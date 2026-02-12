@@ -30,8 +30,8 @@ const globalLimiter = rateLimit({
  * Stricter rate limiter for URL creation
  */
 const createUrlLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 URLs per 15 minutes per IP
+  windowMs: 60 * 1000, // 1 minute
+  max: 1000, // 1000 URLs per minute per IP (for testing)
   message: {
     error: 'Too many URLs created from this IP, please try again later.',
   },

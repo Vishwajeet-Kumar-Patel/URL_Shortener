@@ -78,6 +78,7 @@ class URLController {
       // Try to get from cache first
       const cacheKey = `short:${shortCode}`;
       let url = await cache.get(cacheKey);
+      let cacheHit = false;
 
       if (!url) {
         // If not in cache, get from database
@@ -91,18 +92,33 @@ class URLController {
 
         // Cache the result
         await cache.set(cacheKey, url);
+        cacheHit = false;
+      } else {
+        cacheHit = true;
       }
+
+      // Mark cache hit for metrics
+      res.locals.cacheHit = cacheHit;
 
       // Record analytics asynchronously (don't wait)
       const ip = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('user-agent');
       const referer = req.get('referer');
 
-      setImmediate(() => {
-        URLModel.recordAnalytics(url.id, ip, userAgent, referer);
+      // Fire and forget - skip errors to prevent blocking
+      Promise.resolve().then(() => {
+        return Promise.all([
+          URLModel.incrementClickCount(url.id),
+          URLModel.recordAnalytics(url.id, ip, userAgent, referer)
+        ]);
+      }).catch(err => {
+        // Silently log - don't block the redirect
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Analytics error:', err.message);
+        }
       });
 
-      // Redirect to original URL
+      // Redirect immediately without waiting
       res.redirect(301, url.original_url);
     } catch (error) {
       console.error('Error redirecting:', error);

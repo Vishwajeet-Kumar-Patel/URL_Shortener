@@ -8,6 +8,13 @@ require('dotenv').config();
 const urlRoutes = require('./routes/url.routes');
 const redirectRoutes = require('./routes/redirect.routes');
 const { globalLimiter } = require('./middleware/rateLimiter');
+const { 
+  performanceMiddleware, 
+  metricsEndpoint, 
+  exportMetrics, 
+  resetMetrics,
+  metricsCollector 
+} = require('./middleware/performanceMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,11 +33,20 @@ app.use(express.urlencoded({ extended: true }));
 // Compression
 app.use(compression());
 
+// Performance metrics tracking
+app.use(metricsCollector.requestCounter);
+app.use(performanceMiddleware);
+
 // Global rate limiting
 app.use(globalLimiter);
 
 // Trust proxy (important for rate limiting behind load balancers)
 app.set('trust proxy', 1);
+
+// Metrics endpoints
+app.get('/metrics', metricsEndpoint);
+app.post('/metrics/export', exportMetrics);
+app.post('/metrics/reset', resetMetrics);
 
 // Routes
 app.use('/api', urlRoutes);

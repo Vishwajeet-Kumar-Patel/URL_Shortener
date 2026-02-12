@@ -95,14 +95,27 @@ class URLModel {
   }
 
   /**
-   * Record analytics
+   * Record analytics (batch-friendly, non-blocking)
    */
   static async recordAnalytics(urlId, ipAddress, userAgent, referer) {
-    await db.query(
-      `INSERT INTO url_analytics (url_id, ip_address, user_agent, referer) 
-       VALUES ($1, $2, $3, $4)`,
-      [urlId, ipAddress, userAgent, referer]
-    );
+    try {
+      // Use a shorter timeout for analytics to prevent blocking
+      await Promise.race([
+        db.query(
+          `INSERT INTO url_analytics (url_id, ip_address, user_agent, referer) 
+           VALUES ($1, $2, $3, $4)`,
+          [urlId, ipAddress, userAgent, referer]
+        ),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Analytics timeout')), 1000)
+        )
+      ]);
+    } catch (err) {
+      // Fail silently - analytics shouldn't block redirects
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Analytics insert skipped:', err.message);
+      }
+    }
   }
 
   /**

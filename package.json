@@ -7,7 +7,14 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --coverage",
-    "migrate": "node src/database/migrate.js"
+    "migrate": "node src/database/migrate.js",
+    "setup:db": "docker-compose exec -T postgres psql -U postgres < setup-database.sql",
+    "test:load": "node tests/load-test.js",
+    "test:db": "node tests/db-benchmark.js",
+    "metrics:view": "curl http://localhost:3000/metrics?format=summary",
+    "metrics:export": "curl -X POST http://localhost:3000/metrics/export",
+    "metrics:reset": "curl -X POST http://localhost:3000/metrics/reset",
+    "benchmark:all": "npm run test:db && npm run test:load"
   },
   "keywords": ["url-shortener", "redis", "postgresql", "scalable"],
   "author": "",

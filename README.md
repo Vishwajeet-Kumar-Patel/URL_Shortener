@@ -175,7 +175,82 @@ The application will be available at:
 - Frontend: `http://localhost`
 - Backend API: `http://localhost:3000`
 
-## 📡 API Documentation
+## � Performance Testing & Metrics
+
+This project includes comprehensive performance testing tools to measure and document backend metrics for your resume.
+
+### Quick Start
+
+Run all performance tests with one command:
+
+```powershell
+# Windows PowerShell
+.\run-metrics-tests.ps1
+```
+
+Or manually:
+
+```bash
+# 1. Run database benchmarks
+npm run test:db
+
+# 2. Run load tests
+npm run test:load
+
+# 3. View metrics
+npm run metrics:view
+
+# 4. Export metrics report
+npm run metrics:export
+```
+
+### What Gets Measured
+
+✅ **Read Performance**
+- Redirect latency (avg, median, P95, P99)
+- Cache hit ratio
+- Cache effectiveness
+
+✅ **Load Handling**
+- QPS (Queries Per Second)
+- Requests per minute
+- Concurrent user capacity
+- Peak performance
+
+✅ **Database Optimization**
+- Query execution time
+- Index effectiveness
+- Query type performance (INSERT, SELECT, JOIN)
+- Performance improvements
+
+✅ **Rate Limiting**
+- Requests blocked
+- Abuse prevention effectiveness
+- Rate limit enforcement
+
+### Real-Time Metrics Dashboard
+
+Access live metrics at: `http://localhost:3000/metrics?format=summary`
+
+### Sample Results
+
+After running tests, you'll get resume-ready metrics like:
+
+```
+✅ "Reduced redirect latency to 58ms average using Redis caching"
+✅ "Achieved 87% cache hit ratio under load"
+✅ "Handled 1,200+ requests/minute with 185 QPS"
+✅ "Optimized database queries to 8ms average execution time"
+✅ "Implemented IP-based rate limiting blocking 150+ abuse attempts"
+```
+
+### Documentation
+
+- 📖 **Quick Start**: [docs/QUICK_START_METRICS.md](docs/QUICK_START_METRICS.md)
+- 📖 **Detailed Guide**: [docs/PERFORMANCE_TESTING.md](docs/PERFORMANCE_TESTING.md)
+- 📖 **Metrics Template**: [docs/METRICS_TEMPLATE.md](docs/METRICS_TEMPLATE.md)
+
+## �📡 API Documentation
 
 ### Create Short URL
 
@@ -243,6 +318,48 @@ Soft deletes a URL (sets `is_active` to false).
 {
   "status": "healthy",
   "timestamp": "2025-12-18T00:00:00.000Z"
+}
+```
+
+### Metrics & Monitoring
+
+**GET** `/metrics`
+
+Returns detailed performance metrics in JSON format.
+
+**GET** `/metrics?format=summary`
+
+Returns human-readable metrics summary.
+
+**POST** `/metrics/export`
+
+Exports metrics to JSON file.
+
+**POST** `/metrics/reset`
+
+Resets all metrics counters.
+
+**Sample Metrics Response:**
+```json
+{
+  "uptime": { "minutes": "45.23", "hours": "0.75" },
+  "performance": {
+    "redirect": {
+      "totalRedirects": 1500,
+      "cacheHitRatio": "87.5%",
+      "latency": {
+        "avg": 58.5,
+        "median": 45.2,
+        "p95": 120.3,
+        "p99": 180.7
+      }
+    }
+  },
+  "loadHandling": {
+    "requestsPerSecond": "185.23",
+    "avgRequestsPerMinute": "1200",
+    "peakConcurrentRequests": 150
+  }
 }
 ```
 
