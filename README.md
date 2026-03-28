@@ -49,6 +49,14 @@ A high-performance, scalable URL shortening service built with modern web techno
 └─────────────┘     └──────────────┘     └──────────────┘
 ```
 
+##🚀 Key Engineering Highlights
+
+- Distributed URL shortening service with caching and optimized DB lookups
+- Redis caching layer to reduce database load and improve latency
+- Nanoid-based unique ID generation to prevent enumeration attacks
+- Designed for scalability with stateless backend architecture
+
+
 ### Key Components
 
 1. **Backend API** (Node.js/Express)
@@ -444,7 +452,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 
 4. **Performance Metrics**
    - Average redirect latency: <10ms
-   - Throughput: 10,000+ requests/second
+   - Support high throughput workloads with optimized caching and indexing
    - 99.9% uptime SLA
 
 ## ⚙️ Configuration
