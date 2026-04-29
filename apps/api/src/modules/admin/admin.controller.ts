@@ -1,7 +1,15 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { adminService } from "./admin.service";
-import type { AdminListCampaignsQuery, AdminListUrlsQuery, AdminListUsersQuery } from "./admin.types";
+import type {
+  AdminListCampaignsQuery,
+  AdminListTransactionsQuery,
+  AdminListAnnouncementsQuery,
+  AdminCreateAnnouncementInput,
+  AdminListUrlsQuery,
+  AdminListUsersQuery,
+  AdminReportsQuery
+} from "./admin.types";
 
 export class AdminController {
   async listUsers(req: Request, res: Response): Promise<void> {
@@ -79,6 +87,29 @@ export class AdminController {
       req.body.status,
       req.authUser!.userId,
       req.body.moderationNote
+    );
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
+  async listTransactions(req: Request, res: Response): Promise<void> {
+    const data = await adminService.listTransactions(req.query as unknown as AdminListTransactionsQuery);
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
+  async reports(req: Request, res: Response): Promise<void> {
+    const data = await adminService.reports(req.query as unknown as AdminReportsQuery);
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
+  async listAnnouncements(req: Request, res: Response): Promise<void> {
+    const data = await adminService.listAnnouncements(req.query as unknown as AdminListAnnouncementsQuery);
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
+  async createAnnouncement(req: Request, res: Response): Promise<void> {
+    const data = await adminService.createAnnouncement(
+      req.authUser!.userId,
+      req.body as AdminCreateAnnouncementInput
     );
     res.status(StatusCodes.OK).json({ success: true, data });
   }

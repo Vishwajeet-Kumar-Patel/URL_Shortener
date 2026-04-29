@@ -2,6 +2,9 @@ export type RedirectResolution =
   | {
       outcome: "ACTIVE";
       targetUrl: string;
+      urlId: string;
+      ownerId: string;
+      shortCode: string;
     }
   | {
       outcome: "PAUSED";

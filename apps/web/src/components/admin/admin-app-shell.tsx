@@ -7,12 +7,19 @@ import { useAuthStore } from "@/store/auth.store";
 
 const nav = [
   { href: "/admin", label: "Dashboard" },
-  { href: "/admin/clicks", label: "Clicks" },
-  { href: "/admin/urls", label: "All URLs" },
+  { href: "/admin/click-logs", label: "Click Logs" },
+  { href: "/admin/links", label: "Links" },
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/publishers", label: "Publishers" },
+  { href: "/admin/advertisers", label: "Advertisers" },
+  { href: "/admin/campaigns", label: "Campaigns" },
   { href: "/admin/plans", label: "Plans" },
   { href: "/admin/invoices", label: "Invoices" },
+  { href: "/admin/transactions", label: "Transactions" },
   { href: "/admin/withdrawals", label: "Withdrawals" },
+  { href: "/admin/cpm-rates", label: "CPM Rates" },
+  { href: "/admin/reports", label: "Reports" },
+  { href: "/admin/announcements", label: "Announcements" },
   { href: "/admin/profile", label: "Profile" },
   { href: "/admin/settings", label: "Settings" }
 ] as const;

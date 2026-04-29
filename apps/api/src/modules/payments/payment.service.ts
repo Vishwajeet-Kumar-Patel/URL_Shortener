@@ -8,6 +8,7 @@ import { invoiceRepository } from "../../repositories/invoice.repository";
 import { paymentTransactionRepository } from "../../repositories/payment-transaction.repository";
 import { subscriptionRepository } from "../../repositories/subscription.repository";
 import { campaignRepository } from "../../repositories/campaign.repository";
+import { referralRepository } from "../../repositories/referral.repository";
 import { walletService } from "../wallet/wallet.service";
 import {
   INVOICE_STATUS,
@@ -27,6 +28,7 @@ const buildServiceError = (message: string, statusCode: number): ServiceError =>
 };
 
 const toPaise = (amount: number): number => Math.round(amount * 100);
+const REFERRAL_RATE_PERCENT = 5;
 
 const addMonths = (date: Date, months: number): Date => {
   const next = new Date(date);
@@ -213,6 +215,26 @@ export class PaymentService {
         String(paid.userId),
         paid.amount
       );
+    }
+
+    const referrer = await referralRepository.findByReferredUser(String(paid.userId));
+    if (referrer) {
+      const earning = await referralRepository.addEarning({
+        referrerId: String(referrer.ownerId),
+        referredUserId: String(paid.userId),
+        invoiceId: String(paid._id),
+        grossAmount: paid.amount,
+        ratePercent: REFERRAL_RATE_PERCENT
+      });
+      if (earning) {
+        await walletService.credit(
+          String(referrer.ownerId),
+          earning.amount,
+          WALLET_TX_SOURCE.ADJUSTMENT,
+          String(paid._id),
+          `Referral commission (${REFERRAL_RATE_PERCENT}% from referred user payment)`
+        );
+      }
     }
   }
 }

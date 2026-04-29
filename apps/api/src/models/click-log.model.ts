@@ -15,6 +15,12 @@ export interface ClickLogDocument {
   country?: string;
   city?: string;
   isUnique?: boolean;
+  jsEnabled?: boolean;
+  cookiesEnabled?: boolean;
+  isBot?: boolean;
+  isSuspicious?: boolean;
+  isQualified?: boolean;
+  qualificationReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,7 +40,13 @@ const clickLogSchema = new Schema<ClickLogDocument>(
     referrer: { type: String, trim: true, maxlength: 2048 },
     country: { type: String, trim: true, maxlength: 128 },
     city: { type: String, trim: true, maxlength: 128 },
-    isUnique: { type: Boolean, default: false }
+    isUnique: { type: Boolean, default: false },
+    jsEnabled: { type: Boolean, default: false },
+    cookiesEnabled: { type: Boolean, default: false },
+    isBot: { type: Boolean, default: false },
+    isSuspicious: { type: Boolean, default: false },
+    isQualified: { type: Boolean, default: false, index: true },
+    qualificationReason: { type: String, trim: true, maxlength: 120 }
   },
   { timestamps: true, versionKey: false }
 );
@@ -44,6 +56,7 @@ clickLogSchema.index({ ownerId: 1, timestamp: -1 }, { name: "idx_click_log_owner
 clickLogSchema.index({ shortCode: 1, timestamp: -1 }, { name: "idx_click_log_code_time" });
 clickLogSchema.index({ shortCode: 1, ipHash: 1, timestamp: -1 }, { name: "idx_click_log_unique" });
 clickLogSchema.index({ ownerId: 1, isUnique: 1, timestamp: -1 }, { name: "idx_click_log_owner_unique" });
+clickLogSchema.index({ ownerId: 1, isQualified: 1, timestamp: -1 }, { name: "idx_click_log_owner_qualified" });
 
 export const ClickLogModel =
   models.ClickLog || model<ClickLogDocument>("ClickLog", clickLogSchema);

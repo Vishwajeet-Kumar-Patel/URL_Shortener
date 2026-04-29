@@ -20,6 +20,14 @@ walletRouter.get(
   ensureVerifiedUser,
   asyncHandler((req, res) => walletController.getSummary(req, res))
 );
+walletRouter.get(
+  "/",
+  authMiddleware,
+  requireAuthenticatedUser,
+  ensureActiveUser,
+  ensureVerifiedUser,
+  asyncHandler((req, res) => walletController.getSummary(req, res))
+);
 
 walletRouter.get(
   "/ledger",

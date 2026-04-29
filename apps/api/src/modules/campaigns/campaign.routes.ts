@@ -32,9 +32,19 @@ campaignRouter.post(
   validationMiddleware(createCampaignSchema),
   asyncHandler((req, res) => campaignController.createCampaign(req, res))
 );
+campaignRouter.post(
+  "/create",
+  validationMiddleware(createCampaignSchema),
+  asyncHandler((req, res) => campaignController.createCampaign(req, res))
+);
 
 campaignRouter.get(
   "/",
+  validationMiddleware(listCampaignsSchema),
+  asyncHandler((req, res) => campaignController.listCampaigns(req, res))
+);
+campaignRouter.get(
+  "/my",
   validationMiddleware(listCampaignsSchema),
   asyncHandler((req, res) => campaignController.listCampaigns(req, res))
 );
@@ -46,6 +56,11 @@ campaignRouter.get(
 );
 
 campaignRouter.patch(
+  "/:id",
+  validationMiddleware({ ...campaignIdParamsSchema, ...updateCampaignSchema }),
+  asyncHandler((req, res) => campaignController.updateCampaign(req, res))
+);
+campaignRouter.put(
   "/:id",
   validationMiddleware({ ...campaignIdParamsSchema, ...updateCampaignSchema }),
   asyncHandler((req, res) => campaignController.updateCampaign(req, res))

@@ -22,6 +22,34 @@ import {
 const analyticsRouter = Router();
 
 analyticsRouter.get(
+  "/overview",
+  authMiddleware,
+  requireAuthenticatedUser,
+  ensureActiveUser,
+  ensureVerifiedUser,
+  validationMiddleware(analyticsOverviewQuerySchema),
+  asyncHandler((req, res) => analyticsController.userOverview(req, res))
+);
+analyticsRouter.get(
+  "/link/:id",
+  authMiddleware,
+  requireAuthenticatedUser,
+  ensureActiveUser,
+  ensureVerifiedUser,
+  validationMiddleware({ ...analyticsLinkParamsSchema, ...analyticsLinkQuerySchema }),
+  asyncHandler((req, res) => analyticsController.userLinkDetails(req, res))
+);
+analyticsRouter.get(
+  "/earnings",
+  authMiddleware,
+  requireAuthenticatedUser,
+  ensureActiveUser,
+  ensureVerifiedUser,
+  validationMiddleware(analyticsOverviewQuerySchema),
+  asyncHandler((req, res) => analyticsController.userOverview(req, res))
+);
+
+analyticsRouter.get(
   "/me/overview",
   authMiddleware,
   requireAuthenticatedUser,

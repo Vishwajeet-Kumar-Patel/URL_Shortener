@@ -1,6 +1,10 @@
 import { StatusCodes } from "http-status-codes";
 import { notificationService } from "../notifications/notification.service";
+import { announcementRepository } from "../../repositories/announcement.repository";
 import { campaignRepository } from "../../repositories/campaign.repository";
+import { invoiceRepository } from "../../repositories/invoice.repository";
+import { paymentTransactionRepository } from "../../repositories/payment-transaction.repository";
+import { clickRepository } from "../../repositories/click.repository";
 import { userRepository } from "../../repositories/user.repository";
 import { urlRepository } from "../../repositories/url.repository";
 import {
@@ -8,10 +12,15 @@ import {
   URL_STATUS,
   USER_STATUS,
   type CampaignStatus,
-  type Role
+  type Role,
+  INVOICE_STATUS
 } from "../../types/common";
 import type {
   AdminListCampaignsQuery,
+  AdminListTransactionsQuery,
+  AdminListAnnouncementsQuery,
+  AdminCreateAnnouncementInput,
+  AdminReportsQuery,
   AdminListUrlsQuery,
   AdminListUsersQuery,
   AdminUrlActionResult
@@ -328,6 +337,165 @@ export class AdminService {
     }
 
     return { id: updated.id, status: updated.status };
+  }
+
+  async listTransactions(query: AdminListTransactionsQuery): Promise<{
+    items: Array<{
+      id: string;
+      invoiceId?: string;
+      provider: string;
+      eventType: string;
+      receivedAt: Date;
+      createdAt: Date;
+    }>;
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const { data, total } = await paymentTransactionRepository.listAll({
+      page: query.page,
+      limit: query.limit,
+      provider: query.provider as never
+    });
+    return {
+      items: data.map((tx) => ({
+        id: tx.id,
+        invoiceId: tx.invoiceId ? String(tx.invoiceId) : undefined,
+        provider: tx.provider,
+        eventType: tx.eventType,
+        receivedAt: tx.receivedAt,
+        createdAt: tx.createdAt
+      })),
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / query.limit))
+      }
+    };
+  }
+
+  async reports(query: AdminReportsQuery): Promise<{
+    periodDays: number;
+    users: { total: number; active: number; banned: number };
+    urls: { total: number; active: number; paused: number; deleted: number };
+    clicks: { total: number; unique: number };
+    invoices: { total: number; paid: number; pending: number };
+    revenue: { grossCollected: number };
+  }> {
+    const [users, urls, clicksTotal, clicksUnique, invoices] = await Promise.all([
+      userRepository.listUsers({ page: 1, limit: 1_000_000 }),
+      urlRepository.listAllWithFilters({ page: 1, limit: 1_000_000 }),
+      clickRepository.countClicksTotal(),
+      clickRepository.countUniqueClicksTotal(),
+      invoiceRepository.listAll({ page: 1, limit: 1_000_000 })
+    ]);
+
+    const paid = invoices.data.filter((inv) => inv.status === INVOICE_STATUS.PAID);
+    const pending = invoices.data.filter((inv) => inv.status === INVOICE_STATUS.PENDING);
+    const grossCollected = paid.reduce((sum, inv) => sum + inv.amount, 0);
+
+    return {
+      periodDays: query.days,
+      users: {
+        total: users.total,
+        active: users.data.filter((u) => u.status === USER_STATUS.ACTIVE).length,
+        banned: users.data.filter((u) => u.status === USER_STATUS.BANNED).length
+      },
+      urls: {
+        total: urls.total,
+        active: urls.data.filter((u) => u.status === URL_STATUS.ACTIVE).length,
+        paused: urls.data.filter((u) => u.status === URL_STATUS.PAUSED).length,
+        deleted: urls.data.filter((u) => u.status === URL_STATUS.DELETED).length
+      },
+      clicks: {
+        total: clicksTotal,
+        unique: clicksUnique
+      },
+      invoices: {
+        total: invoices.total,
+        paid: paid.length,
+        pending: pending.length
+      },
+      revenue: {
+        grossCollected
+      }
+    };
+  }
+
+  async listAnnouncements(query: AdminListAnnouncementsQuery): Promise<{
+    items: Array<{
+      id: string;
+      title: string;
+      body: string;
+      audience: string;
+      status: string;
+      sentAt?: Date;
+      stats: {
+        totalRecipients: number;
+        sentCount: number;
+        failedCount: number;
+      };
+      createdAt: Date;
+    }>;
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const { data, total } = await announcementRepository.list(query);
+    return {
+      items: data.map((row) => ({
+        id: row.id,
+        title: row.title,
+        body: row.body,
+        audience: row.audience,
+        status: row.status,
+        sentAt: row.sentAt,
+        stats: row.stats,
+        createdAt: row.createdAt
+      })),
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / query.limit))
+      }
+    };
+  }
+
+  async createAnnouncement(
+    adminUserId: string,
+    input: AdminCreateAnnouncementInput
+  ): Promise<{
+    id: string;
+    status: string;
+    stats: { totalRecipients: number; sentCount: number; failedCount: number };
+  }> {
+    const created = await announcementRepository.create({
+      title: input.title,
+      body: input.body,
+      audience: input.audience,
+      createdBy: adminUserId
+    });
+    if (!created) {
+      throw buildServiceError("Unable to create announcement", StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+
+    const delivery = await notificationService.enqueueAdminAnnouncement({
+      announcementId: created.id,
+      audience: input.audience,
+      activeOnly: input.activeOnly,
+      maxRetries: input.maxRetries
+    });
+    const status = "DRAFT";
+    await announcementRepository.markDelivery(created.id, {
+      status,
+      totalRecipients: delivery.totalRecipients,
+      sentCount: 0,
+      failedCount: 0
+    });
+
+    return {
+      id: created.id,
+      status,
+      stats: { totalRecipients: delivery.totalRecipients, sentCount: 0, failedCount: 0 }
+    };
   }
 
   private async changeUrlStatus(urlId: string, targetStatus: typeof URL_STATUS[keyof typeof URL_STATUS]) {

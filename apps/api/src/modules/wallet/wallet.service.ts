@@ -1,4 +1,5 @@
 import { StatusCodes } from "http-status-codes";
+import { ClientSession, startSession } from "mongoose";
 import { walletRepository } from "../../repositories/wallet.repository";
 import { walletLedgerRepository } from "../../repositories/wallet-ledger.repository";
 import { WALLET_TX_SOURCE, WALLET_TX_TYPE, type WalletTxSource } from "../../types/common";
@@ -48,29 +49,44 @@ export class WalletService {
     amount: number,
     source: WalletTxSource = WALLET_TX_SOURCE.ADJUSTMENT,
     referenceId?: string,
-    memo?: string
+    memo?: string,
+    session?: ClientSession
   ): Promise<void> {
     if (amount <= 0) {
       throw buildServiceError("Amount must be greater than zero", StatusCodes.BAD_REQUEST);
     }
 
-    const wallet = await walletRepository.getOrCreateWallet(userId);
-    const nextBalance = wallet.balance + amount;
+    if (source === WALLET_TX_SOURCE.EARNING && referenceId) {
+      const exists = await walletLedgerRepository.existsEarningReference(userId, referenceId);
+      if (exists) {
+        return;
+      }
+    }
 
-    await walletRepository.updateBalances(userId, {
-      balance: nextBalance,
-      pendingAmount: wallet.pendingAmount
-    });
+    const updated = await walletRepository.incrementBalances(userId, { balanceDelta: amount }, session);
+    if (!updated) {
+      throw buildServiceError("Wallet not found", StatusCodes.NOT_FOUND);
+    }
 
-    await walletLedgerRepository.createEntry({
-      userId: wallet.userId,
-      type: WALLET_TX_TYPE.CREDIT,
-      source,
-      amount,
-      balanceAfter: nextBalance,
-      referenceId,
-      memo
-    });
+    try {
+      await walletLedgerRepository.createEntry({
+        userId: updated.userId,
+        type: WALLET_TX_TYPE.CREDIT,
+        source,
+        amount,
+        balanceAfter: updated.balance,
+        referenceId,
+        memo
+      }, session);
+    } catch (error) {
+      // duplicate earning reference can happen under concurrency; rollback balance and ignore
+      const duplicateKey = (error as { code?: number })?.code === 11000;
+      if (duplicateKey && source === WALLET_TX_SOURCE.EARNING && referenceId) {
+        await walletRepository.incrementBalances(userId, { balanceDelta: -amount }, session);
+        return;
+      }
+      throw error;
+    }
   }
 
   async debit(
@@ -78,13 +94,14 @@ export class WalletService {
     amount: number,
     source: WalletTxSource = WALLET_TX_SOURCE.ADJUSTMENT,
     referenceId?: string,
-    memo?: string
+    memo?: string,
+    session?: ClientSession
   ): Promise<void> {
     if (amount <= 0) {
       throw buildServiceError("Amount must be greater than zero", StatusCodes.BAD_REQUEST);
     }
 
-    const wallet = await walletRepository.getOrCreateWallet(userId);
+    const wallet = await walletRepository.getOrCreateWallet(userId, session);
     if (wallet.balance < amount) {
       throw buildServiceError("Insufficient wallet balance", StatusCodes.BAD_REQUEST);
     }
@@ -94,7 +111,7 @@ export class WalletService {
     await walletRepository.updateBalances(userId, {
       balance: nextBalance,
       pendingAmount: wallet.pendingAmount
-    });
+    }, session);
 
     await walletLedgerRepository.createEntry({
       userId: wallet.userId,
@@ -104,15 +121,15 @@ export class WalletService {
       balanceAfter: nextBalance,
       referenceId,
       memo
-    });
+    }, session);
   }
 
-  async moveToPending(userId: string, amount: number, referenceId?: string): Promise<void> {
+  async moveToPending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
     if (amount <= 0) {
       throw buildServiceError("Amount must be greater than zero", StatusCodes.BAD_REQUEST);
     }
 
-    const wallet = await walletRepository.getOrCreateWallet(userId);
+    const wallet = await walletRepository.getOrCreateWallet(userId, session);
     if (wallet.balance < amount) {
       throw buildServiceError("Insufficient wallet balance", StatusCodes.BAD_REQUEST);
     }
@@ -123,7 +140,7 @@ export class WalletService {
     await walletRepository.updateBalances(userId, {
       balance: nextBalance,
       pendingAmount: nextPending
-    });
+    }, session);
 
     await walletLedgerRepository.createEntry({
       userId: wallet.userId,
@@ -133,17 +150,17 @@ export class WalletService {
       balanceAfter: nextBalance,
       referenceId,
       memo: "Withdrawal requested"
-    });
+    }, session);
   }
 
-  async releasePending(userId: string, amount: number, referenceId?: string): Promise<void> {
-    const wallet = await walletRepository.getOrCreateWallet(userId);
+  async releasePending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
+    const wallet = await walletRepository.getOrCreateWallet(userId, session);
     const nextPending = Math.max(0, wallet.pendingAmount - amount);
 
     await walletRepository.updateBalances(userId, {
       balance: wallet.balance,
       pendingAmount: nextPending
-    });
+    }, session);
 
     await walletLedgerRepository.createEntry({
       userId: wallet.userId,
@@ -153,18 +170,18 @@ export class WalletService {
       balanceAfter: wallet.balance,
       referenceId,
       memo: "Withdrawal processed"
-    });
+    }, session);
   }
 
-  async refundPending(userId: string, amount: number, referenceId?: string): Promise<void> {
-    const wallet = await walletRepository.getOrCreateWallet(userId);
+  async refundPending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
+    const wallet = await walletRepository.getOrCreateWallet(userId, session);
     const nextBalance = wallet.balance + amount;
     const nextPending = Math.max(0, wallet.pendingAmount - amount);
 
     await walletRepository.updateBalances(userId, {
       balance: nextBalance,
       pendingAmount: nextPending
-    });
+    }, session);
 
     await walletLedgerRepository.createEntry({
       userId: wallet.userId,
@@ -174,7 +191,18 @@ export class WalletService {
       balanceAfter: nextBalance,
       referenceId,
       memo: "Withdrawal rejected"
-    });
+    }, session);
+  }
+
+  async requestWithdrawalAtomic(userId: string, amount: number): Promise<void> {
+    const session = await startSession();
+    try {
+      await session.withTransaction(async () => {
+        await this.moveToPending(userId, amount, undefined, session);
+      });
+    } finally {
+      await session.endSession();
+    }
   }
 }
 

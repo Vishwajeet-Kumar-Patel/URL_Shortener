@@ -76,3 +76,34 @@ export const adminUpdateCampaignStatusSchema = {
     moderationNote: z.string().trim().max(500).optional()
   })
 };
+
+export const adminListTransactionsQuerySchema = {
+  query: z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    provider: z.string().trim().max(30).optional()
+  })
+};
+
+export const adminReportsQuerySchema = {
+  query: z.object({
+    days: z.coerce.number().int().min(1).max(365).default(30)
+  })
+};
+
+export const adminListAnnouncementsQuerySchema = {
+  query: z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20)
+  })
+};
+
+export const adminCreateAnnouncementSchema = {
+  body: z.object({
+    title: z.string().trim().min(3).max(180),
+    body: z.string().trim().min(3).max(10000),
+    audience: z.enum(["ALL", ...Object.values(ROLES)] as [string, ...string[]]),
+    activeOnly: z.boolean().optional(),
+    maxRetries: z.coerce.number().int().min(0).max(5).optional()
+  })
+};

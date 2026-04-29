@@ -25,8 +25,18 @@ urlRouter.post(
   validationMiddleware(createUrlSchema),
   asyncHandler((req, res) => urlController.createOwnUrl(req, res))
 );
+urlRouter.post(
+  "/create",
+  validationMiddleware(createUrlSchema),
+  asyncHandler((req, res) => urlController.createOwnUrl(req, res))
+);
 urlRouter.get(
   "/",
+  validationMiddleware(listUrlsSchema),
+  asyncHandler((req, res) => urlController.listOwnUrls(req, res))
+);
+urlRouter.get(
+  "/my-links",
   validationMiddleware(listUrlsSchema),
   asyncHandler((req, res) => urlController.listOwnUrls(req, res))
 );
@@ -36,6 +46,11 @@ urlRouter.get(
   asyncHandler((req, res) => urlController.getOwnUrlById(req, res))
 );
 urlRouter.patch(
+  "/:id",
+  validationMiddleware({ ...getMyUrlByIdSchema, ...updateUrlSchema }),
+  asyncHandler((req, res) => urlController.updateOwnUrl(req, res))
+);
+urlRouter.put(
   "/:id",
   validationMiddleware({ ...getMyUrlByIdSchema, ...updateUrlSchema }),
   asyncHandler((req, res) => urlController.updateOwnUrl(req, res))

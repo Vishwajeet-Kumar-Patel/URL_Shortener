@@ -8,6 +8,7 @@ import type { HydratedDocument } from "mongoose";
 import { env } from "../../config/env";
 import type { UserDocument } from "../../models/user.model";
 import { userRepository } from "../../repositories/user.repository";
+import { referralRepository } from "../../repositories/referral.repository";
 import { ROLES, USER_STATUS } from "../../types/common";
 import { hashPassword, hashToken, verifyPassword } from "../../utils/hash";
 import { sendEmail } from "../../utils/email";
@@ -59,6 +60,13 @@ export class AuthService {
     if (existing) {
       throw buildServiceError("Email is already registered", StatusCodes.CONFLICT);
     }
+    const normalizedReferralCode = input.referralCode?.trim().toUpperCase();
+    if (normalizedReferralCode) {
+      const referral = await referralRepository.findByCode(normalizedReferralCode);
+      if (!referral) {
+        throw buildServiceError("Invalid referral code", StatusCodes.BAD_REQUEST);
+      }
+    }
 
     const passwordHash = await hashPassword(input.password);
     const user = await userRepository.createUser({
@@ -67,6 +75,15 @@ export class AuthService {
       passwordHash,
       role: ROLES.MEMBER
     });
+
+    if (normalizedReferralCode) {
+      const linked = await referralRepository.attachReferredUser(normalizedReferralCode, user.id);
+      if (!linked) {
+        throw buildServiceError("Invalid referral code", StatusCodes.BAD_REQUEST);
+      }
+    }
+
+    await referralRepository.getOrCreateProfile(user.id);
 
     const verificationToken = createOneTimeToken();
     user.emailVerificationTokenHash = hashToken(verificationToken);

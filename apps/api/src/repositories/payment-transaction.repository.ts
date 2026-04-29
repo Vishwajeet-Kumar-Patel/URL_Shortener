@@ -27,6 +27,19 @@ export class PaymentTransactionRepository {
     if (!isValidObjectId(invoiceId)) return [];
     return PaymentTransactionModel.find({ invoiceId }).sort({ createdAt: -1 }).exec();
   }
+
+  async listAll(input: { page: number; limit: number; provider?: PaymentProvider }): Promise<{ data: PaymentTransactionEntity[]; total: number }> {
+    const filter: Record<string, unknown> = {};
+    if (input.provider) {
+      filter.provider = input.provider;
+    }
+    const skip = (input.page - 1) * input.limit;
+    const [data, total] = await Promise.all([
+      PaymentTransactionModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
+      PaymentTransactionModel.countDocuments(filter)
+    ]);
+    return { data, total };
+  }
 }
 
 export const paymentTransactionRepository = new PaymentTransactionRepository();

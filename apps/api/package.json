@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:admin": "tsx src/scripts/seed-admin.ts",
-    "seed:plans": "tsx src/scripts/seed-plans.ts"
+    "seed:plans": "tsx src/scripts/seed-plans.ts",
+    "jobs:announcements": "tsx src/scripts/process-announcements.ts",
+    "worker:announcements": "tsx src/scripts/worker-announcements.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -35,7 +35,8 @@ export type UrlAdMode = (typeof URL_AD_MODE)[keyof typeof URL_AD_MODE];
 export const EMAIL_EVENT_TYPE = {
   URL_PAUSED: "URL_PAUSED",
   URL_ACTIVATED: "URL_ACTIVATED",
-  URL_DELETED: "URL_DELETED"
+  URL_DELETED: "URL_DELETED",
+  ADMIN_ANNOUNCEMENT: "ADMIN_ANNOUNCEMENT"
 } as const;
 
 export type EmailEventType =

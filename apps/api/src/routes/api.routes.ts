@@ -15,6 +15,8 @@ import { walletRouter } from "../modules/wallet/wallet.routes";
 import { withdrawalRouter } from "../modules/withdrawals/withdrawal.routes";
 import { adminSettingsRouter } from "../modules/admin-settings/admin-settings.routes";
 import { contactRouter } from "../modules/contact/contact.routes";
+import { referralRouter } from "../modules/referrals/referral.routes";
+import { cpmRateRouter } from "../modules/cpm-rates/cpm-rate.routes";
 
 const apiRouter = Router();
 
@@ -23,7 +25,9 @@ apiRouter.use("/contact", contactRouter);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/users", userRouter);
 apiRouter.use("/urls", urlRouter);
+apiRouter.use("/links", urlRouter);
 apiRouter.use("/r", redirectRouter);
+apiRouter.use("/public", redirectRouter);
 apiRouter.use("/analytics", analyticsRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/campaigns", campaignRouter);
@@ -34,5 +38,7 @@ apiRouter.use("/payments", paymentRouter);
 apiRouter.use("/wallet", walletRouter);
 apiRouter.use("/withdrawals", withdrawalRouter);
 apiRouter.use("/admin/settings", adminSettingsRouter);
+apiRouter.use("/referrals", referralRouter);
+apiRouter.use("/admin/cpm-rates", cpmRateRouter);
 
 export { apiRouter };

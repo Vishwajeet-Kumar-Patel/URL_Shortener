@@ -33,3 +33,26 @@ export type AdminListCampaignsQuery = {
   ownerId?: string;
   search?: string;
 };
+
+export type AdminListTransactionsQuery = {
+  page: number;
+  limit: number;
+  provider?: string;
+};
+
+export type AdminReportsQuery = {
+  days: number;
+};
+
+export type AdminListAnnouncementsQuery = {
+  page: number;
+  limit: number;
+};
+
+export type AdminCreateAnnouncementInput = {
+  title: string;
+  body: string;
+  audience: "ALL" | Role;
+  activeOnly?: boolean;
+  maxRetries?: number;
+};

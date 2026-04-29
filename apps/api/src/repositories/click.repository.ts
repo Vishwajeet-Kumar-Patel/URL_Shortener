@@ -9,27 +9,27 @@ export class ClickRepository {
   }
 
   async countClicksByOwner(ownerId: string): Promise<number> {
-    return ClickLogModel.countDocuments({ ownerId }).exec();
+    return ClickLogModel.countDocuments({ ownerId, isQualified: true }).exec();
   }
 
   async countClicksByUrl(urlId: string): Promise<number> {
-    return ClickLogModel.countDocuments({ urlId }).exec();
+    return ClickLogModel.countDocuments({ urlId, isQualified: true }).exec();
   }
 
   async countUniqueClicksByOwner(ownerId: string): Promise<number> {
-    return ClickLogModel.countDocuments({ ownerId, isUnique: true }).exec();
+    return ClickLogModel.countDocuments({ ownerId, isUnique: true, isQualified: true }).exec();
   }
 
   async countUniqueClicksByUrl(urlId: string): Promise<number> {
-    return ClickLogModel.countDocuments({ urlId, isUnique: true }).exec();
+    return ClickLogModel.countDocuments({ urlId, isUnique: true, isQualified: true }).exec();
   }
 
   async countClicksTotal(): Promise<number> {
-    return ClickLogModel.countDocuments({}).exec();
+    return ClickLogModel.countDocuments({ isQualified: true }).exec();
   }
 
   async countUniqueClicksTotal(): Promise<number> {
-    return ClickLogModel.countDocuments({ isUnique: true }).exec();
+    return ClickLogModel.countDocuments({ isUnique: true, isQualified: true }).exec();
   }
 
   async existsRecentUniqueClick(input: {
@@ -40,6 +40,7 @@ export class ClickRepository {
     const existing = await ClickLogModel.exists({
       shortCode: input.shortCode,
       ipHash: input.ipHash,
+      isQualified: true,
       timestamp: { $gte: input.since }
     });
     return Boolean(existing);
@@ -55,6 +56,7 @@ export class ClickRepository {
     startDate.setDate(startDate.getDate() - Math.max(1, input.days));
 
     const match: Record<string, unknown> = { timestamp: { $gte: startDate } };
+    match.isQualified = true;
     if (input.ownerId) {
       match.ownerId = input.ownerId;
     }
@@ -104,6 +106,7 @@ export class ClickRepository {
     startDate.setDate(startDate.getDate() - Math.max(1, input.days));
 
     const match: Record<string, unknown> = { timestamp: { $gte: startDate } };
+    match.isQualified = true;
     if (input.ownerId) {
       match.ownerId = input.ownerId;
     }
@@ -165,6 +168,7 @@ export class ClickRepository {
     startDate.setDate(startDate.getDate() - Math.max(1, input.days));
 
     const match: Record<string, unknown> = { timestamp: { $gte: startDate } };
+    match.isQualified = true;
     if (input.ownerId) {
       match.ownerId = input.ownerId;
     }
@@ -214,6 +218,7 @@ export class ClickRepository {
     }
 
     const match: Record<string, unknown> = { timestamp: { $gte: startDate, $lte: now } };
+    match.isQualified = true;
     if (input.ownerId) {
       match.ownerId = input.ownerId;
     }

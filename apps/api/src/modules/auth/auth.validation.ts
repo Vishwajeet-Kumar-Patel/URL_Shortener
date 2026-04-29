@@ -4,7 +4,8 @@ export const registerSchema = {
   body: z.object({
     name: z.string().trim().min(2).max(100),
     email: z.string().trim().email().max(255),
-    password: z.string().min(8).max(128)
+    password: z.string().min(8).max(128),
+    referralCode: z.string().trim().min(4).max(24).optional()
   })
 };
 

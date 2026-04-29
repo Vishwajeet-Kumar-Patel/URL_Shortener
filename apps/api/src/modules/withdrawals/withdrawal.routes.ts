@@ -27,9 +27,27 @@ withdrawalRouter.post(
   validationMiddleware(createWithdrawalSchema),
   asyncHandler((req, res) => withdrawalController.createWithdrawal(req, res))
 );
+withdrawalRouter.post(
+  "/request",
+  authMiddleware,
+  requireAuthenticatedUser,
+  ensureActiveUser,
+  ensureVerifiedUser,
+  validationMiddleware(createWithdrawalSchema),
+  asyncHandler((req, res) => withdrawalController.createWithdrawal(req, res))
+);
 
 withdrawalRouter.get(
   "/",
+  authMiddleware,
+  requireAuthenticatedUser,
+  ensureActiveUser,
+  ensureVerifiedUser,
+  validationMiddleware(listWithdrawalsSchema),
+  asyncHandler((req, res) => withdrawalController.listWithdrawals(req, res))
+);
+withdrawalRouter.get(
+  "/history",
   authMiddleware,
   requireAuthenticatedUser,
   ensureActiveUser,

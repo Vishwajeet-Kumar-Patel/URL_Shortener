@@ -1,11 +1,15 @@
-import { HydratedDocument, isValidObjectId } from "mongoose";
+import { ClientSession, HydratedDocument, isValidObjectId } from "mongoose";
 import { WithdrawalModel, type WithdrawalDocument } from "../models/withdrawal.model";
 import type { WithdrawalStatus } from "../types/common";
 
 type WithdrawalEntity = HydratedDocument<WithdrawalDocument>;
 
 export class WithdrawalRepository {
-  async createWithdrawal(input: Partial<WithdrawalDocument>): Promise<WithdrawalEntity> {
+  async createWithdrawal(input: Partial<WithdrawalDocument>, session?: ClientSession): Promise<WithdrawalEntity> {
+    if (session) {
+      const [created] = await WithdrawalModel.create([input], { session });
+      return created;
+    }
     return WithdrawalModel.create(input);
   }
 
@@ -33,18 +37,25 @@ export class WithdrawalRepository {
     return { data, total };
   }
 
-  async updateStatus(withdrawalId: string, status: WithdrawalStatus, update: Record<string, unknown>) {
+  async updateStatus(
+    withdrawalId: string,
+    status: WithdrawalStatus,
+    update: Record<string, unknown>,
+    session?: ClientSession
+  ) {
     if (!isValidObjectId(withdrawalId)) return null;
     return WithdrawalModel.findByIdAndUpdate(
       withdrawalId,
       { $set: { status, ...update } },
       { new: true }
-    ).exec();
+    )
+      .session(session ?? null)
+      .exec();
   }
 
-  async findById(withdrawalId: string) {
+  async findById(withdrawalId: string, session?: ClientSession) {
     if (!isValidObjectId(withdrawalId)) return null;
-    return WithdrawalModel.findById(withdrawalId).exec();
+    return WithdrawalModel.findById(withdrawalId).session(session ?? null).exec();
   }
 }
 

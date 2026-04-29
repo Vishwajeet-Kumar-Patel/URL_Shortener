@@ -16,6 +16,10 @@ import {
   adminListUsersQuerySchema,
   adminListCampaignsQuerySchema,
   adminUpdateCampaignStatusSchema,
+  adminListTransactionsQuerySchema,
+  adminReportsQuerySchema,
+  adminListAnnouncementsQuerySchema,
+  adminCreateAnnouncementSchema,
   adminUpdateUserRoleSchema,
   adminUpdateUserStatusSchema,
   adminUrlActionParamsSchema,
@@ -102,6 +106,26 @@ adminRouter.patch(
   "/campaigns/:id/status",
   validationMiddleware(adminUpdateCampaignStatusSchema),
   asyncHandler((req, res) => adminController.updateCampaignStatus(req, res))
+);
+adminRouter.get(
+  "/transactions",
+  validationMiddleware(adminListTransactionsQuerySchema),
+  asyncHandler((req, res) => adminController.listTransactions(req, res))
+);
+adminRouter.get(
+  "/reports",
+  validationMiddleware(adminReportsQuerySchema),
+  asyncHandler((req, res) => adminController.reports(req, res))
+);
+adminRouter.get(
+  "/announcements",
+  validationMiddleware(adminListAnnouncementsQuerySchema),
+  asyncHandler((req, res) => adminController.listAnnouncements(req, res))
+);
+adminRouter.post(
+  "/announcements",
+  validationMiddleware(adminCreateAnnouncementSchema),
+  asyncHandler((req, res) => adminController.createAnnouncement(req, res))
 );
 
 export { adminRouter };
