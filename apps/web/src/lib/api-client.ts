@@ -20,10 +20,24 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
     body: options.body ? JSON.stringify(options.body) : undefined
   });
 
-  const payload = (await response.json()) as { success: boolean; data?: T; message?: string };
-  if (!response.ok || !payload.success) {
+  if (!response.ok) {
+    let errorMessage = `HTTP ${response.status}`;
+    try {
+      const errorPayload = (await response.json()) as { message?: string };
+      errorMessage = errorPayload.message || errorMessage;
+    } catch {
+      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  const payload = (await response.json()) as { success?: boolean; data?: T; message?: string };
+  
+  // If response has success field and it's false, throw error
+  if (payload.success === false) {
     throw new Error(payload.message ?? "Request failed");
   }
 
-  return payload.data as T;
+  // Return data if it exists, otherwise return payload as data
+  return (payload.data ?? payload) as T;
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api-client";
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/form-classes";
 import { useAuthStore } from "@/store/auth.store";
 
-export default function ResendVerificationPage() {
+function ResendVerificationContent() {
   const params = useSearchParams();
   const pendingEmail = useAuthStore((state) => state.pendingEmail);
   const initialEmail = useMemo(() => params.get("email") ?? pendingEmail ?? "", [params, pendingEmail]);
@@ -78,5 +79,13 @@ export default function ResendVerificationPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ResendVerificationPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4"><p className="text-slate-400">Loading...</p></div>}>
+      <ResendVerificationContent />
+    </Suspense>
   );
 }

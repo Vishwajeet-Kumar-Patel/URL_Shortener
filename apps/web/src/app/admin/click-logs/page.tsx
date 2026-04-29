@@ -36,7 +36,7 @@ export default function AdminClickLogsPage() {
           <thead className="bg-slate-800/70"><tr><th className="px-3 py-2 text-left">Short</th><th className="px-3 py-2 text-left">Original URL</th><th className="px-3 py-2 text-left">Clicks</th><th className="px-3 py-2 text-left">Unique</th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr className="border-t border-slate-800" key={r.urlId}><td className="px-3 py-2 text-white">{r.shortCode}</td><td className="max-w-xs truncate px-3 py-2 text-slate-300" title={r.originalUrl}>{r.originalUrl ?? "—"}</td><td className="px-3 py-2">{r.totalClicks}</td><td className="px-3 py-2 text-indigo-300">{r.uniqueClicks}</td></tr>
+              <tr className="border-t border-slate-800" key={r.urlId}><td className="px-3 py-2 text-white">{r.shortCode}</td><td className="max-w-xs truncate px-3 py-2 text-slate-300" title={r.originalUrl}>{r.originalUrl ?? "â€”"}</td><td className="px-3 py-2">{r.totalClicks}</td><td className="px-3 py-2 text-indigo-300">{r.uniqueClicks}</td></tr>
             ))}
           </tbody>
         </table>

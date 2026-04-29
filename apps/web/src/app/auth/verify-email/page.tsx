@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth.store";
@@ -16,7 +16,7 @@ type VerifyResponse = {
   tokens: { accessToken: string; refreshToken: string };
 };
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const params = useSearchParams();
   const setSession = useAuthStore((state) => state.setSession);
@@ -80,5 +80,13 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4"><p className="text-slate-400">Loading...</p></div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -17,7 +18,7 @@ type OAuthPayload = {
   };
 };
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
   const params = useSearchParams();
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
@@ -49,5 +50,13 @@ export default function GoogleCallbackPage() {
     <main className="mx-auto flex min-h-screen max-w-xl items-center justify-center p-6 text-center">
       <p className="text-slate-600">Completing Google sign-in...</p>
     </main>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center p-6"><p className="text-slate-400">Loading...</p></div>}>
+      <GoogleCallbackContent />
+    </Suspense>
   );
 }

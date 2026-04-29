@@ -53,7 +53,7 @@ export default function GoSessionPage({ params }: Props) {
       <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 text-center">
         <div className="w-full space-y-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-300">Secure redirect</p>
-          <h1 className="text-2xl font-semibold text-white">One moment…</h1>
+          <h1 className="text-2xl font-semibold text-white">One momentâ€¦</h1>
           <p className="text-sm text-slate-300">We are validating this session and preparing your destination.</p>
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-indigo-500/50 bg-indigo-950/40 text-2xl font-semibold text-indigo-200">
             {seconds}
