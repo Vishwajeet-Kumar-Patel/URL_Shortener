@@ -78,6 +78,7 @@ http://localhost:5000/api/v1/health
 - `MONGODB_URI`
 - `CLIENT_ORIGIN`
 - `APP_PUBLIC_URL`
+- `APP_ANON_OWNER_ID` (placeholder owner ObjectId for anonymous/public links; defaults to all-zero ObjectId)
 - `SMTP_HOST`
 - `SMTP_PORT`
 - `SMTP_SECURE`

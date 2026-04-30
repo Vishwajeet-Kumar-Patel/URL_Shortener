@@ -56,3 +56,8 @@ export type AdminCreateAnnouncementInput = {
   activeOnly?: boolean;
   maxRetries?: number;
 };
+
+export type AdminAttachReferralInput = {
+  email: string;
+  referralCode: string;
+};

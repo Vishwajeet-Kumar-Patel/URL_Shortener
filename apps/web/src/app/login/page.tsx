@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GoogleButton } from "@/components/auth/google-button";
@@ -24,9 +24,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  if (user) {
-    router.replace(user.role === "ADMIN" ? "/admin" : "/dashboard");
-  }
+  useEffect(() => {
+    if (user) {
+      router.replace(user.role === "ADMIN" ? "/admin" : "/dashboard");
+    }
+  }, [router, user]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -63,7 +65,7 @@ export default function LoginPage() {
         <div className={`w-full ${formCardClass}`}>
           <h1 className="mb-1 text-2xl font-bold text-white sm:text-3xl">Welcome back</h1>
           <p className="mb-6 text-sm text-slate-300">Log in to manage your links and analytics.</p>
-          <form className={formFieldGroupClass} onSubmit={handleSubmit}>
+          <form className={formFieldGroupClass} onSubmit={handleSubmit} suppressHydrationWarning>
             <div>
               <label className={formLabelClass} htmlFor="login-email">
                 Email
@@ -77,6 +79,7 @@ export default function LoginPage() {
                 required
                 value={emailValue}
                 onChange={(event) => setEmailValue(event.target.value)}
+                suppressHydrationWarning
               />
             </div>
             <div>
@@ -90,6 +93,7 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 required
+                suppressHydrationWarning
               />
             </div>
             {error ? <p className="text-sm text-red-400">{error}</p> : null}
@@ -101,7 +105,7 @@ export default function LoginPage() {
                 </Link>
               </p>
             ) : null}
-            <button className={formButtonPrimaryClass} disabled={loading} type="submit">
+            <button className={formButtonPrimaryClass} disabled={loading} type="submit" suppressHydrationWarning>
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>

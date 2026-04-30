@@ -22,7 +22,6 @@ export const UrlCreateForm = ({ onCreated }: { onCreated: () => Promise<void> })
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) return;
     const form = event.currentTarget;
     setLoading(true);
     setError(null);
@@ -35,13 +34,11 @@ export const UrlCreateForm = ({ onCreated }: { onCreated: () => Promise<void> })
       return;
     }
     try {
-      const data = await apiRequest<CreatedUrl>("/urls", {
-        method: "POST",
-        token,
-        body: {
-          originalUrl
-        }
-      });
+      const path = token ? "/urls" : "/urls/public";
+      const opts = token
+        ? { method: "POST", token, body: { originalUrl } }
+        : { method: "POST", body: { originalUrl } };
+      const data = await apiRequest<CreatedUrl>(path, opts as any);
       setCreated(data);
       await onCreated();
       form.reset();

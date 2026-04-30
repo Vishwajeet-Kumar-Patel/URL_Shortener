@@ -6,12 +6,18 @@ import type {
   AdminListTransactionsQuery,
   AdminListAnnouncementsQuery,
   AdminCreateAnnouncementInput,
+  AdminAttachReferralInput,
   AdminListUrlsQuery,
   AdminListUsersQuery,
   AdminReportsQuery
 } from "./admin.types";
 
 export class AdminController {
+  async attachUserToReferral(req: Request, res: Response): Promise<void> {
+    const data = await adminService.attachUserToReferral(req.body as AdminAttachReferralInput);
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
   async listUsers(req: Request, res: Response): Promise<void> {
     const data = await adminService.listUsers(req.query as unknown as AdminListUsersQuery);
     res.status(StatusCodes.OK).json({ success: true, data });

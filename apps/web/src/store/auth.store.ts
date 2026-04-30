@@ -28,7 +28,7 @@ type AuthState = {
   isHydrated: boolean;
   hydrate: () => void;
   login: (input: { email: string; password: string }) => Promise<void>;
-  register: (input: { name: string; email: string; password: string }) => Promise<void>;
+  register: (input: { name: string; email: string; password: string; referralCode?: string }) => Promise<void>;
   logout: () => Promise<void>;
   setSession: (payload: AuthResponse) => void;
   patchUser: (partial: Partial<Pick<User, "name" | "email">>) => void;
@@ -71,10 +71,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       pendingEmail: null
     });
   },
-  register: async ({ name, email, password }) => {
+  register: async ({ name, email, password, referralCode }) => {
     const data = await apiRequest<RegisterResponse>("/auth/register", {
       method: "POST",
-      body: { name, email, password }
+      body: {
+        name,
+        email,
+        password,
+        ...(referralCode ? { referralCode } : {})
+      }
     });
 
     if (data.verificationRequired) {

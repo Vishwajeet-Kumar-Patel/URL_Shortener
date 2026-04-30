@@ -44,6 +44,7 @@ app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(globalRateLimitMiddleware);
 
 app.use(API_PREFIX, apiRouter);
+app.use("/r", redirectRouter);
 app.use("/", redirectRouter);
 
 app.use(notFoundMiddleware);

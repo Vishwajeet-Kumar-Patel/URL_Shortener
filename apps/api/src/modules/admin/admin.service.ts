@@ -7,6 +7,7 @@ import { paymentTransactionRepository } from "../../repositories/payment-transac
 import { clickRepository } from "../../repositories/click.repository";
 import { userRepository } from "../../repositories/user.repository";
 import { urlRepository } from "../../repositories/url.repository";
+import { referralRepository } from "../../repositories/referral.repository";
 import {
   EMAIL_EVENT_TYPE,
   URL_STATUS,
@@ -20,6 +21,7 @@ import type {
   AdminListTransactionsQuery,
   AdminListAnnouncementsQuery,
   AdminCreateAnnouncementInput,
+  AdminAttachReferralInput,
   AdminReportsQuery,
   AdminListUrlsQuery,
   AdminListUsersQuery,
@@ -35,6 +37,48 @@ const buildServiceError = (message: string, statusCode: number): ServiceError =>
 };
 
 export class AdminService {
+  async attachUserToReferral(input: AdminAttachReferralInput): Promise<{
+    email: string;
+    referralCode: string;
+    status: "attached" | "already-attached";
+  }> {
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const normalizedCode = input.referralCode.trim().toUpperCase();
+
+    const user = await userRepository.findByEmail(normalizedEmail);
+    if (!user) {
+      throw buildServiceError("User not found for the provided email", StatusCodes.NOT_FOUND);
+    }
+
+    const referralProfile = await referralRepository.findByCode(normalizedCode);
+    if (!referralProfile) {
+      throw buildServiceError("Referral code not found", StatusCodes.NOT_FOUND);
+    }
+
+    if (String(referralProfile.ownerId) === user.id) {
+      throw buildServiceError("User cannot be attached to their own referral code", StatusCodes.BAD_REQUEST);
+    }
+
+    const existing = await referralRepository.findByReferredUser(user.id);
+    if (existing) {
+      if (existing.code === normalizedCode) {
+        return { email: normalizedEmail, referralCode: normalizedCode, status: "already-attached" };
+      }
+
+      throw buildServiceError(
+        `User is already attached to another referral code (${existing.code})`,
+        StatusCodes.CONFLICT
+      );
+    }
+
+    const linked = await referralRepository.attachReferredUser(normalizedCode, user.id);
+    if (!linked) {
+      throw buildServiceError("Unable to attach user to referral code", StatusCodes.CONFLICT);
+    }
+
+    return { email: normalizedEmail, referralCode: normalizedCode, status: "attached" };
+  }
+
   async listUsers(query: AdminListUsersQuery): Promise<{
     items: Array<{
       id: string;

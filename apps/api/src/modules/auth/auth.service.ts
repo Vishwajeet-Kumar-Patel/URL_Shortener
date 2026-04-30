@@ -170,37 +170,63 @@ export class AuthService {
 
   async verifyEmail(input: VerifyEmailInput): Promise<{ user: AuthenticatedUser; tokens: AuthTokens }> {
     const tokenHash = hashToken(input.token);
-    const user = await userRepository.findByEmailVerificationToken(tokenHash);
-    if (!user) {
+    const matchedUser = await userRepository.findByEmailVerificationToken(tokenHash);
+    if (!matchedUser) {
       throw buildServiceError("Verification token is invalid or expired", StatusCodes.UNAUTHORIZED);
     }
 
-    user.isEmailVerified = true;
-    user.emailVerificationTokenHash = undefined;
-    user.emailVerificationExpiresAt = undefined;
-    await user.save();
+    await userRepository.updateEmailVerification(matchedUser.id, {
+      tokenHash: null,
+      expiresAt: null,
+      isEmailVerified: true
+    });
+
+    const user = await userRepository.findById(matchedUser.id);
+    if (!user) {
+      throw buildServiceError("Authenticated user not found", StatusCodes.NOT_FOUND);
+    }
 
     return this.issueSessionForUser(user);
   }
 
   async resendVerification(input: ResendVerificationInput): Promise<void> {
-    const user = await userRepository.findByEmail(input.email.toLowerCase());
-    if (!user || user.isEmailVerified) {
+    try {
+      const user = await userRepository.findByEmail(input.email.toLowerCase());
+      if (!user || user.isEmailVerified) {
+        return;
+      }
+
+      const verificationToken = createOneTimeToken();
+      await userRepository.updateEmailVerification(user.id, {
+        tokenHash: hashToken(verificationToken),
+        expiresAt: getFutureDateByHours(EMAIL_VERIFICATION_TOKEN_TTL_HOURS)
+      });
+
+      const link = `${env.CLIENT_ORIGIN}/auth/verify-email?token=${encodeURIComponent(
+        verificationToken
+      )}`;
+      const email = buildVerificationEmail(user.name, link);
+      void sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text }).catch(
+        async (err) => {
+          try {
+            await userRepository.updateEmailVerification(user.id, {
+              tokenHash: null,
+              expiresAt: null
+            });
+          } catch (rollbackError) {
+            console.error(
+              "resend-verification: failed to rollback token after email failure",
+              rollbackError
+            );
+          }
+
+          console.error("resend-verification: email delivery failed", err);
+        }
+      );
+    } catch (err) {
+      console.error("resend-verification: unexpected failure", err);
       return;
     }
-
-    const verificationToken = createOneTimeToken();
-    user.emailVerificationTokenHash = hashToken(verificationToken);
-    user.emailVerificationExpiresAt = getFutureDateByHours(
-      EMAIL_VERIFICATION_TOKEN_TTL_HOURS
-    );
-    await user.save();
-
-    const link = `${env.CLIENT_ORIGIN}/auth/verify-email?token=${encodeURIComponent(
-      verificationToken
-    )}`;
-    const email = buildVerificationEmail(user.name, link);
-    await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
   }
 
   async refresh(input: RefreshInput): Promise<AuthTokens> {
@@ -231,31 +257,39 @@ export class AuthService {
   }
 
   async forgotPassword(input: ForgotPasswordInput): Promise<void> {
-    const user = await userRepository.findByEmail(input.email.toLowerCase());
-    if (!user) {
-      return;
-    }
-
-    const resetToken = createOneTimeToken();
-    user.passwordResetTokenHash = hashToken(resetToken);
-    user.passwordResetExpiresAt = getFutureDateByHours(
-      PASSWORD_RESET_TOKEN_TTL_HOURS
-    );
-    await user.save();
-
-    const link = `${env.CLIENT_ORIGIN}/auth/reset-password?token=${encodeURIComponent(
-      resetToken
-    )}`;
-    const email = buildPasswordResetEmail(user.name, link);
     try {
-      await sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text });
-    } catch (err) {
-      await userRepository.updatePasswordReset(user.id, { tokenHash: null, expiresAt: null });
-      console.error("forgot-password: email delivery failed", err);
-      throw buildServiceError(
-        "We could not send a reset email. Check your email (SMTP) configuration or try again later.",
-        StatusCodes.BAD_GATEWAY
+      const user = await userRepository.findByEmail(input.email.toLowerCase());
+      if (!user) {
+        return;
+      }
+
+      const resetToken = createOneTimeToken();
+      await userRepository.updatePasswordReset(user.id, {
+        tokenHash: hashToken(resetToken),
+        expiresAt: getFutureDateByHours(PASSWORD_RESET_TOKEN_TTL_HOURS)
+      });
+
+      const link = `${env.CLIENT_ORIGIN}/auth/reset-password?token=${encodeURIComponent(
+        resetToken
+      )}`;
+      const email = buildPasswordResetEmail(user.name, link);
+      void sendEmail({ to: user.email, subject: email.subject, html: email.html, text: email.text }).catch(
+        async (err) => {
+          try {
+            await userRepository.updatePasswordReset(user.id, { tokenHash: null, expiresAt: null });
+          } catch (rollbackError) {
+            console.error(
+              "forgot-password: failed to rollback reset token after email failure",
+              rollbackError
+            );
+          }
+
+          console.error("forgot-password: email delivery failed", err);
+        }
       );
+    } catch (err) {
+      console.error("forgot-password: unexpected failure", err);
+      return;
     }
   }
 
@@ -298,12 +332,23 @@ export class AuthService {
   private async issueSessionForUser(
     user: HydratedDocument<UserDocument>
   ): Promise<{ user: AuthenticatedUser; tokens: AuthTokens }> {
+    await this.normalizeLegacyUserRole(user);
+
     const tokens = this.createTokenPair(user.id, user.role);
     this.attachHashedRefreshToken(user, tokens.refreshToken);
     user.lastLoginAt = new Date();
     await user.save();
 
     return { user: this.toAuthenticatedUser(user), tokens };
+  }
+
+  private async normalizeLegacyUserRole(user: HydratedDocument<UserDocument>): Promise<void> {
+    if (String(user.role) !== "USER") {
+      return;
+    }
+
+    await userRepository.updateRole(user.id, ROLES.MEMBER);
+    user.role = ROLES.MEMBER;
   }
 
   private createTokenPair(userId: string, role: AuthenticatedUser["role"]): AuthTokens {

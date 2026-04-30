@@ -23,6 +23,52 @@ const buildServiceError = (message: string, statusCode: number): ServiceError =>
 type ShortUrlEntity = Awaited<ReturnType<typeof urlRepository.findByShortCode>>;
 
 export class UrlService {
+  // Create a public/anonymous short URL. Uses a placeholder owner id so
+  // the existing data model (ownerId required) remains satisfied.
+  async createPublicUrl(
+    input: CreateShortUrlInput,
+    options?: { anonSessionId?: string; createdByMemberId?: string }
+  ): Promise<UrlListItem> {
+    const normalizedUrl = normalizeUrl(input.originalUrl);
+    if (!isValidPublicUrl(normalizedUrl)) {
+      throw buildServiceError("Please provide a valid public URL", StatusCodes.BAD_REQUEST);
+    }
+
+    const shortCode = input.customAlias ? await this.reserveCustomAlias(input.customAlias) : await this.generateUniqueShortCode();
+
+    const expiresAt = input.expiresAt ? new Date(input.expiresAt) : undefined;
+    if (expiresAt && Number.isNaN(expiresAt.getTime())) {
+      throw buildServiceError("Invalid expiry date", StatusCodes.BAD_REQUEST);
+    }
+
+    // Use the configured anonymous owner id so anonymous links have an owner placeholder.
+    const ANON_OWNER_ID = env.APP_ANON_OWNER_ID;
+
+    const creationData: Record<string, unknown> = {
+      ownerId: ANON_OWNER_ID,
+      shortCode,
+      originalUrl: input.originalUrl.trim(),
+      normalizedUrl,
+      adMode: input.adMode ?? URL_AD_MODE.MONETIZED,
+      isCustomAlias: Boolean(input.customAlias),
+      title: input.title,
+      description: input.description,
+      expiresAt
+    };
+
+    // Add referral attribution if provided
+    if (options?.createdByMemberId) {
+      creationData.createdByMemberId = options.createdByMemberId;
+    }
+
+    if (options?.anonSessionId) {
+      creationData.anonymousSessionId = options.anonSessionId;
+    }
+
+    const created = await urlRepository.createOne(creationData as Parameters<typeof urlRepository.createOne>[0]);
+
+    return this.toUrlListItem(created);
+  }
   async createUrl(userId: string, input: CreateShortUrlInput): Promise<UrlListItem> {
     const plan = await subscriptionService.getPlanForUser(userId);
     if (plan && plan.limits.maxLinks > 0) {

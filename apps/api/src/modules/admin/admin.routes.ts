@@ -20,6 +20,7 @@ import {
   adminReportsQuerySchema,
   adminListAnnouncementsQuerySchema,
   adminCreateAnnouncementSchema,
+  adminAttachReferralSchema,
   adminUpdateUserRoleSchema,
   adminUpdateUserStatusSchema,
   adminUrlActionParamsSchema,
@@ -121,6 +122,11 @@ adminRouter.get(
   "/announcements",
   validationMiddleware(adminListAnnouncementsQuerySchema),
   asyncHandler((req, res) => adminController.listAnnouncements(req, res))
+);
+adminRouter.post(
+  "/referrals/attach",
+  validationMiddleware(adminAttachReferralSchema),
+  asyncHandler((req, res) => adminController.attachUserToReferral(req, res))
 );
 adminRouter.post(
   "/announcements",

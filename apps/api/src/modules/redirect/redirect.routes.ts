@@ -21,6 +21,18 @@ redirectRouter.post(
   asyncHandler((req, res) => redirectController.completeVisit(req, res))
 );
 
+// Funnel step validation endpoints
+redirectRouter.post(
+  "/funnel/validate-step/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.validateFunnelStep(req, res))
+);
+redirectRouter.get(
+  "/funnel/progress/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.getFunnelProgress(req, res))
+);
+
 redirectRouter.get(
   "/:shortCode",
   redirectRateLimitMiddleware,

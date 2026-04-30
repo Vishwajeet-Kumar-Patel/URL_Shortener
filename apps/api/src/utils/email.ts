@@ -39,21 +39,30 @@ const resolveSmtpConfig = async (): Promise<SmtpConfig> => {
 
 const getTransporter = async (): Promise<{ transporter: nodemailer.Transporter; config: SmtpConfig }> => {
   const config = await resolveSmtpConfig();
-  const key = JSON.stringify(config);
+  const normalizedSecure =
+    config.port === 587 ? false : config.port === 465 ? true : config.secure;
+  const normalizedConfig: SmtpConfig = { ...config, secure: normalizedSecure };
+  const key = JSON.stringify(normalizedConfig);
 
   if (!cachedTransporter || cachedKey !== key) {
-    const auth = config.user && config.pass ? { user: config.user, pass: config.pass } : undefined;
+    const auth =
+      normalizedConfig.user && normalizedConfig.pass
+        ? { user: normalizedConfig.user, pass: normalizedConfig.pass }
+        : undefined;
 
     cachedTransporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth
+      host: normalizedConfig.host,
+      port: normalizedConfig.port,
+      secure: normalizedConfig.secure,
+      auth,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
     });
     cachedKey = key;
   }
 
-  return { transporter: cachedTransporter, config };
+  return { transporter: cachedTransporter, config: normalizedConfig };
 };
 
 export const sendEmail = async (input: SendEmailInput): Promise<nodemailer.SentMessageInfo> => {

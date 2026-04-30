@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleButton } from "@/components/auth/google-button";
 import {
   formButtonPrimaryClass,
@@ -18,9 +18,11 @@ const API_BASE_URL = getApiBaseUrl();
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const register = useAuthStore((state) => state.register);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const referralCode = searchParams.get("ref")?.trim().toUpperCase();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -33,7 +35,8 @@ export default function RegisterPage() {
       await register({
         name: String(formData.get("name") ?? ""),
         email,
-        password: String(formData.get("password") ?? "")
+        password: String(formData.get("password") ?? ""),
+        referralCode
       });
       router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
@@ -57,12 +60,24 @@ export default function RegisterPage() {
         <div className={`w-full ${formCardClass}`}>
           <h1 className="mb-1 text-2xl font-bold text-white sm:text-3xl">Create account</h1>
           <p className="mb-6 text-sm text-slate-300">Start shortening and tracking links today.</p>
-          <form className={formFieldGroupClass} onSubmit={handleSubmit}>
+          {referralCode ? (
+            <div className="mb-4 rounded-lg border border-emerald-700/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">
+              Referral code applied: <span className="font-semibold">{referralCode}</span>
+            </div>
+          ) : null}
+          <form className={formFieldGroupClass} onSubmit={handleSubmit} suppressHydrationWarning>
             <div>
               <label className={formLabelClass} htmlFor="register-name">
                 Full name
               </label>
-              <input autoComplete="name" className={formInputClass} id="register-name" name="name" required />
+              <input
+                autoComplete="name"
+                className={formInputClass}
+                id="register-name"
+                name="name"
+                required
+                suppressHydrationWarning
+              />
             </div>
             <div>
               <label className={formLabelClass} htmlFor="register-email">
@@ -75,6 +90,7 @@ export default function RegisterPage() {
                 name="email"
                 type="email"
                 required
+                suppressHydrationWarning
               />
             </div>
             <div>
@@ -89,10 +105,11 @@ export default function RegisterPage() {
                 type="password"
                 minLength={8}
                 required
+                suppressHydrationWarning
               />
             </div>
             {error ? <p className="text-sm text-red-400">{error}</p> : null}
-            <button className={formButtonPrimaryClass} disabled={loading} type="submit">
+            <button className={formButtonPrimaryClass} disabled={loading} type="submit" suppressHydrationWarning>
               {loading ? "Creating account..." : "Create account"}
             </button>
           </form>

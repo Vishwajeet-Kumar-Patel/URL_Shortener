@@ -22,6 +22,8 @@ export interface ShortUrlDocument {
   lastClickedAt?: Date;
   expiresAt?: Date;
   createdByRole: Role;
+  createdByMemberId?: Types.ObjectId;
+  anonymousSessionId?: Types.ObjectId;
   deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -65,6 +67,18 @@ const shortUrlSchema = new Schema<ShortUrlDocument>(
       required: true,
       default: ROLES.MEMBER
     },
+    createdByMemberId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+      sparse: true
+    },
+    anonymousSessionId: {
+      type: Schema.Types.ObjectId,
+      ref: "AnonymousSession",
+      index: true,
+      sparse: true
+    },
     deletedAt: { type: Date }
   },
   { timestamps: true, versionKey: false }
@@ -73,6 +87,10 @@ const shortUrlSchema = new Schema<ShortUrlDocument>(
 shortUrlSchema.index({ shortCode: 1 }, { unique: true, name: "uniq_short_url_code" });
 shortUrlSchema.index({ ownerId: 1, createdAt: -1 }, { name: "idx_short_url_owner_created_at" });
 shortUrlSchema.index({ status: 1 }, { name: "idx_short_url_status" });
+shortUrlSchema.index(
+  { createdByMemberId: 1, createdAt: -1 },
+  { name: "idx_short_url_member_created_at", sparse: true }
+);
 
 export const ShortUrlModel =
   models.ShortUrl || model<ShortUrlDocument>("ShortUrl", shortUrlSchema);

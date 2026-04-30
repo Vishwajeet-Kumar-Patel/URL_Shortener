@@ -107,3 +107,10 @@ export const adminCreateAnnouncementSchema = {
     maxRetries: z.coerce.number().int().min(0).max(5).optional()
   })
 };
+
+export const adminAttachReferralSchema = {
+  body: z.object({
+    email: z.string().trim().email().max(255),
+    referralCode: z.string().trim().min(4).max(24)
+  })
+};

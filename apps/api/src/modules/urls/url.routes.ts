@@ -18,6 +18,14 @@ import {
 
 const urlRouter = Router();
 
+// Public create endpoint - allows anonymous users to create short links (guest)
+// Accessible without authentication, but optional referral code tracking
+urlRouter.post(
+  "/public",
+  validationMiddleware(createUrlSchema),
+  asyncHandler((req, res) => urlController.createPublicUrl(req, res))
+);
+
 urlRouter.use(authMiddleware, requireAuthenticatedUser, ensureActiveUser, ensureVerifiedUser);
 
 urlRouter.post(

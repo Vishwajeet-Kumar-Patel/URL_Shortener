@@ -9,6 +9,10 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
   CLIENT_ORIGIN: z.string().url("CLIENT_ORIGIN must be a valid URL"),
   APP_PUBLIC_URL: z.string().url("APP_PUBLIC_URL must be a valid URL"),
+  APP_ANON_OWNER_ID: z
+    .string()
+    .regex(/^[0-9a-fA-F]{24}$/, "APP_ANON_OWNER_ID must be a 24-char hex string")
+    .default("000000000000000000000000"),
   SMTP_HOST: z.string().min(1, "SMTP_HOST is required"),
   SMTP_PORT: z.coerce.number().int().positive(),
   SMTP_SECURE: z.coerce.boolean().default(false),

@@ -174,6 +174,44 @@ export class RedirectController {
     const result = await this.resolveRaw(req);
 
     if (result.outcome === "ACTIVE") {
+      // Check if we should use the monetization funnel
+      // For MVP, we'll check if there's a ref parameter or if the URL is from an anonymous source
+      const referralCode = req.query.ref as string | undefined;
+      
+      if (referralCode) {
+        // User came through a referral link - use funnel system
+        try {
+          const { anonSessionService } = await import("./anon-session.service");
+          const { redirectSessionRepository } = await import("../../repositories/redirect-session.repository");
+          
+          const meta = this.getRequestMeta(req);
+          
+          // Create anonymous session with referral code
+          const anonSession = await anonSessionService.createSession(
+            meta.userAgent,
+            meta.ipHash,
+            referralCode
+          );
+          
+          // Create funnel session
+          const funnelSession = await redirectSessionRepository.createSession({
+            shortCode: result.shortCode,
+            anonymousSessionId: anonSession._id?.toString(),
+            memberId: anonSession.memberId?.toString(),
+            targetUrl: result.targetUrl
+          });
+          
+          // Redirect to funnel entry point
+          res.redirect(302, `/funnel/${funnelSession._id?.toString()}`);
+          return;
+        } catch (err) {
+          // Fall back to direct redirect on error
+          res.redirect(302, result.targetUrl);
+          return;
+        }
+      }
+      
+      // No referral code - direct redirect for backward compatibility
       res.redirect(302, result.targetUrl);
       return;
     }
@@ -246,6 +284,62 @@ export class RedirectController {
     const localIp = ipAddress === "127.0.0.1" || ipAddress === "::1";
     const missingReferrer = !referrer;
     return localIp || missingReferrer;
+  }
+
+  async validateFunnelStep(req: Request, res: Response): Promise<void> {
+    try {
+      const { funnelValidationService } = await import("./funnel-validation.service");
+      const sessionId = String(req.params.sessionId);
+      const { currentStep, scrollPosition, viewportHeight, ctaClicked, hasScrolledEnough } = req.body;
+
+      const result = await funnelValidationService.validateAndAdvanceStep(sessionId, currentStep, {
+        scrollPosition,
+        viewportHeight,
+        ctaClicked,
+        hasScrolledEnough
+      });
+
+      res.status(StatusCodes.OK).json({
+        success: result.isValid,
+        data: {
+          isValid: result.isValid,
+          nextStep: result.nextStep,
+          message: result.message
+        }
+      });
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to validate funnel step"
+      });
+    }
+  }
+
+  async getFunnelProgress(req: Request, res: Response): Promise<void> {
+    try {
+      const { funnelValidationService } = await import("./funnel-validation.service");
+      const sessionId = String(req.params.sessionId);
+
+      const progress = await funnelValidationService.getProgress(sessionId);
+
+      if (!progress) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: "Funnel session not found"
+        });
+        return;
+      }
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: progress
+      });
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to get funnel progress"
+      });
+    }
   }
 }
 

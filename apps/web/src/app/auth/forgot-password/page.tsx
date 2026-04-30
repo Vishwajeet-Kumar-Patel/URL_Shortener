@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
         <h1 className="text-2xl font-semibold text-white">Forgot password</h1>
         <p className="mt-2 text-sm text-slate-300">We will email you a reset link if your account exists.</p>
 
-        <form className={`mt-6 ${formFieldGroupClass}`} onSubmit={handleSubmit}>
+        <form className={`mt-6 ${formFieldGroupClass}`} onSubmit={handleSubmit} suppressHydrationWarning>
           <div>
             <label className={formLabelClass} htmlFor="forgot-email">
               Email
@@ -54,9 +54,15 @@ export default function ForgotPasswordPage() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              suppressHydrationWarning
             />
           </div>
-          <button className={formButtonPrimaryClass} disabled={status === "loading"} type="submit">
+          <button
+            className={formButtonPrimaryClass}
+            disabled={status === "loading"}
+            type="submit"
+            suppressHydrationWarning
+          >
             {status === "loading" ? "Sending..." : "Send reset link"}
           </button>
         </form>

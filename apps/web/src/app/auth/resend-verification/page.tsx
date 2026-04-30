@@ -47,7 +47,7 @@ function ResendVerificationContent() {
         <h1 className="text-2xl font-semibold text-white">Resend verification email</h1>
         <p className="mt-2 text-sm text-slate-300">Enter your email to receive a fresh verification link.</p>
 
-        <form className={`mt-6 ${formFieldGroupClass}`} onSubmit={handleSubmit}>
+        <form className={`mt-6 ${formFieldGroupClass}`} onSubmit={handleSubmit} suppressHydrationWarning>
           <div>
             <label className={formLabelClass} htmlFor="resend-email">
               Email
@@ -61,9 +61,15 @@ function ResendVerificationContent() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              suppressHydrationWarning
             />
           </div>
-          <button className={formButtonPrimaryClass} disabled={status === "loading"} type="submit">
+          <button
+            className={formButtonPrimaryClass}
+            disabled={status === "loading"}
+            type="submit"
+            suppressHydrationWarning
+          >
             {status === "loading" ? "Sending..." : "Send verification"}
           </button>
         </form>

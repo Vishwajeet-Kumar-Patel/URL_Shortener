@@ -4,16 +4,15 @@ import { useState } from "react";
 import { apiRequest } from "@/lib/api-client";
 
 function publicShortUrl(shortCode: string): string | null {
-  const raw = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
-  if (!raw) return null;
-  return `${raw}/r/${encodeURIComponent(shortCode)}`;
+  if (typeof window === "undefined") return `/r/${encodeURIComponent(shortCode)}`;
+  return `${window.location.origin.replace(/\/$/, "")}/r/${encodeURIComponent(shortCode)}`;
 }
 
 function OpenShortLink({ shortCode }: { shortCode: string }) {
   const href = publicShortUrl(shortCode);
   if (!href) {
     return (
-      <span className="text-xs text-slate-600" title="Set NEXT_PUBLIC_APP_URL">
+      <span className="text-xs text-slate-600" title="Uses current site origin">
         —
       </span>
     );
@@ -25,7 +24,7 @@ function OpenShortLink({ shortCode }: { shortCode: string }) {
       href={href}
       rel="noopener noreferrer"
       target="_blank"
-      title="Open destination flow (public /r link)"
+      title="Open public /r link"
     >
       <span aria-hidden className="text-base leading-none">
         ↗

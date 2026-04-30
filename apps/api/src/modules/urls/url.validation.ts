@@ -10,7 +10,11 @@ export const createUrlSchema = {
     adMode: z.enum(Object.values(URL_AD_MODE) as [string, ...string[]]).optional(),
     title: z.string().trim().min(1).max(255).optional(),
     description: z.string().trim().min(1).max(1000).optional(),
-    expiresAt: z.string().datetime().optional()
+    expiresAt: z.string().datetime().optional(),
+    // Referral tracking fields
+    referralCode: z.string().trim().min(1).max(255).optional(),
+    createdByMemberId: z.string().trim().min(1).optional(),
+    anonSessionId: z.string().trim().min(1).optional()
   })
 };
 
