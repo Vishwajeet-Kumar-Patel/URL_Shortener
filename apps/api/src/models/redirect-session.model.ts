@@ -9,6 +9,20 @@ export interface FunnelStepTiming {
 export interface RedirectSessionDocument {
   shortCode: string;
   anonymousSessionId?: Types.ObjectId;
+  // Visitor metadata
+  ipAddress?: string;
+  ipHash?: string;
+  userAgent?: string;
+  browser?: string;
+  os?: string;
+  deviceType?: string;
+  referrer?: string;
+  country?: string;
+  city?: string;
+  jsEnabled?: boolean;
+  cookiesEnabled?: boolean;
+  // Link to initial raw click log
+  clickLogId?: Types.ObjectId;
   memberId?: Types.ObjectId;
   currentStep: number;
   completedSteps: number[];
@@ -21,6 +35,7 @@ export interface RedirectSessionDocument {
   expiresAt: Date;
   stepTimings: FunnelStepTiming[];
   isQualified: boolean;
+  targetUrl: string;
   updatedAt: Date;
 }
 
@@ -42,6 +57,20 @@ const redirectSessionSchema = new Schema<RedirectSessionDocument>(
       index: true,
       sparse: true
     },
+    // Visitor metadata
+    ipAddress: { type: String, trim: true },
+    ipHash: { type: String, trim: true },
+    userAgent: { type: String, trim: true },
+    browser: { type: String, trim: true },
+    os: { type: String, trim: true },
+    deviceType: { type: String, trim: true },
+    referrer: { type: String, trim: true },
+    country: { type: String, trim: true },
+    city: { type: String, trim: true },
+    jsEnabled: { type: Boolean, default: true },
+    cookiesEnabled: { type: Boolean, default: true },
+    // initial raw click log id
+    clickLogId: { type: Schema.Types.ObjectId, ref: "ClickLog", index: true, sparse: true },
     memberId: { type: Schema.Types.ObjectId, ref: "User", index: true, sparse: true },
     currentStep: { type: Number, required: true, default: 1, min: 1, max: 5 },
     completedSteps: { type: [Number], default: [] },
@@ -52,6 +81,7 @@ const redirectSessionSchema = new Schema<RedirectSessionDocument>(
     ctaClicked: { type: Boolean, default: false },
     stepTimings: { type: [funnelStepTimingSchema], default: [] },
     isQualified: { type: Boolean, default: false, index: true },
+    targetUrl: { type: String, required: true, trim: true },
     expiresAt: { type: Date, required: true, index: true }
   },
   { timestamps: true, versionKey: false }

@@ -24,14 +24,22 @@ export const SiteHeader = () => {
           {!isHydrated ? (
             <span className="inline-block w-16" aria-hidden />
           ) : isLoggedIn ? (
-            <Link
-              className="rounded-lg border border-indigo-500/60 bg-indigo-600/20 px-2.5 py-1.5 text-xs font-medium text-indigo-100"
-              href={appHref}
-            >
-              {user?.role === "ADMIN" ? "Admin" : "Dashboard"}
-            </Link>
+            <>
+              <Link className="text-xs text-slate-300" href="/blog/digital-growth-2026">
+                Blog
+              </Link>
+              <Link
+                className="rounded-lg border border-indigo-500/60 bg-indigo-600/20 px-2.5 py-1.5 text-xs font-medium text-indigo-100"
+                href={appHref}
+              >
+                {user?.role === "ADMIN" ? "Admin" : "Dashboard"}
+              </Link>
+            </>
           ) : (
             <>
+              <Link className="text-xs text-slate-300" href="/blog/digital-growth-2026">
+                Blog
+              </Link>
               <Link className="text-xs text-slate-300" href="/login">
                 Login
               </Link>
@@ -46,6 +54,7 @@ export const SiteHeader = () => {
           <Link href="/features">Features</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/about">About</Link>
+          <Link href="/blog/digital-growth-2026">Blog</Link>
           <Link href="/contact">Contact</Link>
           {!isHydrated ? (
             <span className="inline-block w-[11rem]" aria-hidden />

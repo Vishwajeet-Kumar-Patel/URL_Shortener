@@ -1,35 +1,16 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { randomBytes } from "crypto";
+
 import { getGeoFromHeaders } from "../../utils/geo";
 import { parseUserAgent } from "../../utils/user-agent";
 import { hashToken } from "../../utils/hash";
+import { env } from "../../config/env";
 import { redirectService } from "./redirect.service";
+import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
+import { clickRepository } from "../../repositories/click.repository";
+import { anonSessionService } from "./anon-session.service";
 
-const adSessions = new Map<
-  string,
-  {
-    targetUrl: string;
-    expiresAt: number;
-    createdAt: number;
-    shortCode: string;
-    urlId: string;
-    ownerId: string;
-    ipAddress: string;
-    ipHash: string;
-    userAgent: string;
-    browser: string;
-    os: string;
-    deviceType: string;
-    referrer?: string;
-    country?: string;
-    city?: string;
-    jsEnabled: boolean;
-    cookiesEnabled: boolean;
-  }
->();
-const AD_SESSION_TTL_MS = 10 * 60 * 1000;
-const MIN_CONTINUE_DELAY_MS = 3500;
+// We persist redirect sessions to DB; no in-memory ad sessions used.
 
 const getClientIp = (req: Request): string => {
   const forwardedFor = req.headers["x-forwarded-for"];
@@ -67,152 +48,164 @@ export class RedirectController {
       res.status(StatusCodes.NOT_FOUND).json({ success: false, message: inspected.message });
       return;
     }
-    const result = {
-      ...inspected,
-      meta: {
-        ...meta,
-        jsEnabled: req.body?.jsEnabled !== false,
-        cookiesEnabled: req.body?.cookiesEnabled !== false
-      }
-    };
+    const jsEnabled = req.body?.jsEnabled !== false;
+    const cookiesEnabled = req.body?.cookiesEnabled !== false;
 
-    const sessionId = randomBytes(24).toString("hex");
-    adSessions.set(sessionId, {
-      targetUrl: result.targetUrl,
-      expiresAt: Date.now() + AD_SESSION_TTL_MS,
-      createdAt: Date.now(),
-      shortCode: result.shortCode,
-      urlId: result.urlId,
-      ownerId: result.ownerId,
-      ipAddress: result.meta.ipAddress,
-      ipHash: result.meta.ipHash,
-      userAgent: result.meta.userAgent,
-      browser: result.meta.browser,
-      os: result.meta.os,
-      deviceType: result.meta.deviceType,
-      referrer: result.meta.referrer,
-      country: result.meta.country,
-      city: result.meta.city,
-      jsEnabled: result.meta.jsEnabled,
-      cookiesEnabled: result.meta.cookiesEnabled
+    // Create initial raw click log and increment raw counter
+    const clickResult = await redirectService.recordClick({
+      ...meta,
+      urlId: inspected.urlId,
+      ownerId: inspected.ownerId,
+      jsEnabled,
+      cookiesEnabled,
+      isBot: false,
+      isSuspicious: false,
+      isQualified: false,
+      qualificationReason: "session_started"
     });
 
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: {
-        sessionId,
-        continueAfterSeconds: 5
-      }
+    // Create persistent redirect session
+    const session = await redirectSessionRepository.createSession({
+      shortCode: inspected.shortCode,
+      anonymousSessionId: undefined,
+      memberId: undefined,
+      targetUrl: inspected.targetUrl,
+      ipAddress: meta.ipAddress,
+      ipHash: meta.ipHash,
+      userAgent: meta.userAgent,
+      browser: meta.browser,
+      os: meta.os,
+      deviceType: meta.deviceType,
+      referrer: meta.referrer,
+      country: meta.country,
+      city: meta.city,
+      jsEnabled,
+      cookiesEnabled,
+      clickLogId: clickResult.clickLogId
     });
-  }
 
-  async completeVisit(req: Request, res: Response): Promise<void> {
-    const session = adSessions.get(String(req.params.sessionId));
-    if (!session || session.expiresAt < Date.now()) {
-      res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: "Session not found or expired"
-      });
+    if (!session) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to create redirect session" });
       return;
     }
 
-    const isBot = this.isBotUserAgent(session.userAgent);
-    const isSuspicious = this.isSuspiciousTraffic(session.ipAddress, session.referrer);
-    const waitedEnough = Date.now() - session.createdAt >= MIN_CONTINUE_DELAY_MS;
-    const isQualified =
-      session.jsEnabled &&
-      session.cookiesEnabled &&
-      !isBot &&
-      !isSuspicious &&
-      waitedEnough;
+    res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), continueAfterSeconds: 5 } });
+  }
 
-    const result = await redirectService.recordClick({
-      urlId: session.urlId,
-      ownerId: session.ownerId,
-      shortCode: session.shortCode,
-      ipAddress: session.ipAddress,
-      ipHash: session.ipHash,
-      userAgent: session.userAgent,
-      browser: session.browser,
-      os: session.os,
-      deviceType: session.deviceType,
-      referrer: session.referrer,
-      country: session.country,
-      city: session.city,
-      jsEnabled: session.jsEnabled,
-      cookiesEnabled: session.cookiesEnabled,
-      isBot,
-      isSuspicious,
-      isQualified,
-      qualificationReason: isQualified
-        ? "qualified_after_countdown"
-        : !waitedEnough
-          ? "countdown_bypassed"
-          : isBot
-            ? "bot_traffic"
-            : isSuspicious
-              ? "suspicious_traffic"
-              : "client_requirements_missing"
-    });
-    if (result.isQualified) {
-      await redirectService.creditQualifiedPayout({
-        ownerId: session.ownerId,
-        country: session.country,
-        shortCode: session.shortCode,
-        clickLogId: result.clickLogId
+  async completeVisit(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = String(req.params.sessionId);
+      const session = await redirectSessionRepository.findById(sessionId);
+      
+      if (!session) {
+        res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Session not found" });
+        return;
+      }
+
+      // Try to mark click as qualified (optional - don't crash if it fails)
+      if (session.clickLogId) {
+        try {
+          await clickRepository.markClickQualified(String(session.clickLogId));
+        } catch (err) {
+          console.error("Failed to mark click qualified:", err);
+        }
+      }
+
+      // Try to credit payout (optional - don't crash if it fails)
+      try {
+        const inspected = await redirectService.inspectShortCode(session.shortCode);
+        if (inspected.outcome === "ACTIVE") {
+          await redirectService.creditQualifiedPayout({
+            ownerId: inspected.ownerId,
+            country: session.country || "",
+            shortCode: session.shortCode,
+            clickLogId: session.clickLogId ? String(session.clickLogId) : ""
+          });
+        }
+      } catch (err) {
+        console.error("Failed to credit payout:", err);
+      }
+
+      // Always return the redirect URL
+      res.status(StatusCodes.OK).json({ 
+        success: true, 
+        data: { redirectUrl: session.targetUrl } 
+      });
+    } catch (error) {
+      console.error("Complete visit error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+        success: false, 
+        message: "Internal server error" 
       });
     }
-
-    adSessions.delete(String(req.params.sessionId));
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: { redirectUrl: session.targetUrl }
-    });
   }
 
   async redirectByShortCode(req: Request, res: Response): Promise<void> {
     const result = await this.resolveRaw(req);
 
     if (result.outcome === "ACTIVE") {
-      // Check if we should use the monetization funnel
-      // For MVP, we'll check if there's a ref parameter or if the URL is from an anonymous source
+      // Create a redirect session for every hit and record raw click immediately
+      const meta = this.getRequestMeta(req);
+      const jsEnabled = true;
+      const cookiesEnabled = true;
+
+      const clickResult = await redirectService.recordClick({
+        ...meta,
+        urlId: result.urlId,
+        ownerId: result.ownerId,
+        jsEnabled,
+        cookiesEnabled,
+        isBot: false,
+        isSuspicious: false,
+        isQualified: false,
+        qualificationReason: "initial_visit"
+      });
+
+      // If referral is provided, try to create anon session
+      let anonId: string | undefined = undefined;
+      let memberId: string | undefined = undefined;
       const referralCode = req.query.ref as string | undefined;
-      
       if (referralCode) {
-        // User came through a referral link - use funnel system
         try {
-          const { anonSessionService } = await import("./anon-session.service");
-          const { redirectSessionRepository } = await import("../../repositories/redirect-session.repository");
-          
-          const meta = this.getRequestMeta(req);
-          
-          // Create anonymous session with referral code
-          const anonSession = await anonSessionService.createSession(
-            meta.userAgent,
-            meta.ipHash,
+          const anon = await anonSessionService.createSession({
+            userAgent: meta.userAgent,
+            ipHash: meta.ipHash,
             referralCode
-          );
-          
-          // Create funnel session
-          const funnelSession = await redirectSessionRepository.createSession({
-            shortCode: result.shortCode,
-            anonymousSessionId: anonSession._id?.toString(),
-            memberId: anonSession.memberId?.toString(),
-            targetUrl: result.targetUrl
           });
-          
-          // Redirect to funnel entry point
-          res.redirect(302, `/funnel/${funnelSession._id?.toString()}`);
-          return;
-        } catch (err) {
-          // Fall back to direct redirect on error
-          res.redirect(302, result.targetUrl);
-          return;
+          anonId = anon.sessionId;
+          memberId = anon.memberId;
+        } catch (_) {
+          // ignore referral creation errors; still create session
         }
       }
-      
-      // No referral code - direct redirect for backward compatibility
-      res.redirect(302, result.targetUrl);
+
+      const session = await redirectSessionRepository.createSession({
+        shortCode: result.shortCode,
+        anonymousSessionId: anonId,
+        memberId: memberId,
+        targetUrl: result.targetUrl,
+        ipAddress: meta.ipAddress,
+        ipHash: meta.ipHash,
+        userAgent: meta.userAgent,
+        browser: meta.browser,
+        os: meta.os,
+        deviceType: meta.deviceType,
+        referrer: meta.referrer,
+        country: meta.country,
+        city: meta.city,
+        jsEnabled,
+        cookiesEnabled,
+        clickLogId: clickResult.clickLogId
+      });
+
+      if (!session) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to create redirect session" });
+        return;
+      }
+
+      // Redirect visitor into the single monetized blog page using persistent session id
+      // e.g. /blog/monetized?token=sessionId
+      res.redirect(302, `${env.CLIENT_ORIGIN}/blog/monetized?token=${String(session._id)}`);
       return;
     }
 
@@ -276,15 +269,7 @@ export class RedirectController {
     return redirectService.resolveShortCode(this.getRequestMeta(req));
   }
 
-  private isBotUserAgent(userAgent: string): boolean {
-    return /(bot|crawler|spider|curl|wget|headless)/i.test(userAgent);
-  }
 
-  private isSuspiciousTraffic(ipAddress: string, referrer?: string): boolean {
-    const localIp = ipAddress === "127.0.0.1" || ipAddress === "::1";
-    const missingReferrer = !referrer;
-    return localIp || missingReferrer;
-  }
 
   async validateFunnelStep(req: Request, res: Response): Promise<void> {
     try {
@@ -339,6 +324,101 @@ export class RedirectController {
         success: false,
         message: "Failed to get funnel progress"
       });
+    }
+  }
+
+  async getFunnelStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { funnelValidationService } = await import("./funnel-validation.service");
+      const sessionId = String(req.params.sessionId);
+
+      const status = await funnelValidationService.getSessionStatus(sessionId);
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: status
+      });
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to get funnel status"
+      });
+    }
+  }
+
+  // New: receive single-page monetization events from public blog page
+  async sessionEvent(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = String(req.params.sessionId);
+      const { event, scrollPosition, maxScrollPosition, viewportHeight } = req.body as any;
+
+      if (!event) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Missing event" });
+        return;
+      }
+
+      // Map events to repository updates
+      switch (event) {
+        case "timer1":
+          // entered phase 2 (scroll phase)
+          await redirectSessionRepository.addStepTiming(sessionId, 2, { step: 2, enteredAt: new Date() });
+          break;
+        case "scroll":
+          await redirectSessionRepository.updateStep(sessionId, 2, {
+            scrollPosition: scrollPosition || 100,
+            maxScrollPosition: maxScrollPosition || 100,
+            viewportHeight: viewportHeight || 0,
+            hasScrolledEnough: true
+          });
+          // mark entry to next timer step
+          await redirectSessionRepository.addStepTiming(sessionId, 3, { step: 3, enteredAt: new Date() });
+          break;
+        case "timer2":
+          await redirectSessionRepository.addStepTiming(sessionId, 4, { step: 4, enteredAt: new Date() });
+          break;
+        case "sponsor":
+          await redirectSessionRepository.updateStep(sessionId, 4, { ctaClicked: true });
+          // sponsor opened; prepare final step
+          await redirectSessionRepository.addStepTiming(sessionId, 5, { step: 5, enteredAt: new Date() });
+          break;
+        case "focus":
+          // final qualification
+          await redirectSessionRepository.markAsQualified(sessionId);
+          break;
+        default:
+          // unknown event - ignore
+          break;
+      }
+
+      res.status(StatusCodes.OK).json({ success: true });
+    } catch (error) {
+      console.error("Session event error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to record session event" });
+    }
+  }
+
+  // New: public status for session
+  async getSessionStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = String(req.params.sessionId);
+      const session = await redirectSessionRepository.findById(sessionId);
+      if (!session) {
+        res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Session not found" });
+        return;
+      }
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          currentStep: session.currentStep,
+          completedSteps: session.completedSteps,
+          isQualified: session.isQualified,
+          targetUrl: session.targetUrl
+        }
+      });
+    } catch (error) {
+      console.error("Get session status error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to retrieve session" });
     }
   }
 }

@@ -35,6 +35,7 @@ export default function GoSessionPage({ params }: Props) {
           if (!response.ok || !payload.success || !payload.data?.redirectUrl) {
             throw new Error(payload.message ?? "Session is invalid or expired");
           }
+          // Redirect to the target URL (your blog page)
           window.location.href = payload.data.redirectUrl;
         } catch (e) {
           setError(e instanceof Error ? e.message : "Unable to continue redirect.");

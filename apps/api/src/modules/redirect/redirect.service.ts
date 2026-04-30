@@ -1,7 +1,8 @@
-import { UNIQUE_CLICK_WINDOW_HOURS } from "../../config/constants";
+import { UNIQUE_CLICK_WINDOW_HOURS, PAYOUT_PER_QUALIFIED_CLICK } from "../../config/constants";
 import { clickRepository } from "../../repositories/click.repository";
-import { cpmRateRepository } from "../../repositories/cpm-rate.repository";
 import { urlRepository } from "../../repositories/url.repository";
+import { env } from "../../config/env";
+import { memberMetricsRepository } from "../../repositories/member-metrics.repository";
 import { WALLET_TX_SOURCE } from "../../types/common";
 import { walletService } from "../wallet/wallet.service";
 import { URL_STATUS } from "../../types/common";
@@ -85,9 +86,8 @@ export class RedirectService {
     if (!isUnique && finalQualified) {
       finalQualified = false;
     }
-    if (finalQualified) {
-      await urlRepository.incrementClickForActiveShortCode(input.shortCode);
-    }
+    // Always increment raw click count for the short URL on initial hit
+    await urlRepository.incrementClickForActiveShortCode(input.shortCode);
 
     const click = await clickRepository.createClickLog({
       urlId: input.urlId as never,
@@ -121,18 +121,39 @@ export class RedirectService {
     shortCode: string;
     clickLogId: string;
   }): Promise<{ amount: number; currency: string } | null> {
-    const rate = await cpmRateRepository.getApplicableRate(input.country);
-    if (!rate || rate.cpm <= 0) return null;
-    const amount = Number((rate.cpm / 1000).toFixed(6));
-    if (amount <= 0) return null;
+    // 1. Get the URL to check for referred member attribution
+    const url = await urlRepository.findByShortCode(input.shortCode);
+    if (!url) return null;
+
+    // 2. Determine who gets the payout
+    // If it's an anonymous link, the referred member (createdByMemberId) gets the payout
+    // Otherwise, the ownerId gets the payout
+    const isAnonymousLink = String(url.ownerId) === env.APP_ANON_OWNER_ID;
+    const recipientId = isAnonymousLink && url.createdByMemberId 
+      ? String(url.createdByMemberId) 
+      : input.ownerId;
+
+    // 3. Calculate payout amount
+    // We use the configured constant, but could fall back to CPM rates if needed.
+    // For this module, we use the PAYOUT_PER_QUALIFIED_CLICK constant.
+    const amount = PAYOUT_PER_QUALIFIED_CLICK;
+    const currency = "INR"; // Default currency
+
+    // 4. Record the credit in wallet
     await walletService.credit(
-      input.ownerId,
+      recipientId,
       amount,
       WALLET_TX_SOURCE.EARNING,
       `click:${input.clickLogId}`,
-      `Qualified click payout (${rate.countryCode} CPM ${rate.cpm})`
+      `Qualified monetized completion payout (Code: ${input.shortCode})`
     );
-    return { amount, currency: rate.currency };
+
+    // 5. Update member metrics
+    await memberMetricsRepository.getOrCreateMetrics(recipientId);
+    await memberMetricsRepository.incrementQualifiedClicks(recipientId, 1);
+    await memberMetricsRepository.addEarnings(recipientId, amount);
+
+    return { amount, currency };
   }
 
   async resolveShortCode(input: ResolveInput): Promise<RedirectResolution> {

@@ -60,6 +60,14 @@ type DashboardSummary = {
   analytics: AnalyticsOverview | null;
   wallet: WalletSummary | null;
   referrals: ReferralSummary | null;
+  traffic: {
+    totalUsersBrought: number;
+    totalLinksGenerated: number;
+    totalQualifiedClicks: number;
+    totalEarnings: number;
+    thisMonthUsers: number;
+    thisMonthEarnings: number;
+  } | null;
   invoices: InvoiceItem[];
 };
 
@@ -71,6 +79,7 @@ export default function DashboardPage() {
     analytics: null,
     wallet: null,
     referrals: null,
+    traffic: null,
     invoices: []
   });
   const [loading, setLoading] = useState(true);
@@ -96,14 +105,16 @@ export default function DashboardPage() {
         apiRequest<AnalyticsOverview>("/analytics/me/overview?days=30", { token }),
         apiRequest<WalletSummary>("/wallet/summary", { token }),
         apiRequest<ReferralSummary>("/referrals/me", { token }),
-        apiRequest<InvoiceResponse>("/invoices/me?page=1&limit=5", { token })
+        apiRequest<InvoiceResponse>("/invoices/me?page=1&limit=5", { token }),
+        apiRequest<{ data: any }>("/referrals/stats", { token })
       ]);
 
       setSummary({
         analytics: results[0].status === "fulfilled" ? results[0].value : null,
         wallet: results[1].status === "fulfilled" ? results[1].value : null,
         referrals: results[2].status === "fulfilled" ? results[2].value : null,
-        invoices: results[3].status === "fulfilled" ? results[3].value.items : []
+        invoices: results[3].status === "fulfilled" ? results[3].value.items : [],
+        traffic: results[4].status === "fulfilled" ? results[4].value.data : null
       });
     };
 
@@ -163,9 +174,9 @@ export default function DashboardPage() {
           <p className="mt-3 text-xs font-medium opacity-80">Traffic across active links</p>
         </div>
         <div className="rounded-[1.25rem] border border-white/10 bg-gradient-to-br from-indigo-600 to-blue-700 p-5 text-white shadow-lg shadow-blue-950/20">
-          <p className="text-sm font-medium text-white/80">Total Earnings</p>
-          <p className="mt-2 text-3xl font-semibold">₹{totalEarnings.toFixed(2)}</p>
-          <p className="mt-3 text-xs font-medium text-white/70">Referral commission and qualified clicks</p>
+          <p className="text-sm font-medium text-white/80">Traffic Earnings</p>
+          <p className="mt-2 text-3xl font-semibold">₹{(summary.traffic?.totalEarnings ?? 0).toFixed(2)}</p>
+          <p className="mt-3 text-xs font-medium text-white/70">From your referred traffic generators</p>
         </div>
         <div className="rounded-[1.25rem] border border-white/10 bg-gradient-to-br from-emerald-700 to-green-600 p-5 text-white shadow-lg shadow-green-950/20">
           <p className="text-sm font-medium text-white/80">Referral Earnings</p>
@@ -173,9 +184,9 @@ export default function DashboardPage() {
           <p className="mt-3 text-xs font-medium text-white/70">From your referred members</p>
         </div>
         <div className="rounded-[1.25rem] border border-white/10 bg-gradient-to-br from-rose-600 to-red-500 p-5 text-white shadow-lg shadow-red-950/20">
-          <p className="text-sm font-medium text-white/80">Average CPM</p>
-          <p className="mt-2 text-3xl font-semibold">₹{avgCpm.toFixed(2)}</p>
-          <p className="mt-3 text-xs font-medium text-white/70">Estimated payout per 1,000 views</p>
+          <p className="text-sm font-medium text-white/80">Total Balance</p>
+          <p className="mt-2 text-3xl font-semibold">₹{(summary.wallet?.balance ?? 0).toFixed(2)}</p>
+          <p className="mt-3 text-xs font-medium text-white/70">Available for withdrawal</p>
         </div>
       </section>
 
@@ -198,10 +209,10 @@ export default function DashboardPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              ["Statistics", "/dashboard/analytics", "Traffic trends and top links"],
               ["Manage Links", "/dashboard/urls", "All created URLs"],
               ["Withdraw", "/dashboard/wallet", "Request payouts"],
-              ["Tools", "/dashboard/tools", "API and bookmarklet"],
+              ["Traffic Partners", "/dashboard/partner/traffic", "Monitor referred generators"],
+              ["Mass Shrinker", "/dashboard/mass-shrinker", "Shorten links in bulk"],
               ["Referrals", "/dashboard/referrals", "Invite and earn"],
               ["Invoices", "/dashboard/billing", "Subscription history"],
               ["Settings", "/dashboard/profile", "Profile and password"],

@@ -9,6 +9,11 @@ export type CreateShortUrlInput = {
   expiresAt?: string;
 };
 
+export type BulkCreateShortUrlInput = {
+  urls: string[]; // List of URLs, one per line
+  adMode?: UrlAdMode;
+};
+
 export type UpdateShortUrlInput = {
   originalUrl?: string;
   adMode?: UrlAdMode;

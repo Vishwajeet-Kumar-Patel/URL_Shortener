@@ -8,6 +8,10 @@ export class ClickRepository {
     return ClickLogModel.create(payload);
   }
 
+  async markClickQualified(clickId: string): Promise<void> {
+    await ClickLogModel.findByIdAndUpdate(clickId, { isQualified: true }).exec();
+  }
+
   async countClicksByOwner(ownerId: string): Promise<number> {
     return ClickLogModel.countDocuments({ ownerId, isQualified: true }).exec();
   }

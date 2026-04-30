@@ -22,6 +22,7 @@ export class FunnelValidationService {
       maxScrollPosition?: number;
       viewportHeight?: number;
       ctaClicked?: boolean;
+      hasScrolledEnough?: boolean;
     }
   ): Promise<{
     isValid: boolean;
@@ -37,34 +38,42 @@ export class FunnelValidationService {
     const maxSteps = 5;
 
     // Validate step-specific requirements
-    switch (currentStep) {
-      case 1: // Blog/Article page
-        // Step 1 just requires viewing the page, no special validation
-        // Advance to step 2 (scroll unlock)
-        break;
+    const timing = session.stepTimings.find(t => t.step === currentStep);
+    const now = new Date();
+    const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
+    const REQUIRED_WAIT = 9.5; // Allow slight buffer for network/latency
 
-      case 2: // Scroll unlock
-        if (!input.scrollPosition || !input.maxScrollPosition) {
+    switch (currentStep) {
+      case 1: // Blog/Article page - 10s timer
+        if (secondsElapsed < REQUIRED_WAIT) {
           return {
             isValid: false,
             nextStep: currentStep,
-            message: "Scroll position not provided"
+            message: `Please wait ${Math.ceil(REQUIRED_WAIT - secondsElapsed)} more seconds`
           };
         }
+        break;
 
-        // Require 80% scroll
-        const scrollPercent = (input.scrollPosition / (input.maxScrollPosition || 1)) * 100;
-        if (scrollPercent < 80) {
+      case 2: // Scroll unlock + 10s timer
+        if (secondsElapsed < REQUIRED_WAIT) {
           return {
             isValid: false,
             nextStep: currentStep,
-            message: `Need to scroll more (${Math.round(scrollPercent)}% / 80%)`
+            message: `Please wait ${Math.ceil(REQUIRED_WAIT - secondsElapsed)} more seconds`
+          };
+        }
+        
+        if (!input.hasScrolledEnough && (!input.scrollPosition || !input.maxScrollPosition)) {
+          return {
+            isValid: false,
+            nextStep: currentStep,
+            message: "Please scroll down to continue"
           };
         }
 
         await redirectSessionRepository.updateStep(sessionId, currentStep, {
-          scrollPosition: input.scrollPosition,
-          maxScrollPosition: input.maxScrollPosition,
+          scrollPosition: input.scrollPosition || 100,
+          maxScrollPosition: input.maxScrollPosition || 100,
           hasScrolledEnough: true
         });
         break;
@@ -83,12 +92,19 @@ export class FunnelValidationService {
         });
         break;
 
-      case 4: // Reward verification
-        // Verification happens server-side, just confirm session
+      case 4: // Reward verification + final 10s timer
+        if (secondsElapsed < REQUIRED_WAIT) {
+          return {
+            isValid: false,
+            nextStep: currentStep,
+            message: `Please wait ${Math.ceil(REQUIRED_WAIT - secondsElapsed)} more seconds`
+          };
+        }
         break;
 
       case 5: // Final unlock
-        // No additional validation needed for final step
+        // Qualify the session when completing step 5
+        await redirectSessionRepository.markAsQualified(sessionId);
         break;
 
       default:
@@ -103,10 +119,7 @@ export class FunnelValidationService {
       });
     }
 
-    // Qualify the session when completing step 5
-    if (currentStep === 5) {
-      await redirectSessionRepository.markAsQualified(sessionId);
-    }
+    // Qualification is handled in step 5 switch above
 
     return {
       isValid: true,

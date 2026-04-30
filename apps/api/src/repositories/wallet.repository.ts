@@ -46,7 +46,9 @@ export class WalletRepository {
     return WalletModel.findOneAndUpdate(
       { userId },
       {
-        $setOnInsert: { userId, balance: 0, pendingAmount: 0 },
+        // avoid setting the same field in both $setOnInsert and $inc to prevent
+        // ConflictingUpdateOperators errors when creating/updating in one op
+        $setOnInsert: { userId },
         $inc: {
           balance: input.balanceDelta ?? 0,
           pendingAmount: input.pendingDelta ?? 0

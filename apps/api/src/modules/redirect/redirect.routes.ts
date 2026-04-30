@@ -21,9 +21,22 @@ redirectRouter.post(
   asyncHandler((req, res) => redirectController.completeVisit(req, res))
 );
 
+// Public session events for single-page monetized blog
+redirectRouter.post(
+  "/session/:sessionId/event",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.sessionEvent(req, res))
+);
+
+redirectRouter.get(
+  "/session/:sessionId/status",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.getSessionStatus(req, res))
+);
+
 // Funnel step validation endpoints
 redirectRouter.post(
-  "/funnel/validate-step/:sessionId",
+  "/funnel/validate/:sessionId",
   redirectRateLimitMiddleware,
   asyncHandler((req, res) => redirectController.validateFunnelStep(req, res))
 );
@@ -31,6 +44,11 @@ redirectRouter.get(
   "/funnel/progress/:sessionId",
   redirectRateLimitMiddleware,
   asyncHandler((req, res) => redirectController.getFunnelProgress(req, res))
+);
+redirectRouter.get(
+  "/funnel/status/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.getFunnelStatus(req, res))
 );
 
 redirectRouter.get(

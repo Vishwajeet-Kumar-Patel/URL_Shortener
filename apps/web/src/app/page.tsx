@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -75,6 +75,19 @@ export default function HomePage() {
   const [anonSubmitting, setAnonSubmitting] = useState(false);
   const [anonError, setAnonError] = useState<string | null>(null);
   const [anonCreated, setAnonCreated] = useState<CreatedUrl | null>(null);
+  const [referralCode, setReferralCode] = useState("");
+
+  useEffect(() => {
+    // Read referral_code from cookie
+    const cookies = document.cookie.split(";");
+    const refCookie = cookies.find(c => c.trim().startsWith("referral_code="));
+    if (refCookie) {
+      const code = refCookie.split("=")[1];
+      if (code) {
+        setReferralCode(code);
+      }
+    }
+  }, []);
 
   const onShorten = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -115,15 +128,16 @@ export default function HomePage() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const originalUrl = String(formData.get("anonOriginalUrl") ?? "").trim();
-    const referralCode = String(formData.get("referralCode") ?? "").trim();
+    // Use the state value or form value
+    const finalReferralCode = String(formData.get("referralCode") ?? "").trim() || referralCode;
     
     if (!originalUrl) return;
 
     setAnonSubmitting(true);
     try {
       const body: Record<string, unknown> = { originalUrl };
-      if (referralCode) {
-        body.referralCode = referralCode;
+      if (finalReferralCode) {
+        body.referralCode = finalReferralCode;
       }
       
       const data = await apiRequest<CreatedUrl>("/urls/public", {
@@ -197,6 +211,8 @@ export default function HomePage() {
                   placeholder="Enter referral code to support a creator"
                   suppressHydrationWarning
                   type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
                 />
                 <p className="mt-1 text-xs text-slate-400">
                   Have a referral code? Enter it to give them credit for your traffic.

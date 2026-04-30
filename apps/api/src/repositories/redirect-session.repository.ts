@@ -12,7 +12,22 @@ export class RedirectSessionRepository {
     shortCode: string;
     anonymousSessionId?: string;
     memberId?: string;
+    targetUrl: string;
     ttlMinutes?: number;
+    // optional visitor metadata
+    ipAddress?: string;
+    ipHash?: string;
+    userAgent?: string;
+    browser?: string;
+    os?: string;
+    deviceType?: string;
+    referrer?: string;
+    country?: string;
+    city?: string;
+    jsEnabled?: boolean;
+    cookiesEnabled?: boolean;
+    // initial raw click log id
+    clickLogId?: string;
   }): Promise<RedirectSessionEntity | null> {
     const ttlMs = (input.ttlMinutes || 10) * 60 * 1000;
     const expiresAt = new Date(Date.now() + ttlMs);
@@ -24,9 +39,23 @@ export class RedirectSessionRepository {
           ? new Types.ObjectId(input.anonymousSessionId)
           : undefined,
         memberId: input.memberId ? new Types.ObjectId(input.memberId) : undefined,
+        // metadata
+        ipAddress: input.ipAddress,
+        ipHash: input.ipHash,
+        userAgent: input.userAgent,
+        browser: input.browser,
+        os: input.os,
+        deviceType: input.deviceType,
+        referrer: input.referrer,
+        country: input.country,
+        city: input.city,
+        jsEnabled: input.jsEnabled,
+        cookiesEnabled: input.cookiesEnabled,
+        clickLogId: input.clickLogId ? new Types.ObjectId(input.clickLogId) : undefined,
         currentStep: 1,
         completedSteps: [],
         expiresAt,
+        targetUrl: input.targetUrl,
         stepTimings: [{ step: 1, enteredAt: new Date() }]
       });
       return session;

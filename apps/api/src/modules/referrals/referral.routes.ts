@@ -23,5 +23,13 @@ referralRouter.get(
   validationMiddleware(referralEarningsQuerySchema),
   asyncHandler((req, res) => referralController.listMyEarnings(req, res))
 );
+referralRouter.get(
+  "/traffic-stats",
+  asyncHandler((req, res) => referralController.getTrafficStats(req, res))
+);
+referralRouter.get(
+  "/stats",
+  asyncHandler((req, res) => referralController.getGeneralStats(req, res))
+);
 
 export { referralRouter };

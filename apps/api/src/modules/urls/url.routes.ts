@@ -29,6 +29,10 @@ urlRouter.post(
 urlRouter.use(authMiddleware, requireAuthenticatedUser, ensureActiveUser, ensureVerifiedUser);
 
 urlRouter.post(
+  "/bulk",
+  asyncHandler((req, res) => urlController.createBulkUrls(req, res))
+);
+urlRouter.post(
   "/",
   validationMiddleware(createUrlSchema),
   asyncHandler((req, res) => urlController.createOwnUrl(req, res))

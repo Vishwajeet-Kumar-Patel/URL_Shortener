@@ -2,11 +2,13 @@ import { StatusCodes } from "http-status-codes";
 import { env } from "../../config/env";
 import { urlRepository } from "../../repositories/url.repository";
 import { subscriptionService } from "../subscriptions/subscription.service";
+import { anonSessionService } from "../redirect/anon-session.service";
 import { URL_AD_MODE, URL_STATUS, type UrlStatus } from "../../types/common";
 import { generateShortCode } from "../../utils/nanoid";
 import { isValidPublicUrl, normalizeUrl } from "../../utils/url";
 import type {
   CreateShortUrlInput,
+  BulkCreateShortUrlInput,
   ListUserUrlsQuery,
   UpdateShortUrlInput,
   UrlListItem
@@ -27,7 +29,13 @@ export class UrlService {
   // the existing data model (ownerId required) remains satisfied.
   async createPublicUrl(
     input: CreateShortUrlInput,
-    options?: { anonSessionId?: string; createdByMemberId?: string }
+    options?: {
+      anonSessionId?: string;
+      createdByMemberId?: string;
+      referralCode?: string;
+      userAgent?: string;
+      ipHash?: string;
+    }
   ): Promise<UrlListItem> {
     const normalizedUrl = normalizeUrl(input.originalUrl);
     if (!isValidPublicUrl(normalizedUrl)) {
@@ -57,18 +65,75 @@ export class UrlService {
     };
 
     // Add referral attribution if provided
-    if (options?.createdByMemberId) {
-      creationData.createdByMemberId = options.createdByMemberId;
+    let finalMemberId = options?.createdByMemberId;
+    let finalAnonSessionId = options?.anonSessionId;
+
+    if (options?.referralCode && options.userAgent && options.ipHash) {
+      try {
+        const session = await anonSessionService.createSession({
+          userAgent: options.userAgent,
+          ipHash: options.ipHash,
+          referralCode: options.referralCode
+        });
+        finalMemberId = session.memberId;
+        // In a real scenario, we might want to return this session token to the client
+        // but for now we just link it to the URL.
+      } catch (err) {
+        console.error("Failed to create referral session:", err);
+      }
     }
 
-    if (options?.anonSessionId) {
-      creationData.anonymousSessionId = options.anonSessionId;
+    if (finalMemberId) {
+      creationData.createdByMemberId = finalMemberId;
+      await anonSessionService.trackLinkGeneration(finalMemberId);
+    }
+
+    if (finalAnonSessionId) {
+      creationData.anonymousSessionId = finalAnonSessionId;
     }
 
     const created = await urlRepository.createOne(creationData as Parameters<typeof urlRepository.createOne>[0]);
 
     return this.toUrlListItem(created);
   }
+  async createBulkUrls(userId: string, input: BulkCreateShortUrlInput): Promise<UrlListItem[]> {
+    const plan = await subscriptionService.getPlanForUser(userId);
+    const maxLinks = plan?.limits.maxLinks ?? 0;
+    
+    if (maxLinks > 0) {
+      const currentCount = await urlRepository.countByOwner(userId);
+      if (currentCount + input.urls.length > maxLinks) {
+        throw buildServiceError(
+          `Bulk creation exceeds plan limit. You have ${maxLinks - currentCount} links remaining.`,
+          StatusCodes.FORBIDDEN
+        );
+      }
+    }
+
+    const results: UrlListItem[] = [];
+    
+    // Process in series to avoid overwhelming or race conditions on unique code generation
+    // though for performance in real scale we might batch these or use a pool.
+    for (const url of input.urls) {
+      const normalizedUrl = normalizeUrl(url);
+      if (!isValidPublicUrl(normalizedUrl)) continue;
+
+      const shortCode = await this.generateUniqueShortCode();
+      const created = await urlRepository.createOne({
+        ownerId: userId,
+        shortCode,
+        originalUrl: url.trim(),
+        normalizedUrl,
+        adMode: input.adMode ?? URL_AD_MODE.DIRECT,
+        isCustomAlias: false,
+      });
+
+      results.push(this.toUrlListItem(created));
+    }
+
+    return results;
+  }
+
   async createUrl(userId: string, input: CreateShortUrlInput): Promise<UrlListItem> {
     const plan = await subscriptionService.getPlanForUser(userId);
     if (plan && plan.limits.maxLinks > 0) {
