@@ -121,7 +121,6 @@ export default function DashboardPage() {
     void loadSummary();
   }, [token]);
 
-  const totalUrls = summary.analytics?.totals.urls ?? items.length;
   const totalClicks = summary.analytics?.totals.clicks ?? items.reduce((sum, item) => sum + item.clickCount, 0);
   const totalEarnings = summary.referrals?.totalEarnings ?? 0;
   const avgCpm = totalClicks > 0 ? (totalEarnings / totalClicks) * 1000 : 0;
