@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleButton } from "@/components/auth/google-button";
@@ -16,7 +16,7 @@ import { useAuthStore } from "@/store/auth.store";
 
 const API_BASE_URL = getApiBaseUrl();
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const register = useAuthStore((state) => state.register);
@@ -130,5 +130,17 @@ export default function RegisterPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
+        Loading...
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }
