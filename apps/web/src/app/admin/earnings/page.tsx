@@ -53,12 +53,12 @@ export default function AdminEarningsPage() {
       });
 
       const [breakdownData, summaryData] = await Promise.all([
-        apiRequest(`/admin/earnings?${params.toString()}`, { token }),
-        apiRequest(`/admin/earnings/summary?${params.toString()}`, { token })
+        apiRequest<EarningsBreakdown>(`/admin/earnings?${params.toString()}`, { token }),
+        apiRequest<SummaryStats>(`/admin/earnings/summary?${params.toString()}`, { token })
       ]);
 
-      setBreakdown(breakdownData as EarningsBreakdown);
-      setSummary(summaryData as SummaryStats);
+      setBreakdown(breakdownData);
+      setSummary(summaryData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load earnings data");
     } finally {
