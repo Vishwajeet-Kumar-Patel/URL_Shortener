@@ -24,7 +24,7 @@ const REFRESH_KEY = "ls_refresh_token";
 const USER_KEY = "ls_user";
 const PENDING_EMAIL_KEY = "ls_pending_email";
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set: any, get: any) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
@@ -39,7 +39,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const pendingEmail = localStorage.getItem(PENDING_EMAIL_KEY);
     set({ accessToken, refreshToken, user, pendingEmail, isHydrated: true });
   },
-  login: async ({ email, password }) => {
+  login: async ({ email, password }: { email: string; password: string }) => {
     const data = await apiRequest<AuthResponse>("/auth/login", {
       method: "POST",
       body: { email, password }
@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       pendingEmail: null
     });
   },
-  register: async ({ name, email, password, referralCode }) => {
+  register: async ({ name, email, password, referralCode }: { name: string; email: string; password: string; referralCode?: string }) => {
     const data = await apiRequest<RegisterResponse>("/auth/register", {
       method: "POST",
       body: {
@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem(PENDING_EMAIL_KEY);
     set({ user: null, accessToken: null, refreshToken: null, pendingEmail: null });
   },
-  setSession: (payload) => {
+  setSession: (payload: AuthResponse) => {
     const user: AuthUser = {
       id: payload.user.userId,
       name: payload.user.name,
@@ -121,7 +121,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       pendingEmail: null
     });
   },
-  patchUser: (partial) => {
+  patchUser: (partial: Partial<Pick<AuthUser, "name" | "email">>) => {
     const cur = get().user;
     if (!cur || typeof window === "undefined") return;
     const next = { ...cur, ...partial };
