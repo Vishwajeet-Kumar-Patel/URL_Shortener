@@ -52,13 +52,10 @@ export default function AdminEarningsPage() {
         until: now.toISOString()
       });
 
-      const results = await Promise.all([
+      const [breakdownData, summaryData] = (await Promise.all([
         apiRequest<EarningsBreakdown>(`/admin/earnings?${params.toString()}`, { token }),
         apiRequest<SummaryStats>(`/admin/earnings/summary?${params.toString()}`, { token })
-      ]);
-
-      const breakdownData = results[0] as EarningsBreakdown;
-      const summaryData = results[1] as SummaryStats;
+      ])) as [EarningsBreakdown, SummaryStats];
 
       setBreakdown(breakdownData);
       setSummary(summaryData);
