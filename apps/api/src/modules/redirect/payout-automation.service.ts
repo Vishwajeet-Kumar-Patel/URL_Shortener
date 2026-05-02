@@ -120,8 +120,8 @@ export class PayoutAutomationService {
       sessionId,
       notes: `CPM ${breakdown.adminEarning} (20% margin from ${rate.cpm} CPM rate)`
     });
+  }
 
-   */
   async calculateMemberEarnings(
     memberId: string,
     since: Date,
