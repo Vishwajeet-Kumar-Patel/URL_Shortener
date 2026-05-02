@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api-client";
 
@@ -34,7 +34,7 @@ const adSlots: Record<
   }
 };
 
-export default function MonetizedBlogPage() {
+function MonetizedBlogContent() {
   const search = useSearchParams();
   const sessionToken = String(search.get("token") ?? "");
 
@@ -212,7 +212,7 @@ export default function MonetizedBlogPage() {
           <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
             <div className="space-y-4 md:col-span-2">
               <img
-                src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=1a5b1d0b0b7b2f1a9d9d1f2b3c4d5e6f"
+                src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop"
                 alt="Ocean sunrise representing growth"
                 className="h-72 w-full rounded-2xl border border-slate-800 object-cover shadow-2xl"
               />
@@ -285,7 +285,7 @@ export default function MonetizedBlogPage() {
 
           <figure className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
             <img
-              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3f7a9df6f7b6a2d4e6f8b9c2d3a4e5f6"
+              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1200&auto=format&fit=crop"
               alt="Workspace showing campaign planning"
               className="h-80 w-full object-cover"
             />
@@ -445,5 +445,17 @@ export default function MonetizedBlogPage() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+export default function MonetizedBlogPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+        <p className="text-slate-400">Loading experience...</p>
+      </main>
+    }>
+      <MonetizedBlogContent />
+    </Suspense>
   );
 }
