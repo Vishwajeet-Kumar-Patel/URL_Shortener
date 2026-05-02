@@ -57,8 +57,8 @@ export default function AdminEarningsPage() {
         apiRequest(`/admin/earnings/summary?${params.toString()}`, { token })
       ]);
 
-      setBreakdown(breakdownData);
-      setSummary(summaryData);
+      setBreakdown(breakdownData as EarningsBreakdown);
+      setSummary(summaryData as SummaryStats);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load earnings data");
     } finally {
