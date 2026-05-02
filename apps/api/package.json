@@ -4,20 +4,20 @@
   "private": true,
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "npx tsx watch src/server.ts",
     "prebuild": "npm ci --include=dev",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed:admin": "tsx src/scripts/seed-admin.ts",
-    "seed:member": "tsx src/scripts/seed-member.ts",
-    "seed:demo": "tsx src/scripts/seed-demo.ts",
-    "referrals:attach": "tsx src/scripts/attach-referral.ts",
-    "seed:plans": "tsx src/scripts/seed-plans.ts",
-    "jobs:announcements": "tsx src/scripts/process-announcements.ts",
-    "worker:announcements": "tsx src/scripts/worker-announcements.ts"
+    "seed:admin": "npx tsx src/scripts/seed-admin.ts",
+    "seed:member": "npx tsx src/scripts/seed-member.ts",
+    "seed:demo": "npx tsx src/scripts/seed-demo.ts",
+    "referrals:attach": "npx tsx src/scripts/attach-referral.ts",
+    "seed:plans": "npx tsx src/scripts/seed-plans.ts",
+    "jobs:announcements": "npx tsx src/scripts/process-announcements.ts",
+    "worker:announcements": "npx tsx src/scripts/worker-announcements.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

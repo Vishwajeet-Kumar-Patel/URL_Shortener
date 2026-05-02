@@ -23,7 +23,7 @@ export default function ReferralLinkPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!token || !user?.userId) {
+      if (!token || !user?.id) {
         setError("Not authenticated");
         setLoading(false);
         return;
@@ -31,7 +31,7 @@ export default function ReferralLinkPage() {
 
       try {
         const data = await apiRequest<MemberStats>(
-          `/users/${user.userId}/member-stats`,
+          `/users/${user.id}/member-stats`,
           { method: "GET", token }
         );
         setStats(data);
@@ -41,7 +41,7 @@ export default function ReferralLinkPage() {
           totalUsersBrought: 0,
           totalLinksGenerated: 0,
           thisMonthUsers: 0,
-          referralCode: `REF_${user.userId.substring(0, 8).toUpperCase()}`
+          referralCode: `REF_${user.id.substring(0, 8).toUpperCase()}`
         });
       } finally {
         setLoading(false);
@@ -49,7 +49,7 @@ export default function ReferralLinkPage() {
     };
 
     fetchStats();
-  }, [token, user?.userId]);
+  }, [token, user?.id]);
 
   const handleCopyCode = () => {
     if (stats?.referralCode) {

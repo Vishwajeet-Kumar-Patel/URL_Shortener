@@ -12,6 +12,7 @@ type VerifyResponse = {
     name: string;
     email: string;
     role: "ADMIN" | "MEMBER" | "ADVERTISER";
+    isEmailVerified: boolean;
   };
   tokens: { accessToken: string; refreshToken: string };
 };

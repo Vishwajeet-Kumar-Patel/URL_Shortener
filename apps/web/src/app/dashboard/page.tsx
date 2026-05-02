@@ -124,7 +124,7 @@ export default function DashboardPage() {
   const totalClicks = summary.analytics?.totals.clicks ?? items.reduce((sum, item) => sum + item.clickCount, 0);
   const totalEarnings = summary.referrals?.totalEarnings ?? 0;
   //const avgCpm = totalClicks > 0 ? (totalEarnings / totalClicks) * 1000 : 0;
-  const referralCode = summary.referrals?.code ?? `REF_${user?.userId?.slice(0, 8).toUpperCase() ?? "MEMBER"}`;
+  const referralCode = summary.referrals?.code ?? `REF_${user?.id?.slice(0, 8).toUpperCase() ?? "MEMBER"}`;
 
   return (
     <div className="space-y-8">

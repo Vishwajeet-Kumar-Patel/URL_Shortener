@@ -25,7 +25,7 @@ const handleAuthFailureRedirect = () => {
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
-  token?: string;
+  token?: string | null;
 };
 
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {

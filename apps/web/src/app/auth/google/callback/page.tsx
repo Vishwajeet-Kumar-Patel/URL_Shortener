@@ -11,6 +11,7 @@ type OAuthPayload = {
     name: string;
     email: string;
     role: "ADMIN" | "MEMBER" | "ADVERTISER";
+    isEmailVerified: boolean;
   };
   tokens: {
     accessToken: string;

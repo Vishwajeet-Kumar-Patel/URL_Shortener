@@ -80,6 +80,12 @@ export default function EarningsPage() {
           <p className="text-slate-300">Track your CPM earnings from qualified traffic</p>
         </div>
 
+        {error ? (
+          <div className="mb-8 rounded-lg border border-rose-700 bg-rose-950/30 p-4 text-rose-300">
+            {error}
+          </div>
+        ) : null}
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">

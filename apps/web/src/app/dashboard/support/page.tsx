@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { apiRequest } from "@/lib/api-client";
 import { getApiBaseUrl } from "@/lib/public-env";
 import {
   formButtonPrimaryClass,

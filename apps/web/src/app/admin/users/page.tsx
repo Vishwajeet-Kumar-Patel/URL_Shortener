@@ -25,7 +25,7 @@ const ROLES = ["MEMBER", "ADVERTISER", "ADMIN"] as const;
 
 export default function AdminUsersPage() {
   const token = useAuthStore((state) => state.accessToken);
-  const actorId = useAuthStore((state) => state.user?.userId ?? null);
+  const actorId = useAuthStore((state) => state.user?.id ?? null);
   const [data, setData] = useState<AdminUsersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

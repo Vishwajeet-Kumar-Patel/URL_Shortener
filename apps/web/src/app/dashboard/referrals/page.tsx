@@ -54,7 +54,7 @@ export default function DashboardReferralsPage() {
         const message = err instanceof Error ? err.message : "Unable to load referrals";
         setError(message);
         setSummary({
-          code: user?.userId ? `REF_${user.userId.slice(0, 8).toUpperCase()}` : "REF_MEMBER",
+          code: user?.id ? `REF_${user.id.slice(0, 8).toUpperCase()}` : "REF_MEMBER",
           referralLink: "",
           totalReferred: 0,
           totalEarnings: 0
@@ -66,7 +66,7 @@ export default function DashboardReferralsPage() {
     };
 
     void run();
-  }, [token, user?.userId]);
+  }, [token, user?.id]);
 
   return (
     <section className="space-y-5">

@@ -3,25 +3,10 @@
 import { create } from "zustand";
 import { apiRequest } from "@/lib/api-client";
 
-type User = {
-  userId: string;
-  name: string;
-  email: string;
-  role: "ADMIN" | "MEMBER" | "ADVERTISER";
-};
-
-type AuthResponse = {
-  user: User;
-  tokens: { accessToken: string; refreshToken: string };
-};
-
-type RegisterResponse = {
-  user: User;
-  verificationRequired: boolean;
-};
+import { AuthUser, AuthResponse, RegisterResponse } from "@/types/auth";
 
 type AuthState = {
-  user: User | null;
+  user: AuthUser | null;
   accessToken: string | null;
   refreshToken: string | null;
   pendingEmail: string | null;
@@ -31,7 +16,7 @@ type AuthState = {
   register: (input: { name: string; email: string; password: string; referralCode?: string }) => Promise<void>;
   logout: () => Promise<void>;
   setSession: (payload: AuthResponse) => void;
-  patchUser: (partial: Partial<Pick<User, "name" | "email">>) => void;
+  patchUser: (partial: Partial<Pick<AuthUser, "name" | "email">>) => void;
 };
 
 const ACCESS_KEY = "ls_access_token";
@@ -50,7 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const accessToken = localStorage.getItem(ACCESS_KEY);
     const refreshToken = localStorage.getItem(REFRESH_KEY);
     const userRaw = localStorage.getItem(USER_KEY);
-    const user = userRaw ? (JSON.parse(userRaw) as User) : null;
+    const user = userRaw ? (JSON.parse(userRaw) as AuthUser) : null;
     const pendingEmail = localStorage.getItem(PENDING_EMAIL_KEY);
     set({ accessToken, refreshToken, user, pendingEmail, isHydrated: true });
   },
@@ -60,12 +45,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       body: { email, password }
     });
 
+    const user: AuthUser = {
+      id: data.user.userId,
+      name: data.user.name,
+      email: data.user.email,
+      role: data.user.role,
+      isEmailVerified: data.user.isEmailVerified
+    };
+
     localStorage.setItem(ACCESS_KEY, data.tokens.accessToken);
     localStorage.setItem(REFRESH_KEY, data.tokens.refreshToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
     localStorage.removeItem(PENDING_EMAIL_KEY);
     set({
-      user: data.user,
+      user,
       accessToken: data.tokens.accessToken,
       refreshToken: data.tokens.refreshToken,
       pendingEmail: null
@@ -109,12 +102,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, accessToken: null, refreshToken: null, pendingEmail: null });
   },
   setSession: (payload) => {
+    const user: AuthUser = {
+      id: payload.user.userId,
+      name: payload.user.name,
+      email: payload.user.email,
+      role: payload.user.role,
+      isEmailVerified: payload.user.isEmailVerified
+    };
+
     localStorage.setItem(ACCESS_KEY, payload.tokens.accessToken);
     localStorage.setItem(REFRESH_KEY, payload.tokens.refreshToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
     localStorage.removeItem(PENDING_EMAIL_KEY);
     set({
-      user: payload.user,
+      user,
       accessToken: payload.tokens.accessToken,
       refreshToken: payload.tokens.refreshToken,
       pendingEmail: null

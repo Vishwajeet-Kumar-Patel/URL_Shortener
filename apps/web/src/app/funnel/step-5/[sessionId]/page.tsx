@@ -25,17 +25,15 @@ export default function FunnelStep5Page() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState<FunnelProgress | null>(null);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        const data = await apiRequest<FunnelProgress>(`/redirect/funnel/progress/${sessionId}`, {
+        await apiRequest<FunnelProgress>(`/redirect/funnel/progress/${sessionId}`, {
           method: "GET"
         });
-        setProgress(data);
 
         // Also fetch session status to get the target URL
         const status = await apiRequest<SessionStatus>(`/redirect/funnel/progress/${sessionId}`, {

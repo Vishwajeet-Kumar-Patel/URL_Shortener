@@ -41,13 +41,13 @@ export default function WithdrawalPage() {
         // This endpoints would need to be created in the backend
         const balanceData = await apiRequest<UserBalance>(
           `/users/${user.id}/balance`,
-          { method: "GET", token }
+          { method: "GET", token: token ?? undefined }
         );
         setBalance(balanceData);
 
         const requestsData = await apiRequest<WithdrawalRequest[]>(
           `/users/${user.id}/withdrawal-requests`,
-          { method: "GET", token }
+          { method: "GET", token: token ?? undefined }
         );
         setRequests(requestsData || []);
       } catch (err) {
@@ -86,7 +86,7 @@ export default function WithdrawalPage() {
         `/users/${user?.id}/withdraw`,
         {
           method: "POST",
-          token,
+          token: token ?? undefined,
           body: { amount: withdrawalAmount }
         }
       );

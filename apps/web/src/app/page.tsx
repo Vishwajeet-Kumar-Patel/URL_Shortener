@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import {
@@ -65,13 +64,7 @@ const faqItems = [
 ];
 
 export default function HomePage() {
-  const router = useRouter();
   const token = useAuthStore((state) => state.accessToken);
-  const user = useAuthStore((state) => state.user);
-
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<CreatedUrl | null>(null);
   const [anonSubmitting, setAnonSubmitting] = useState(false);
   const [anonError, setAnonError] = useState<string | null>(null);
   const [anonCreated, setAnonCreated] = useState<CreatedUrl | null>(null);
@@ -89,36 +82,6 @@ export default function HomePage() {
     }
   }, []);
 
-  const onShorten = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setCreated(null);
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const originalUrl = String(formData.get("originalUrl") ?? "").trim();
-    if (!originalUrl) return;
-
-    if (!token) {
-      router.push("/register");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const data = await apiRequest<CreatedUrl>("/urls", {
-        method: "POST",
-        token,
-        body: { originalUrl }
-      });
-      setCreated(data);
-      form.reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to shorten URL");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const onAnonShorten = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
