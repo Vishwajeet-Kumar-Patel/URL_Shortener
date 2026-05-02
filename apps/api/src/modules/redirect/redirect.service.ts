@@ -1,4 +1,4 @@
-import { UNIQUE_CLICK_WINDOW_HOURS, DEFAULT_CPM_RATE, DEFAULT_CURRENCY } from "../../config/constants";
+import { UNIQUE_CLICK_WINDOW_HOURS, DEFAULT_CURRENCY } from "../../config/constants";
 import { calculateCpmBreakdown } from "../../utils/cpm-calculation";
 import { cpmRateRepository } from "../../repositories/cpm-rate.repository";
 import { clickRepository } from "../../repositories/click.repository";
@@ -139,7 +139,10 @@ export class RedirectService {
     let rate = await cpmRateRepository.getApplicableRate(input.country);
     if (!rate || rate.cpm <= 0) {
       // Fallback to default rate
-      rate = { cpm: DEFAULT_CPM_RATE, currency: DEFAULT_CURRENCY, isActive: true };
+      rate = await cpmRateRepository.getApplicableRate(DEFAULT_CURRENCY);
+      if (!rate) {
+        return null; // No rate available
+      }
     }
 
     // 4. Calculate payout using unified CPM calculation

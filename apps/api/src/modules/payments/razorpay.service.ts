@@ -38,7 +38,6 @@ export class RazorpayService {
       amount: Math.round(input.amount * 100), // Convert to paise
       currency: "INR",
       receipt: `plan-${input.userId}-${Date.now()}`,
-      customer_notify: 1,
       notes: {
         userId: input.userId,
         planId: input.planId,
@@ -48,7 +47,7 @@ export class RazorpayService {
     });
 
     return {
-      orderId: order.id,
+    orderId: (order as any).id,
       amount: input.amount,
       currency: "INR",
       keyId: env.RAZORPAY_KEY_ID || ""

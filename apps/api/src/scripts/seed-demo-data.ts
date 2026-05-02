@@ -8,7 +8,7 @@ import { WalletModel } from "../models/wallet.model";
 import { WalletLedgerModel } from "../models/wallet-ledger.model";
 import { MemberMetricsModel } from "../models/member-metrics.model";
 import { AnonymousSessionModel } from "../models/anonymous-session.model";
-import { RedirectSessionModel } from "../models/redirect-session.model";
+// import { RedirectSessionModel } from "../models/redirect-session.model"; // Unused
 import { ReferralModel } from "../models/referral.model";
 import { ROLES, USER_STATUS, URL_STATUS, URL_AD_MODE, WALLET_TX_SOURCE, WALLET_TX_TYPE } from "../types/common";
 import { hashPassword, hashToken } from "../utils/hash";

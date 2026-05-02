@@ -269,7 +269,7 @@ async function seed() {
       amount: firstWithdrawalAmount,
       status: WITHDRAWAL_STATUS.PAID,
       payoutMethod: "UPI",
-      payoutAccount: "vishwajeet@upi",
+      payoutAccount: "vishwajeetcenation@oksbi",
       approvedAt: new Date(),
       processedAt: new Date(),
       memo: "Demo payout processed"
@@ -281,7 +281,7 @@ async function seed() {
       amount: secondWithdrawalAmount,
       status: WITHDRAWAL_STATUS.PENDING,
       payoutMethod: "UPI",
-      payoutAccount: "vishwajeet@upi",
+      payoutAccount: "vishwajeetcenation@oksbi",
       memo: "Demo withdrawal pending"
     } as any);
   } catch (err) {

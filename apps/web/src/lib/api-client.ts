@@ -4,6 +4,24 @@ import { getApiBaseUrl } from "./public-env";
 
 export const API_BASE_URL = getApiBaseUrl();
 
+let authRedirectInProgress = false;
+
+const handleAuthFailureRedirect = () => {
+  if (typeof window === "undefined") return;
+  if (authRedirectInProgress) return;
+  if (window.location.pathname === "/login") return;
+
+  authRedirectInProgress = true;
+
+  // Clear persisted auth state to avoid stale session loops.
+  localStorage.removeItem("ls_access_token");
+  localStorage.removeItem("ls_refresh_token");
+  localStorage.removeItem("ls_user");
+
+  sessionStorage.setItem("auth_redirect_reason", "expired_or_invalid");
+  window.location.replace("/login?reason=expired");
+};
+
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
@@ -28,6 +46,11 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
     } catch {
       errorMessage = `HTTP ${response.status}: ${response.statusText}`;
     }
+
+    if ((response.status === 401 || response.status === 403) && options.token) {
+      handleAuthFailureRedirect();
+    }
+
     throw new Error(errorMessage);
   }
 

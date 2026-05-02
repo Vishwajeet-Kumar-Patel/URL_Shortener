@@ -4,7 +4,6 @@ import { anonymousSessionRepository } from "../../repositories/anonymous-session
 import { referralRepository } from "../../repositories/referral.repository";
 import { memberMetricsRepository } from "../../repositories/member-metrics.repository";
 import { ShortUrlModel } from "../../models/short-url.model";
-import { Types } from "mongoose";
 
 type ServiceError = Error & { statusCode?: number };
 

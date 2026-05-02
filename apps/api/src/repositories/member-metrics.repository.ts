@@ -83,7 +83,7 @@ export class MemberMetricsRepository {
     };
 
     if (isThisMonth) {
-      update.$inc = { ...update.$inc, thisMonthEarnings: amount };
+      update.$inc = { ...(update.$inc || {}), thisMonthEarnings: amount };
     }
 
     const result = await MemberMetricsModel.updateOne(

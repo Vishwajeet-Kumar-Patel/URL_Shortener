@@ -16,7 +16,7 @@ const bootstrapMember = async (): Promise<void> => {
   await mongoose.connect(env.MONGODB_URI);
 
   const passwordHash = await hashPassword(password);
-  const res = await UserModel.updateOne(
+  await UserModel.updateOne(
     { email: email.toLowerCase() },
     {
       $set: {

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleButton } from "@/components/auth/google-button";
 import {
   formButtonPrimaryClass,
@@ -18,6 +18,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
   const user = useAuthStore((state) => state.user);
   const [emailValue, setEmailValue] = useState("");
@@ -29,6 +30,18 @@ export default function LoginPage() {
       router.replace(user.role === "ADMIN" ? "/admin" : "/dashboard");
     }
   }, [router, user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const reason = searchParams.get("reason");
+    const marker = sessionStorage.getItem("auth_redirect_reason");
+
+    if (reason === "expired" || marker === "expired_or_invalid") {
+      sessionStorage.removeItem("auth_redirect_reason");
+      window.alert("Your session expired or token became invalid. Please login again.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

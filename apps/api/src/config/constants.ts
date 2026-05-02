@@ -18,4 +18,4 @@ export const DEFAULT_CURRENCY = "INR";
 export const CPM_CALCULATION_DECIMALS = 6;
 
 // DEPRECATED: Use country-based CPM rates instead
-// export const PAYOUT_PER_QUALIFIED_CLICK = 0.5; // Replaced by CPM system
+export const PAYOUT_PER_QUALIFIED_CLICK = 0.1; // Legacy constant for seed scripts

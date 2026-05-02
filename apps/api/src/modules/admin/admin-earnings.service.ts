@@ -82,7 +82,7 @@ export class AdminEarningsService {
 
     // Get subscription revenue by plan (if not already in logs)
     const paidInvoices = await InvoiceModel.find({
-      type: INVOICE_TYPE.SUBSCRIPTION,
+       type: INVOICE_TYPE.PLAN_PURCHASE,
       status: INVOICE_STATUS.PAID,
       createdAt: { $gte: since, $lte: until }
     }).lean();
@@ -148,7 +148,7 @@ export class AdminEarningsService {
 
     // Get paid subscriptions
     const paidInvoices = await InvoiceModel.countDocuments({
-      type: INVOICE_TYPE.SUBSCRIPTION,
+      type: INVOICE_TYPE.PLAN_PURCHASE,
       status: INVOICE_STATUS.PAID,
       createdAt: { $gte: since, $lte: until }
     });
