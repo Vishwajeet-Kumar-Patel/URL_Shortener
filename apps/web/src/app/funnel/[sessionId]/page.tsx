@@ -21,7 +21,7 @@ export default function FunnelPage() {
   const params = useParams();
   const sessionId = String(params.sessionId);
   const router = useRouter();
-  
+
   const [progress, setProgress] = useState<FunnelProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(10);
@@ -30,7 +30,7 @@ export default function FunnelPage() {
   const [scrollReached, setScrollReached] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
-  
+
   const loadProgress = async () => {
     try {
       const data = await apiRequest<FunnelProgress>(`/redirect/funnel/progress/${sessionId}`);
@@ -77,7 +77,7 @@ export default function FunnelPage() {
   useEffect(() => {
     const handleScroll = () => {
       if (progress?.currentStep !== 2) return;
-      
+
       const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
       const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
       const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
@@ -96,7 +96,7 @@ export default function FunnelPage() {
 
   const advanceStep = async () => {
     if (!progress || validating) return;
-    
+
     setValidating(true);
     try {
       const body: any = {
@@ -149,7 +149,7 @@ export default function FunnelPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-center text-white">
         <h1 className="text-2xl font-bold">Oops!</h1>
         <p className="mt-2 text-slate-400">{error}</p>
-        <button 
+        <button
           onClick={() => router.push("/")}
           className="mt-6 rounded-xl bg-indigo-600 px-6 py-2.5 font-semibold hover:bg-indigo-500"
         >
@@ -163,8 +163,8 @@ export default function FunnelPage() {
     <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-100">
       {/* Top Progress Bar */}
       <div className="fixed top-0 z-50 h-2 w-full bg-slate-100">
-        <div 
-          className="h-full bg-indigo-600 transition-all duration-700 ease-out" 
+        <div
+          className="h-full bg-indigo-600 transition-all duration-700 ease-out"
           style={{ width: `${progress?.progress}%` }}
         />
       </div>
@@ -177,7 +177,7 @@ export default function FunnelPage() {
               Please wait {timeLeft} seconds...
             </div>
           )}
-          
+
           {canContinue && (
             <button
               onClick={advanceStep}
@@ -229,13 +229,13 @@ export default function FunnelPage() {
 
         <div className="prose prose-slate prose-lg max-w-none">
           <p className="text-xl leading-relaxed text-slate-600 font-medium italic border-l-4 border-indigo-600 pl-6 mb-12">
-            "The landscape of digital connectivity is shifting. It's no longer just about the destination, 
+            "The landscape of digital connectivity is shifting. It's no longer just about the destination,
             but the journey of attribution and value creation that happens in between."
           </p>
 
           <p>
-            As we navigate through the mid-2020s, the concept of a 'link' has evolved significantly. 
-            What used to be a simple pointer to a document has now become a sophisticated vehicle for 
+            As we navigate through the mid-2020s, the concept of a 'link' has evolved significantly.
+            What used to be a simple pointer to a document has now become a sophisticated vehicle for
             analytics, monetization, and brand building.
           </p>
 
@@ -251,8 +251,8 @@ export default function FunnelPage() {
 
           <h2 className="text-3xl font-extrabold text-slate-900 mt-16 mb-6">The Power of Targeted Redirection</h2>
           <p>
-            Traditional URL shorteners were blind. They didn't understand who was clicking, or why. 
-            Modern attribution engines like the one you're currently interacting with use hundreds of 
+            Traditional URL shorteners were blind. They didn't understand who was clicking, or why.
+            Modern attribution engines like the one you're currently interacting with use hundreds of
             data points to ensure that traffic is not just high-volume, but high-quality.
           </p>
 
@@ -286,13 +286,13 @@ export default function FunnelPage() {
 
           <h2 className="text-3xl font-extrabold text-slate-900 mt-16 mb-6">Monetization as a Service</h2>
           <p>
-            For creators, the ability to monetize every share is a game-changer. By building 
-            engagement funnels directly into the redirection process, we're creating a sustainable 
+            For creators, the ability to monetize every share is a game-changer. By building
+            engagement funnels directly into the redirection process, we're creating a sustainable
             ecosystem where attention is properly valued and rewarded.
           </p>
 
           <p>
-            This multistep process ensures that users are genuinely engaged with the content, 
+            This multistep process ensures that users are genuinely engaged with the content,
             which in turn provides better ROI for advertisers and higher payouts for members.
           </p>
 
@@ -307,8 +307,8 @@ export default function FunnelPage() {
               <h3 className="mt-0 text-emerald-950 text-2xl font-black">Final Security Check</h3>
               <p className="text-emerald-700/80 font-medium mb-8">Confirming your session security and human verification...</p>
               <div className="mx-auto h-3 w-64 rounded-full bg-emerald-200/50 overflow-hidden shadow-inner">
-                <div 
-                  className="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.5)]" 
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
                   style={{ width: `${(10 - timeLeft) * 10}%` }}
                 />
               </div>

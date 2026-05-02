@@ -75,129 +75,128 @@ export default function ReferralLinkPage() {
     <AdminAppShell>
       <div className="min-h-screen bg-slate-950 text-slate-100">
         <div className="mx-auto max-w-4xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Your Referral Code</h1>
-          <p className="text-slate-300">Share your code and earn CPM for every qualified click</p>
-        </div>
-
-        {error ? (
-          <div className="mb-8 rounded-lg border border-rose-700 bg-rose-950/30 p-4 text-rose-300">
-            {error}
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Your Referral Code</h1>
+            <p className="text-slate-300">Share your code and earn CPM for every qualified click</p>
           </div>
-        ) : null}
 
-        {/* Referral Code Card */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 mb-8">
-          <h2 className="text-lg font-semibold text-white mb-4">Referral Code</h2>
-          
-          <div className="rounded-lg bg-slate-800 p-6 mb-6">
-            <p className="text-sm text-slate-400 mb-2">Your Unique Referral Code</p>
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={stats?.referralCode || ""}
-                readOnly
-                className="flex-1 rounded-lg bg-slate-700 px-4 py-3 font-mono text-lg text-white border border-slate-600"
-              />
-              <button
-                onClick={handleCopyCode}
-                className={`px-4 py-3 rounded-lg font-semibold transition-all ${
-                  copied
-                    ? "bg-emerald-600 text-white"
-                    : "bg-indigo-600 text-white hover:bg-indigo-500"
-                }`}
-              >
-                {copied ? "Copied!" : "Copy"}
+          {error ? (
+            <div className="mb-8 rounded-lg border border-rose-700 bg-rose-950/30 p-4 text-rose-300">
+              {error}
+            </div>
+          ) : null}
+
+          {/* Referral Code Card */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 mb-8">
+            <h2 className="text-lg font-semibold text-white mb-4">Referral Code</h2>
+
+            <div className="rounded-lg bg-slate-800 p-6 mb-6">
+              <p className="text-sm text-slate-400 mb-2">Your Unique Referral Code</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={stats?.referralCode || ""}
+                  readOnly
+                  className="flex-1 rounded-lg bg-slate-700 px-4 py-3 font-mono text-lg text-white border border-slate-600"
+                />
+                <button
+                  onClick={handleCopyCode}
+                  className={`px-4 py-3 rounded-lg font-semibold transition-all ${copied
+                      ? "bg-emerald-600 text-white"
+                      : "bg-indigo-600 text-white hover:bg-indigo-500"
+                    }`}
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            {/* Share URL */}
+            <div className="rounded-lg bg-slate-800 p-6 mb-6">
+              <p className="text-sm text-slate-400 mb-2">Referral URL</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={referralUrl}
+                  readOnly
+                  className="flex-1 rounded-lg bg-slate-700 px-4 py-3 text-sm text-white border border-slate-600 overflow-hidden text-ellipsis"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(referralUrl);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="px-4 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition-all whitespace-nowrap"
+                >
+                  {copied ? "Copied!" : "Copy URL"}
+                </button>
+              </div>
+            </div>
+
+            {/* Share buttons */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+                Facebook
+              </button>
+              <button className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-400">
+                Twitter
+              </button>
+              <button className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">
+                Email
+              </button>
+              <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500">
+                WhatsApp
               </button>
             </div>
           </div>
 
-          {/* Share URL */}
-          <div className="rounded-lg bg-slate-800 p-6 mb-6">
-            <p className="text-sm text-slate-400 mb-2">Referral URL</p>
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={referralUrl}
-                readOnly
-                className="flex-1 rounded-lg bg-slate-700 px-4 py-3 text-sm text-white border border-slate-600 overflow-hidden text-ellipsis"
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(referralUrl);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-                className="px-4 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition-all whitespace-nowrap"
-              >
-                {copied ? "Copied!" : "Copy URL"}
-              </button>
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm text-slate-400 mb-2">Total Users Brought</p>
+              <p className="text-3xl font-bold text-white">{stats?.totalUsersBrought || 0}</p>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm text-slate-400 mb-2">Links Generated by Referrals</p>
+              <p className="text-3xl font-bold text-white">{stats?.totalLinksGenerated || 0}</p>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+              <p className="text-sm text-slate-400 mb-2">This Month Users</p>
+              <p className="text-3xl font-bold text-emerald-400">{stats?.thisMonthUsers || 0}</p>
             </div>
           </div>
 
-          {/* Share buttons */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
-              Facebook
-            </button>
-            <button className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-400">
-              Twitter
-            </button>
-            <button className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">
-              Email
-            </button>
-            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500">
-              WhatsApp
-            </button>
+          {/* Navigation */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link
+              href="/dashboard/partner/anonymous-links"
+              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+            >
+              <p className="text-sm text-slate-400">📊 Anonymous Links</p>
+            </Link>
+            <Link
+              href="/dashboard/partner/earnings"
+              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+            >
+              <p className="text-sm text-slate-400">💰 Earnings</p>
+            </Link>
+            <Link
+              href="/dashboard/partner/withdrawal"
+              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+            >
+              <p className="text-sm text-slate-400">💳 Withdrawal</p>
+            </Link>
+            <Link
+              href="/dashboard"
+              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+            >
+              <p className="text-sm text-slate-400">← Back</p>
+            </Link>
           </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400 mb-2">Total Users Brought</p>
-            <p className="text-3xl font-bold text-white">{stats?.totalUsersBrought || 0}</p>
-          </div>
-          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400 mb-2">Links Generated by Referrals</p>
-            <p className="text-3xl font-bold text-white">{stats?.totalLinksGenerated || 0}</p>
-          </div>
-          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400 mb-2">This Month Users</p>
-            <p className="text-3xl font-bold text-emerald-400">{stats?.thisMonthUsers || 0}</p>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link
-            href="/dashboard/partner/anonymous-links"
-            className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
-          >
-            <p className="text-sm text-slate-400">📊 Anonymous Links</p>
-          </Link>
-          <Link
-            href="/dashboard/partner/earnings"
-            className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
-          >
-            <p className="text-sm text-slate-400">💰 Earnings</p>
-          </Link>
-          <Link
-            href="/dashboard/partner/withdrawal"
-            className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
-          >
-            <p className="text-sm text-slate-400">💳 Withdrawal</p>
-          </Link>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
-          >
-            <p className="text-sm text-slate-400">← Back</p>
-          </Link>
         </div>
       </div>
-    </div>
-  </AdminAppShell>
+    </AdminAppShell>
   );
 }

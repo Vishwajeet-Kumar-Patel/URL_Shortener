@@ -13,7 +13,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(5000),
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
-  CLIENT_ORIGIN: z.string().url("CLIENT_ORIGIN must be a valid URL"),
+  CLIENT_ORIGIN: z.string().url("CLIENT_ORIGIN must be a valid URL").transform((val) => val.replace(/\/$/, "")),
   APP_PUBLIC_URL: z.string().url("APP_PUBLIC_URL must be a valid URL"),
   APP_ANON_OWNER_ID: z
     .string()
