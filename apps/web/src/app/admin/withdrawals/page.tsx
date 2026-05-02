@@ -34,7 +34,7 @@ const pipeline = [
     title: "Approved",
     detail: "Finance agrees to pay. Mark as PAID after the transfer hits their account."
   },
-  { step: "PAID", title: "Paid", detail: "Closed loop—balance already debited when the request was opened." },
+  { step: "PAID", title: "Paid", detail: "The payout has been sent and the approved balance is now settled." },
   {
     step: "REJECTED",
     title: "Rejected",

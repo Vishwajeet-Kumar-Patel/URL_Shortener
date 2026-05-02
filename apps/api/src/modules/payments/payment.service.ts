@@ -40,10 +40,6 @@ type PaidInvoice = HydratedDocument<InvoiceDocument>;
 
 export class PaymentService {
   async createRazorpayOrder(userId: string, input: CreateOrderInput): Promise<{ invoiceId: string; order: RazorpayOrderResponse }> {
-    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
-      throw buildServiceError("Razorpay is not configured", StatusCodes.SERVICE_UNAVAILABLE);
-    }
-
     let amount = input.amount ?? 0;
     let referenceId: string | undefined;
 
@@ -93,6 +89,14 @@ export class PaymentService {
     });
 
     const invoiceId = String(invoice._id);
+
+    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+      throw buildServiceError(
+        "Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in apps/api/.env and restart API.",
+        StatusCodes.SERVICE_UNAVAILABLE
+      );
+    }
+
     const payload = {
       amount: toPaise(amount),
       currency: input.currency ?? "INR",
@@ -125,7 +129,10 @@ export class PaymentService {
    */
   async verifyRazorpayPayment(userId: string, input: RazorpayVerifyInput): Promise<void> {
     if (!env.RAZORPAY_KEY_SECRET) {
-      throw buildServiceError("Razorpay is not configured", StatusCodes.SERVICE_UNAVAILABLE);
+      throw buildServiceError(
+        "Razorpay is not configured. Set RAZORPAY_KEY_SECRET in apps/api/.env and restart API.",
+        StatusCodes.SERVICE_UNAVAILABLE
+      );
     }
 
     const body = `${input.razorpay_order_id}|${input.razorpay_payment_id}`;

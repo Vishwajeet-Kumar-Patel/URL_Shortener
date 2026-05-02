@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { adminService } from "./admin.service";
+import { adminEarningsService } from "./admin-earnings.service";
 import type {
   AdminListCampaignsQuery,
   AdminListTransactionsQuery,
@@ -117,6 +118,24 @@ export class AdminController {
       req.authUser!.userId,
       req.body as AdminCreateAnnouncementInput
     );
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
+  async getEarnings(req: Request, res: Response): Promise<void> {
+    const { since, until } = req.query;
+    const sinceDate = since ? new Date(since as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const untilDate = until ? new Date(until as string) : new Date();
+
+    const data = await adminEarningsService.getEarningsBreakdown(sinceDate, untilDate);
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
+  async getEarningsSummary(req: Request, res: Response): Promise<void> {
+    const { since, until } = req.query;
+    const sinceDate = since ? new Date(since as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const untilDate = until ? new Date(until as string) : new Date();
+
+    const data = await adminEarningsService.getSummaryStats(sinceDate, untilDate);
     res.status(StatusCodes.OK).json({ success: true, data });
   }
 }

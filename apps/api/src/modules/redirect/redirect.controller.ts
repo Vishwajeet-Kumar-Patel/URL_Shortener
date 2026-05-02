@@ -9,6 +9,7 @@ import { redirectService } from "./redirect.service";
 import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
 import { clickRepository } from "../../repositories/click.repository";
 import { anonSessionService } from "./anon-session.service";
+import { adminEarningsService } from "../admin/admin-earnings.service";
 
 // We persist redirect sessions to DB; no in-memory ad sessions used.
 
@@ -350,7 +351,7 @@ export class RedirectController {
   async sessionEvent(req: Request, res: Response): Promise<void> {
     try {
       const sessionId = String(req.params.sessionId);
-      const { event, scrollPosition, maxScrollPosition, viewportHeight } = req.body as any;
+      const { event, scrollPosition, maxScrollPosition, viewportHeight, placement } = req.body as any;
 
       if (!event) {
         res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Missing event" });
@@ -362,6 +363,36 @@ export class RedirectController {
         case "timer1":
           // entered phase 2 (scroll phase)
           await redirectSessionRepository.addStepTiming(sessionId, 2, { step: 2, enteredAt: new Date() });
+          break;
+        case "ad_timer1_popup":
+          await redirectSessionRepository.addStepTiming(sessionId, 2, { step: 2, enteredAt: new Date() });
+          {
+            const session = await redirectSessionRepository.findById(sessionId);
+            await adminEarningsService.logRevenue({
+              source: "AD_POPUP_IMPRESSION",
+              amount: 0,
+              currency: "INR",
+              country: session?.country,
+              memberId: session?.memberId ? String(session.memberId) : undefined,
+              sessionId,
+              notes: `Ad popup impression captured (${event}) on ${placement || "blog_monetized"}`
+            });
+          }
+          break;
+        case "ad_timer1_click":
+          await redirectSessionRepository.updateStep(sessionId, 2, { hasScrolledEnough: true });
+          {
+            const session = await redirectSessionRepository.findById(sessionId);
+            await adminEarningsService.logRevenue({
+              source: "AD_POPUP_CLICK",
+              amount: 0,
+              currency: "INR",
+              country: session?.country,
+              memberId: session?.memberId ? String(session.memberId) : undefined,
+              sessionId,
+              notes: `Ad popup click captured (${event}) on ${placement || "blog_monetized"}`
+            });
+          }
           break;
         case "scroll":
           await redirectSessionRepository.updateStep(sessionId, 2, {
@@ -375,6 +406,36 @@ export class RedirectController {
           break;
         case "timer2":
           await redirectSessionRepository.addStepTiming(sessionId, 4, { step: 4, enteredAt: new Date() });
+          break;
+        case "ad_timer2_popup":
+          await redirectSessionRepository.addStepTiming(sessionId, 4, { step: 4, enteredAt: new Date() });
+          {
+            const session = await redirectSessionRepository.findById(sessionId);
+            await adminEarningsService.logRevenue({
+              source: "AD_POPUP_IMPRESSION",
+              amount: 0,
+              currency: "INR",
+              country: session?.country,
+              memberId: session?.memberId ? String(session.memberId) : undefined,
+              sessionId,
+              notes: `Ad popup impression captured (${event}) on ${placement || "blog_monetized"}`
+            });
+          }
+          break;
+        case "ad_timer2_click":
+          await redirectSessionRepository.updateStep(sessionId, 4, { ctaClicked: true });
+          {
+            const session = await redirectSessionRepository.findById(sessionId);
+            await adminEarningsService.logRevenue({
+              source: "AD_POPUP_CLICK",
+              amount: 0,
+              currency: "INR",
+              country: session?.country,
+              memberId: session?.memberId ? String(session.memberId) : undefined,
+              sessionId,
+              notes: `Ad popup click captured (${event}) on ${placement || "blog_monetized"}`
+            });
+          }
           break;
         case "sponsor":
           await redirectSessionRepository.updateStep(sessionId, 4, { ctaClicked: true });

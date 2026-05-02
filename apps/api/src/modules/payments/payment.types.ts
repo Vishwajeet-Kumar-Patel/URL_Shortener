@@ -14,6 +14,7 @@ export type RazorpayOrderResponse = {
   currency: string;
   receipt: string;
   status: string;
+  mode?: "LIVE" | "MOCK";
 };
 
 /** Returned by Razorpay Checkout `handler` after successful payment. */

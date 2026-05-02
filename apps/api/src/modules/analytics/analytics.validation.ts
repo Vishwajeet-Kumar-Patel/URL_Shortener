@@ -9,7 +9,7 @@ export const analyticsOverviewQuerySchema = {
 export const analyticsTopLinksQuerySchema = {
   query: z.object({
     days: z.coerce.number().int().min(1).max(365).default(30),
-    limit: z.coerce.number().int().min(1).max(50).default(10)
+    limit: z.coerce.number().int().min(1).max(100).default(10)
   })
 };
 

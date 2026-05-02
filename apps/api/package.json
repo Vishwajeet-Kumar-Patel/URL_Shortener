@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "seed:admin": "tsx src/scripts/seed-admin.ts",
     "seed:member": "tsx src/scripts/seed-member.ts",
+    "seed:demo": "tsx src/scripts/seed-demo.ts",
     "referrals:attach": "tsx src/scripts/attach-referral.ts",
     "seed:plans": "tsx src/scripts/seed-plans.ts",
     "jobs:announcements": "tsx src/scripts/process-announcements.ts",

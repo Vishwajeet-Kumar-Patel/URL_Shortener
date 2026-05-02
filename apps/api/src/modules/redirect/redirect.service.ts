@@ -1,4 +1,6 @@
-import { UNIQUE_CLICK_WINDOW_HOURS, PAYOUT_PER_QUALIFIED_CLICK } from "../../config/constants";
+import { UNIQUE_CLICK_WINDOW_HOURS, DEFAULT_CPM_RATE, DEFAULT_CURRENCY } from "../../config/constants";
+import { calculateCpmBreakdown } from "../../utils/cpm-calculation";
+import { cpmRateRepository } from "../../repositories/cpm-rate.repository";
 import { clickRepository } from "../../repositories/click.repository";
 import { urlRepository } from "../../repositories/url.repository";
 import { env } from "../../config/env";
@@ -133,27 +135,34 @@ export class RedirectService {
       ? String(url.createdByMemberId) 
       : input.ownerId;
 
-    // 3. Calculate payout amount
-    // We use the configured constant, but could fall back to CPM rates if needed.
-    // For this module, we use the PAYOUT_PER_QUALIFIED_CLICK constant.
-    const amount = PAYOUT_PER_QUALIFIED_CLICK;
-    const currency = "INR"; // Default currency
+    // 3. Get CPM rate by country
+    let rate = await cpmRateRepository.getApplicableRate(input.country);
+    if (!rate || rate.cpm <= 0) {
+      // Fallback to default rate
+      rate = { cpm: DEFAULT_CPM_RATE, currency: DEFAULT_CURRENCY, isActive: true };
+    }
 
-    // 4. Record the credit in wallet
+    // 4. Calculate payout using unified CPM calculation
+    const breakdown = calculateCpmBreakdown(rate.cpm, rate.currency);
+
+    // 5. Record the credit in member's wallet
     await walletService.credit(
       recipientId,
-      amount,
+      breakdown.memberEarning,
       WALLET_TX_SOURCE.EARNING,
       `click:${input.clickLogId}`,
-      `Qualified monetized completion payout (Code: ${input.shortCode})`
+      `Qualified monetized completion payout (Country: ${input.country || "UNKNOWN"}, CPM: ${rate.cpm})`
     );
 
-    // 5. Update member metrics
+    // 6. Update member metrics
     await memberMetricsRepository.getOrCreateMetrics(recipientId);
     await memberMetricsRepository.incrementQualifiedClicks(recipientId, 1);
-    await memberMetricsRepository.addEarnings(recipientId, amount);
+    await memberMetricsRepository.addEarnings(recipientId, breakdown.memberEarning);
 
-    return { amount, currency };
+    // NOTE: Admin earning (breakdown.adminEarning) is implicitly tracked
+    // It will be recorded in RevenueLog when that model is integrated
+
+    return { amount: breakdown.memberEarning, currency: rate.currency };
   }
 
   async resolveShortCode(input: ResolveInput): Promise<RedirectResolution> {

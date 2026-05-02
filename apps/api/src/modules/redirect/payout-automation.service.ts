@@ -1,9 +1,14 @@
 import { StatusCodes } from "http-status-codes";
+import { calculateCpmBreakdown } from "../../utils/cpm-calculation";
+import { DEFAULT_CPM_RATE, DEFAULT_CURRENCY } from "../../config/constants";
 import { cpmRateRepository } from "../../repositories/cpm-rate.repository";
 import { memberMetricsRepository } from "../../repositories/member-metrics.repository";
+import { referralRepository } from "../../repositories/referral.repository";
+import { userRepository } from "../../repositories/user.repository";
 import { walletService } from "../wallet/wallet.service";
 import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
 import { clickRepository } from "../../repositories/click.repository";
+import { adminEarningsService } from "../admin/admin-earnings.service";
 import { WALLET_TX_SOURCE } from "../../types/common";
 
 type ServiceError = Error & { statusCode?: number };
@@ -20,7 +25,8 @@ export class PayoutAutomationService {
    */
   async processSessionPayout(sessionId: string): Promise<{
     success: boolean;
-    amount?: number;
+    memberAmount?: number;
+    adminAmount?: number;
     currency?: string;
     message: string;
   }> {
@@ -51,46 +57,70 @@ export class PayoutAutomationService {
       country = clicks[0].country;
     }
 
-    // Apply CPM rate
-    const rate = await cpmRateRepository.getApplicableRate(country);
+    // Get CPM rate by country
+    let rate = await cpmRateRepository.getApplicableRate(country);
     if (!rate || rate.cpm <= 0) {
-      return {
-        success: false,
-        message: "No applicable CPM rate for this location"
-      };
+      // Fallback to default rate
+      rate = { cpm: DEFAULT_CPM_RATE, currency: DEFAULT_CURRENCY, isActive: true } as any;
     }
 
-    const amount = Number((rate.cpm / 1000).toFixed(6));
-    if (amount <= 0) {
-      return {
-        success: false,
-        message: "Calculated payout amount is zero"
-      };
-    }
+    // Use unified CPM calculation
+    const breakdown = calculateCpmBreakdown(rate.cpm, rate.currency);
 
     // Credit the member's wallet
     await walletService.credit(
       String(session.memberId),
-      amount,
+      breakdown.memberEarning,
       WALLET_TX_SOURCE.EARNING,
       `redirect-session:${sessionId}`,
-      `Qualified click payout (CPM: ${rate.cpm})`
+      `Qualified click payout (Country: ${country || "UNKNOWN"}, CPM: ${rate.cpm})`
     );
 
     // Update member metrics
     await memberMetricsRepository.incrementQualifiedClicks(String(session.memberId), 1);
-    await memberMetricsRepository.addEarnings(String(session.memberId), amount, true);
+    await memberMetricsRepository.addEarnings(String(session.memberId), breakdown.memberEarning, true);
 
-    return {
-      success: true,
-      amount,
+    // REFERRAL EARNING: Check if this member was referred by someone
+    const member = await userRepository.findById(String(session.memberId));
+    if (member && (member as any).referredBy) {
+      const referrerId = (member as any).referredBy;
+      
+      // Calculate referral commission (15% of member earning)
+      const referralCommissionRate = 0.15;
+      const referralAmount = Number((breakdown.memberEarning * referralCommissionRate).toFixed(6));
+
+      if (referralAmount > 0) {
+        // Credit referrer's wallet
+        await walletService.credit(
+          referrerId,
+          referralAmount,
+          WALLET_TX_SOURCE.REFERRAL_EARNING,
+          `referral-session:${sessionId}`,
+          `Referral commission (15% from referred member)`
+        );
+
+        // Update referrer's metrics
+        await memberMetricsRepository.addEarnings(referrerId, referralAmount);
+
+        // Update referral profile
+        const referralProfile = await referralRepository.getByOwnerId(referrerId);
+        if (referralProfile) {
+          await referralRepository.incrementEarnings(referrerId, referralAmount);
+        }
+      }
+    }
+
+    // Log admin revenue for analytics
+    await adminEarningsService.logRevenue({
+      source: "CPM",
+      amount: breakdown.adminEarning,
       currency: rate.currency,
-      message: "Payout processed successfully"
-    };
-  }
+      country,
+      memberId: String(session.memberId),
+      sessionId,
+      notes: `CPM ${breakdown.adminEarning} (20% margin from ${rate.cpm} CPM rate)`
+    });
 
-  /**
-   * Calculate earnings from qualified clicks in a time period
    */
   async calculateMemberEarnings(
     memberId: string,
@@ -125,19 +155,24 @@ export class PayoutAutomationService {
       if (!clickLog) continue;
 
       const country = clickLog.country || "UNKNOWN";
-      const rate = await cpmRateRepository.getApplicableRate(country);
-
-      if (rate && rate.cpm > 0) {
-        const earnings = Number((rate.cpm / 1000).toFixed(6));
-
-        if (!byCountryMap[country]) {
-          byCountryMap[country] = { clicks: 0, earnings: 0 };
-        }
-
-        byCountryMap[country].clicks += 1;
-        byCountryMap[country].earnings += earnings;
-        totalEarnings += earnings;
+      let rate = await cpmRateRepository.getApplicableRate(country);
+      
+      if (!rate || rate.cpm <= 0) {
+        rate = { cpm: DEFAULT_CPM_RATE, currency: DEFAULT_CURRENCY, isActive: true } as any;
       }
+
+      // Use unified CPM calculation
+      const breakdown = calculateCpmBreakdown(rate.cpm, rate.currency);
+
+      if (!byCountryMap[country]) {
+        byCountryMap[country] = { clicks: 0, earnings: 0 };
+      }
+
+      byCountryMap[country].clicks += 1;
+      byCountryMap[country].earnings = Number(
+        (byCountryMap[country].earnings + breakdown.memberEarning).toFixed(6)
+      );
+      totalEarnings += breakdown.memberEarning;
     }
 
     const byCountry = Object.entries(byCountryMap).map(([country, data]) => ({

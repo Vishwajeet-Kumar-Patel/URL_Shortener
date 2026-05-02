@@ -73,7 +73,8 @@ export default function DashboardWalletPage() {
   const onWithdraw = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token) return;
-    const fd = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const fd = new FormData(form);
     setMessage(null);
     try {
       await apiRequest("/withdrawals", {
@@ -87,7 +88,7 @@ export default function DashboardWalletPage() {
         }
       });
       setMessage("Withdrawal requested.");
-      event.currentTarget.reset();
+      form.reset();
       void load();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Request failed");
@@ -105,14 +106,21 @@ export default function DashboardWalletPage() {
       {loading ? <p className="text-slate-400">Loading...</p> : null}
 
       {summary && !loading ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Available</p>
-            <p className="mt-2 text-2xl font-semibold text-white">INR {summary.balance}</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Available Balance</p>
+            <p className="mt-2 text-2xl font-semibold text-emerald-400">₹{summary.balance.toFixed(2)}</p>
+            <p className="mt-1 text-xs text-slate-400">Ready for withdrawal</p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Pending withdrawal</p>
-            <p className="mt-2 text-2xl font-semibold text-white">INR {summary.pendingAmount}</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Pending Withdrawals</p>
+            <p className="mt-2 text-2xl font-semibold text-amber-400">₹{summary.pendingAmount.toFixed(2)}</p>
+            <p className="mt-1 text-xs text-slate-400">Under admin review</p>
+          </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Total Earnings</p>
+            <p className="mt-2 text-2xl font-semibold text-cyan-400">₹{(summary.balance + summary.pendingAmount).toFixed(2)}</p>
+            <p className="mt-1 text-xs text-slate-400">Available + pending</p>
           </div>
         </div>
       ) : null}

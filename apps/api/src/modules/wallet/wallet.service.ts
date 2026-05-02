@@ -130,11 +130,7 @@ export class WalletService {
     }
 
     const wallet = await walletRepository.getOrCreateWallet(userId, session);
-    if (wallet.balance < amount) {
-      throw buildServiceError("Insufficient wallet balance", StatusCodes.BAD_REQUEST);
-    }
-
-    const nextBalance = wallet.balance - amount;
+    const nextBalance = wallet.balance;
     const nextPending = wallet.pendingAmount + amount;
 
     await walletRepository.updateBalances(userId, {
@@ -155,10 +151,19 @@ export class WalletService {
 
   async releasePending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
     const wallet = await walletRepository.getOrCreateWallet(userId, session);
-    const nextPending = Math.max(0, wallet.pendingAmount - amount);
+    if (wallet.pendingAmount < amount) {
+      throw buildServiceError("Insufficient pending withdrawal balance", StatusCodes.BAD_REQUEST);
+    }
+
+    if (wallet.balance < amount) {
+      throw buildServiceError("Insufficient wallet balance", StatusCodes.BAD_REQUEST);
+    }
+
+    const nextBalance = wallet.balance - amount;
+    const nextPending = wallet.pendingAmount - amount;
 
     await walletRepository.updateBalances(userId, {
-      balance: wallet.balance,
+      balance: nextBalance,
       pendingAmount: nextPending
     }, session);
 
@@ -166,8 +171,8 @@ export class WalletService {
       userId: wallet.userId,
       type: WALLET_TX_TYPE.DEBIT,
       source: WALLET_TX_SOURCE.WITHDRAWAL,
-      amount: 0,
-      balanceAfter: wallet.balance,
+      amount,
+      balanceAfter: nextBalance,
       referenceId,
       memo: "Withdrawal processed"
     }, session);
@@ -175,8 +180,12 @@ export class WalletService {
 
   async refundPending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
     const wallet = await walletRepository.getOrCreateWallet(userId, session);
-    const nextBalance = wallet.balance + amount;
-    const nextPending = Math.max(0, wallet.pendingAmount - amount);
+    if (wallet.pendingAmount < amount) {
+      throw buildServiceError("Insufficient pending withdrawal balance", StatusCodes.BAD_REQUEST);
+    }
+
+    const nextBalance = wallet.balance;
+    const nextPending = wallet.pendingAmount - amount;
 
     await walletRepository.updateBalances(userId, {
       balance: nextBalance,
@@ -187,7 +196,7 @@ export class WalletService {
       userId: wallet.userId,
       type: WALLET_TX_TYPE.CREDIT,
       source: WALLET_TX_SOURCE.ADJUSTMENT,
-      amount,
+      amount: 0,
       balanceAfter: nextBalance,
       referenceId,
       memo: "Withdrawal rejected"

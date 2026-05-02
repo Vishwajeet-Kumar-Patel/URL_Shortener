@@ -4,6 +4,36 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api-client";
 
+type AdSlotKey = "timer1" | "timer2";
+
+const adSlots: Record<
+  AdSlotKey,
+  {
+    title: string;
+    subtitle: string;
+    ctaLabel: string;
+    destination: string;
+    badge: string;
+  }
+> = {
+  timer1: {
+    title: "Sponsored Boost: Creator Analytics Pack",
+    subtitle:
+      "Track engagement quality by region, session depth, and sponsor interaction before you scale your campaigns.",
+    ctaLabel: "Preview Offer",
+    destination: "https://example.com/ads/creator-analytics",
+    badge: "Timer 1 Ad"
+  },
+  timer2: {
+    title: "Premium Partner Spotlight",
+    subtitle:
+      "Unlock advanced audience cohorts and payout optimization tools. Ideal for publishers with growing traffic.",
+    ctaLabel: "Visit Partner",
+    destination: "https://example.com/ads/premium-partner",
+    badge: "Timer 2 Ad"
+  }
+};
+
 export default function MonetizedBlogPage() {
   const search = useSearchParams();
   const sessionToken = String(search.get("token") ?? "");
@@ -19,24 +49,33 @@ export default function MonetizedBlogPage() {
   const [error, setError] = useState<string | null>(null);
   const [focusCountdown, setFocusCountdown] = useState<number | null>(null);
   const [finalCountdown, setFinalCountdown] = useState<number | null>(null);
-  const [finalUrl, setFinalUrl] = useState<string | null>(null);
+  const [activeAd, setActiveAd] = useState<AdSlotKey | null>(null);
 
   const sponsorAnchorRef = useRef<HTMLDivElement | null>(null);
+
+  const postSessionEvent = async (event: string, payload?: Record<string, unknown>) => {
+    if (!sessionToken) return;
+    try {
+      await apiRequest(`/r/session/${encodeURIComponent(sessionToken)}/event`, {
+        method: "POST",
+        body: { event, ...(payload || {}) }
+      });
+    } catch {
+      // keep UX uninterrupted on telemetry failures
+    }
+  };
 
   useEffect(() => {
     if (!sessionToken) return;
 
-    // Start first 10s timer
     const t = setInterval(() => {
       setSeconds1((s) => {
         if (s <= 1) {
           clearInterval(t);
           setTimer1Done(true);
-          // notify backend
-          void apiRequest(`/r/session/${encodeURIComponent(sessionToken)}/event`, {
-            method: "POST",
-            body: { event: "timer1" }
-          }).catch(() => {});
+          setActiveAd("timer1");
+          void postSessionEvent("timer1");
+          void postSessionEvent("ad_timer1_popup", { placement: "blog_monetized" });
           return 0;
         }
         return s - 1;
@@ -53,25 +92,24 @@ export default function MonetizedBlogPage() {
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
       const windowHeight = window.innerHeight || document.documentElement.clientHeight;
-      // if anchor top is within bottom 30% of viewport
       if (rect.top <= windowHeight * 0.7) {
         setScrollReached(true);
-        // notify backend
-        void apiRequest(`/r/session/${encodeURIComponent(sessionToken)}/event`, {
-          method: "POST",
-          body: { event: "scroll", scrollPosition: window.scrollY, maxScrollPosition: document.documentElement.scrollHeight, viewportHeight: windowHeight }
-        }).catch(() => {});
-        // start second timer
+        void postSessionEvent("scroll", {
+          scrollPosition: window.scrollY,
+          maxScrollPosition: document.documentElement.scrollHeight,
+          viewportHeight: windowHeight,
+          placement: "blog_monetized"
+        });
+
         setSeconds2(10);
         const t2 = setInterval(() => {
           setSeconds2((prev) => {
             if (prev <= 1) {
               clearInterval(t2);
               setTimer2Done(true);
-              void apiRequest(`/r/session/${encodeURIComponent(sessionToken)}/event`, {
-                method: "POST",
-                body: { event: "timer2" }
-              }).catch(() => {});
+              setActiveAd("timer2");
+              void postSessionEvent("timer2");
+              void postSessionEvent("ad_timer2_popup", { placement: "blog_monetized" });
               return 0;
             }
             return prev - 1;
@@ -88,28 +126,21 @@ export default function MonetizedBlogPage() {
     const handleVisibility = () => {
       if (!sessionToken) return;
       if (document.visibilityState === "visible" && sponsorOpened && !unlocked) {
-        // user returned after sponsor visit: notify backend then start 10s auto-unlock countdown
-        void apiRequest(`/r/session/${encodeURIComponent(sessionToken)}/event`, {
-          method: "POST",
-          body: { event: "focus" }
-        })
+        void postSessionEvent("focus")
           .then(() => {
-              // show unlock state and start a 10s countdown before auto-unlock
-              setUnlocked(true);
-              setFocusCountdown(10);
-            })
+            setUnlocked(true);
+            setFocusCountdown(10);
+          })
           .catch(() => setError("Unable to register return focus"));
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [sessionToken, sponsorOpened]);
+  }, [sessionToken, sponsorOpened, unlocked]);
 
-  // auto-unlock countdown effect
   useEffect(() => {
     if (focusCountdown === null) return;
     if (focusCountdown <= 0) {
-      // when focus auto-countdown finishes, start the final countdown flow
       setFocusCountdown(null);
       setFinalCountdown((v) => (v === null ? 10 : v));
       return;
@@ -118,19 +149,21 @@ export default function MonetizedBlogPage() {
     return () => clearInterval(id);
   }, [focusCountdown]);
 
-  // final countdown effect: when it reaches 0, request final redirect URL
   useEffect(() => {
     if (finalCountdown === null) return;
     if (finalCountdown <= 0) {
       setFinalCountdown(null);
-      void (async () => {
+      (async () => {
         if (!sessionToken) return;
         setLoadingUnlock(true);
         setError(null);
         try {
-          const payload = await apiRequest<{ redirectUrl: string }>(`/r/complete/${encodeURIComponent(sessionToken)}`, { method: "POST" });
+          const payload = await apiRequest<{ redirectUrl: string }>(
+            `/r/complete/${encodeURIComponent(sessionToken)}`,
+            { method: "POST" }
+          );
           if (payload?.redirectUrl) {
-            setFinalUrl(payload.redirectUrl);
+            window.location.href = payload.redirectUrl;
             return;
           }
           throw new Error("Invalid unlock response");
@@ -146,157 +179,271 @@ export default function MonetizedBlogPage() {
     return () => clearInterval(id);
   }, [finalCountdown]);
 
+  const closeAd = () => setActiveAd(null);
+
+  const openAdDestination = () => {
+    if (!activeAd) return;
+    window.open(adSlots[activeAd].destination, "_blank", "noopener,noreferrer");
+    void postSessionEvent(
+      activeAd === "timer1" ? "ad_timer1_click" : "ad_timer2_click",
+      { placement: "blog_monetized" }
+    );
+  };
+
   const openSponsor = () => {
-    // open sponsor in new tab and notify backend
     const sponsorUrl = "https://www.youtube.com/";
-    window.open(sponsorUrl, "_blank");
+    window.open(sponsorUrl, "_blank", "noopener,noreferrer");
     setSponsorOpened(true);
-    void apiRequest(`/r/session/${encodeURIComponent(sessionToken)}/event`, {
-      method: "POST",
-      body: { event: "sponsor" }
-    }).catch(() => setError("Unable to register sponsor click"));
-    // start countdown immediately so the original tab will auto-unlock after 10s
+    void postSessionEvent("sponsor").catch(() => setError("Unable to register sponsor click"));
     setUnlocked(true);
     setFocusCountdown(10);
   };
 
-  // Starts the final 10s countdown; after it completes the final URL will be fetched
   const unlockDestination = () => {
     if (!sessionToken) return;
-    if (finalCountdown !== null || finalUrl) return; // already in progress
+    if (finalCountdown !== null) return;
     setFinalCountdown(10);
   };
 
-  const openFinalDestination = () => {
-    if (!finalUrl) return;
-    // direct navigation to final URL
-    window.location.href = finalUrl;
-  };
-
   return (
-    <main className="min-h-screen bg-white text-slate-900">
-      <article className="mx-auto max-w-3xl p-6">
-        <header className="mb-8">
-          <div className="space-y-4">
-            <img
-              src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=1a5b1d0b0b7b2f1a9d9d1f2b3c4d5e6f"
-              alt="Hero"
-              className="w-full h-64 rounded object-cover shadow-sm"
-            />
-            <div>
-              <h1 className="text-4xl font-bold">The New Economics of Micro-Content</h1>
-              <p className="mt-2 text-slate-600">By Purple Merit — April 30, 2026 · 8 min read</p>
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <article className="mx-auto max-w-5xl px-4 pb-28 pt-8 sm:px-6 md:px-8 md:pt-12">
+        <header className="mb-10">
+          <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
+            <div className="space-y-4 md:col-span-2">
+              <img
+                src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=1a5b1d0b0b7b2f1a9d9d1f2b3c4d5e6f"
+                alt="Ocean sunrise representing growth"
+                className="h-72 w-full rounded-2xl border border-slate-800 object-cover shadow-2xl"
+              />
+              <div>
+                <p className="inline-block rounded-full bg-indigo-950/60 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-300">
+                  Monetized Read Experience
+                </p>
+                <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+                  The New Economics of Micro-Content
+                </h1>
+                <p className="mt-3 text-slate-300">By Purple Merit · May 1, 2026 · 8 min read</p>
+              </div>
             </div>
+
+            <aside className="sticky top-24 hidden md:col-span-1 md:block">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?q=80&w=200&auto=format&fit=crop"
+                    alt="Author"
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="font-semibold text-white">Purple Merit</div>
+                    <div className="text-sm text-slate-400">Publisher</div>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-6 text-slate-300">
+                  This article explains how session-based sponsor engagement can create sustainable earnings for
+                  publishers without forcing intrusive ad patterns.
+                </p>
+                <div className="mt-4">
+                  <a href="/blog" className="text-sm text-indigo-400 hover:text-indigo-300">
+                    More articles
+                  </a>
+                </div>
+              </div>
+            </aside>
           </div>
         </header>
 
-        {/* Ad / Hero banner */}
-        <div className="mb-8 rounded border p-6 text-center bg-slate-50">[Ad Banner Placeholder]</div>
-
-        {/* Article content (rich content with images) */}
-        <section className="prose mb-12">
-          <p>Start reading the article. The first 10-second timer is running.</p>
-          {timer1Done ? (
-            <div className="my-4 rounded border-l-4 border-amber-400 bg-amber-50 p-4">Please scroll down to continue.</div>
-          ) : (
-            <div className="my-4 rounded border-l-4 border-indigo-400 bg-indigo-50 p-4">Waiting: {seconds1}s</div>
-          )}
-
-          <h2>The Rise of Bite-Sized Monetization</h2>
-          <p>
-            Small moments of attention across the web—an article paragraph, a short clip, or a single image—now
-            represent meaningful monetization opportunities. Publishers and creators can design experiences that
-            respect readers while enabling sponsor value.
-          </p>
-
-          <figure>
-            <img
-              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3f7a9df6f7b6a2d4e6f8b9c2d3a4e5f6"
-              alt="Desk workspace"
-              className="w-full rounded"
-            />
-            <figcaption className="text-sm text-slate-500">Photo by Unsplash</figcaption>
-          </figure>
-
-          <p>
-            Engagement-first monetization works when readers get choice and the page flow is natural. In this
-            experiment you are shown sponsor content inline and encouraged to visit—your return signals intent and
-            unlocks the destination.
-          </p>
-
-          <h3>How it works</h3>
-          <ol>
-            <li>Spend a short amount of time reading.</li>
-            <li>Scroll to the sponsor area and wait for the second timer.</li>
-            <li>Visit the sponsor in a new tab and come back — the page will unlock automatically.</li>
-          </ol>
-
-          <p>
-            Below are several sections with images and examples of content that mimic a long-form public blog article.
-            Continue scrolling to reach the sponsored block.
-          </p>
-
-          {Array.from({ length: 6 }).map((_, i) => (
-            <p key={i}>
-              Paragraph {i + 1}: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent
-              libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis
-              ipsum. Praesent mauris.
-            </p>
-          ))}
-        </section>
-
-        {/* Middle section with anchor for scroll detection */}
-        <div ref={sponsorAnchorRef} className="mb-8 rounded border p-6 bg-slate-50">
-          <h2 className="text-2xl font-semibold">Sponsored Content</h2>
-          <p className="mt-2">Scroll here to reveal sponsor content.</p>
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <img
-              src="https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=2b3a6f8e9d7c4a1b0c8d9e3f4a5b6c7d"
-              alt="Sponsor"
-              className="w-full rounded object-cover h-48"
-            />
-            <div>
-              <p className="mb-2">A brief sponsor description that explains why this offer is useful to readers.</p>
-              <div className="text-sm text-slate-500 mb-4">Sponsored by Example Co.</div>
-            </div>
+        <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center">
+          <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Top Banner Ad Slot</p>
+          <p className="mt-2 text-sm text-slate-300">This is reserved for hosted ad script placement on this page only.</p>
+          <div className="mt-4 rounded-xl border border-dashed border-slate-700 px-4 py-6 text-slate-400" id="hosted-ad-banner">
+            [Hosted Ad Container: Replace with network script after deployment]
           </div>
-          {!timer2Done ? (
-            <div className="mt-4 rounded border-l-4 border-indigo-400 bg-indigo-50 p-4">Second timer: {seconds2}s</div>
-          ) : (
-            <div className="mt-4">
-              <button onClick={openSponsor} className="rounded bg-indigo-600 px-4 py-2 text-white">Visit Sponsor To Unlock Destination</button>
-            </div>
-          )}
         </div>
 
-        {/* More article */}
-        <section className="prose">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <p key={i}>More article content paragraph #{i + 1} for readers to engage with.</p>
+        <section className="mb-12 space-y-7 text-slate-200">
+          <p className="text-base leading-8 text-slate-300">
+            Start reading. A short validation timer ensures real attention before ad milestones trigger earning events.
+          </p>
+          {timer1Done ? (
+            <div className="rounded-xl border-l-4 border-amber-400 bg-amber-950/20 p-4 text-amber-200">
+              Timer 1 complete. Scroll to the sponsor zone to continue.
+            </div>
+          ) : (
+            <div className="rounded-xl border-l-4 border-indigo-400 bg-indigo-950/20 p-4 text-indigo-200">
+              Timer 1 running: {seconds1}s
+            </div>
+          )}
+
+          <h2 className="text-3xl font-bold text-white">The Rise of Bite-Sized Monetization</h2>
+          <p className="leading-8 text-slate-300">
+            Readers no longer move through content in a single, uninterrupted session. They scan, compare, pause,
+            and return. That behavior can still support high-quality publishing if monetization is built around
+            intent signals instead of forced interruptions.
+          </p>
+
+          <figure className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+            <img
+              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3f7a9df6f7b6a2d4e6f8b9c2d3a4e5f6"
+              alt="Workspace showing campaign planning"
+              className="h-80 w-full object-cover"
+            />
+            <figcaption className="px-4 py-3 text-sm text-slate-400">
+              Teams that monetize attention ethically generally optimize session quality before CPM.
+            </figcaption>
+          </figure>
+
+          <p className="leading-8 text-slate-300">
+            In this flow, two timers gate sponsor visibility. Each timer can trigger an on-page ad popup, which can
+            later be connected to your hosted ad network. Because events are scoped to this page session, payout logic
+            can attribute earnings precisely.
+          </p>
+
+          <h3 className="text-2xl font-semibold text-white">How This Page Generates Earnings</h3>
+          <ol className="list-decimal space-y-2 pl-6 text-slate-300">
+            <li>Spend a short amount of time reading.</li>
+            <li>Reach sponsor section and complete timer two.</li>
+            <li>Open sponsor tab, come back, and complete unlock countdown.</li>
+          </ol>
+
+          <p className="leading-8 text-slate-300">
+            This keeps conversion transparent: readers are informed, sponsors receive qualified visibility, and
+            publishers can tie completions to measurable earnings.
+          </p>
+
+          {[
+            {
+              heading: "Why Session Depth Matters",
+              body: "A click alone has weak value. Session depth, completed steps, and sponsor return signals are better predictors of advertiser outcomes and payout sustainability."
+            },
+            {
+              heading: "Designing Around Reader Trust",
+              body: "Users tolerate ad moments when they understand what unlocks next and why. Clear milestones outperform aggressive overlays in long-term retention."
+            },
+            {
+              heading: "Turning Validation Into Revenue",
+              body: "Timer events, scroll checkpoints, and sponsor return focus can be converted into revenue events for your admin dashboard and member earning calculations."
+            }
+          ].map((item) => (
+            <div key={item.heading} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+              <h4 className="text-xl font-semibold text-white">{item.heading}</h4>
+              <p className="mt-2 leading-8 text-slate-300">{item.body}</p>
+              <img
+                src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200&auto=format&fit=crop"
+                alt={item.heading}
+                className="mt-4 h-56 w-full rounded-xl object-cover"
+              />
+            </div>
           ))}
         </section>
 
-        {/* Final unlock area */}
-        <div className="fixed bottom-6 right-6 z-50">
-          {unlocked ? (
+        <div ref={sponsorAnchorRef} className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/80 p-6">
+          <h2 className="text-2xl font-semibold text-white">Sponsored Block</h2>
+          <p className="mt-2 text-slate-300">Stay on this section until timer two finishes to activate sponsor unlock.</p>
+          <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <img
+              src="https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=1000&auto=format&fit=crop"
+              alt="Sponsored visual"
+              className="h-52 w-full rounded-xl object-cover"
+            />
             <div>
-              {finalUrl ? (
-                <button onClick={openFinalDestination} className="rounded bg-emerald-600 px-4 py-3 text-white">Open Destination</button>
-              ) : finalCountdown !== null ? (
-                <div className="rounded bg-amber-50 px-4 py-3 text-amber-800">Preparing destination… {finalCountdown}s</div>
+              <p className="text-slate-300">
+                Featured partner offer designed for high-intent publishers. Your completed sponsor interaction helps
+                validate traffic quality and powers member earnings.
+              </p>
+              <p className="mb-4 mt-3 text-sm text-slate-500">Sponsored by Purple Merit Partner Network</p>
+              {!timer2Done ? (
+                <div className="rounded-xl border-l-4 border-indigo-400 bg-indigo-950/20 p-4 text-indigo-200">
+                  Timer 2 running: {seconds2}s
+                </div>
               ) : (
-                <button onClick={unlockDestination} disabled={loadingUnlock} className="rounded bg-emerald-600 px-4 py-3 text-white">
-                  {loadingUnlock ? "Preparing…" : "Destination Ready — Start Opening"}
+                <button
+                  onClick={openSponsor}
+                  className="rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-500"
+                >
+                  Visit Sponsor To Unlock Destination
                 </button>
               )}
             </div>
+          </div>
+        </div>
+
+        <section className="space-y-6 text-slate-300">
+          <h3 className="text-2xl font-semibold text-white">Implementation Notes</h3>
+          <p className="leading-8">
+            Timer-based ad popups on this page emit dedicated events (`ad_timer1_popup`, `ad_timer2_popup`) that you
+            can later map to ad impressions and earnings once hosted ad providers are connected.
+          </p>
+          <p className="leading-8">
+            For production deployment, replace placeholder destination URLs with real campaign links and inject your ad
+            network script inside the dedicated hosted ad containers.
+          </p>
+        </section>
+
+        <div className="fixed bottom-6 right-6 z-50">
+          {unlocked ? (
+            finalCountdown !== null ? (
+              <div className="rounded-xl bg-amber-900/80 px-4 py-3 text-amber-100 shadow-xl">
+                Opening destination in {finalCountdown}s...
+              </div>
+            ) : (
+              <button
+                onClick={unlockDestination}
+                disabled={loadingUnlock}
+                className="rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white shadow-xl hover:bg-emerald-500"
+              >
+                {loadingUnlock ? "Preparing..." : "Destination Ready - Start Opening"}
+              </button>
+            )
           ) : (
-            <div className="rounded bg-slate-100 px-4 py-3 text-slate-700">Complete sponsor visit to unlock</div>
+            <div className="rounded-xl bg-slate-800 px-4 py-3 text-slate-200 shadow-xl">
+              Complete sponsor visit to unlock
+            </div>
           )}
         </div>
 
-        {error ? <div className="mt-6 text-red-600">{error}</div> : null}
+        {error ? <div className="mt-6 text-red-400">{error}</div> : null}
       </article>
+
+      {activeAd ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4">
+          <div className="w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="rounded-full bg-indigo-950/60 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-300">
+                {adSlots[activeAd].badge}
+              </span>
+              <button onClick={closeAd} className="text-sm text-slate-400 hover:text-white">
+                Close
+              </button>
+            </div>
+            <h3 className="text-2xl font-bold text-white">{adSlots[activeAd].title}</h3>
+            <p className="mt-3 leading-7 text-slate-300">{adSlots[activeAd].subtitle}</p>
+
+            <div
+              id={`hosted-ad-${activeAd}`}
+              className="mt-4 rounded-xl border border-dashed border-slate-700 bg-slate-950 px-4 py-5 text-sm text-slate-400"
+            >
+              Hosted ad placeholder for {activeAd}. Replace this container with ad network embed after hosting.
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                onClick={openAdDestination}
+                className="rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-500"
+              >
+                {adSlots[activeAd].ctaLabel}
+              </button>
+              <button
+                onClick={closeAd}
+                className="rounded-xl border border-slate-700 px-4 py-2 font-semibold text-slate-200 hover:bg-slate-800"
+              >
+                Continue Reading
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

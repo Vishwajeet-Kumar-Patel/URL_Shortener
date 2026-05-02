@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth.store";
 
 const nav = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/earnings", label: "Earnings" },
   { href: "/admin/click-logs", label: "Click Logs" },
   { href: "/admin/links", label: "Links" },
   { href: "/admin/users", label: "Users" },

@@ -10,12 +10,18 @@ type Resp = { items: TopLink[] };
 export default function AdminClickLogsPage() {
   const token = useAuthStore((s) => s.accessToken);
   const [rows, setRows] = useState<TopLink[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const run = async () => {
       if (!token) return;
-      const data = await apiRequest<Resp>("/analytics/admin/links/top?days=30&limit=100", { token });
-      setRows(data.items);
+      try {
+        setError(null);
+        const data = await apiRequest<Resp>("/analytics/admin/links/top?days=30&limit=100", { token });
+        setRows(data.items);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unable to load click logs");
+      }
     };
     void run();
   }, [token]);
@@ -26,6 +32,7 @@ export default function AdminClickLogsPage() {
         <h1 className="text-3xl font-semibold text-white">Click Logs</h1>
         <p className="text-sm text-slate-400">Qualified traffic leaderboard over the last 30 days.</p>
       </header>
+      {error ? <p className="text-sm text-red-400">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-3">
         <Box label="Tracked Links" value={rows.length} />
         <Box label="Total Qualified Clicks" value={rows.reduce((a, b) => a + b.totalClicks, 0)} />

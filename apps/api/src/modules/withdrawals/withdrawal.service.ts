@@ -102,6 +102,7 @@ export class WithdrawalService {
         }
 
         if (status === WITHDRAWAL_STATUS.APPROVED) {
+          await walletService.releasePending(String(existing.userId), existing.amount, withdrawalId, session);
           updated = await withdrawalRepository.updateStatus(
             withdrawalId,
             WITHDRAWAL_STATUS.APPROVED,
@@ -116,7 +117,6 @@ export class WithdrawalService {
         }
 
         if (status === WITHDRAWAL_STATUS.PAID) {
-          await walletService.releasePending(String(existing.userId), existing.amount, withdrawalId, session);
           updated = await withdrawalRepository.updateStatus(
             withdrawalId,
             WITHDRAWAL_STATUS.PAID,

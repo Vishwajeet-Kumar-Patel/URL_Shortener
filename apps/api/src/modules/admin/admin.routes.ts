@@ -133,5 +133,13 @@ adminRouter.post(
   validationMiddleware(adminCreateAnnouncementSchema),
   asyncHandler((req, res) => adminController.createAnnouncement(req, res))
 );
+adminRouter.get(
+  "/earnings",
+  asyncHandler((req, res) => adminController.getEarnings(req, res))
+);
+adminRouter.get(
+  "/earnings/summary",
+  asyncHandler((req, res) => adminController.getEarningsSummary(req, res))
+);
 
 export { adminRouter };

@@ -1,7 +1,13 @@
 import dotenv from "dotenv";
+import path from "path";
 import { z } from "zod";
 
-dotenv.config();
+// Ensure API env files are loaded even when server is started from monorepo root.
+const apiEnvPath = path.resolve(__dirname, "../../.env");
+const apiLocalEnvPath = path.resolve(__dirname, "../../.env.local");
+const shouldOverrideShellEnv = process.env.NODE_ENV !== "production";
+dotenv.config({ path: apiEnvPath, override: shouldOverrideShellEnv });
+dotenv.config({ path: apiLocalEnvPath, override: shouldOverrideShellEnv });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
