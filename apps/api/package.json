@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "npx tsx watch src/server.ts",
+    "prebuild": "node -e \"const fs=require('fs'); if (fs.existsSync('node_modules/express') && fs.existsSync('node_modules/typescript') && fs.existsSync('node_modules/@types/node')) process.exit(0); process.exit(1);\" || npm install --include=dev --no-package-lock",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
