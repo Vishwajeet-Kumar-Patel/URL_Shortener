@@ -16,6 +16,46 @@ redirectRouter.post(
   asyncHandler((req, res) => redirectController.startVisit(req, res))
 );
 redirectRouter.post(
+  "/verify-human/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.verifyHuman(req, res))
+);
+redirectRouter.post(
+  "/phase1/start/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.startPhase1(req, res))
+);
+redirectRouter.post(
+  "/phase1/complete/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.completePhase1(req, res))
+);
+redirectRouter.post(
+  "/phase2/start/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.startPhase2(req, res))
+);
+redirectRouter.post(
+  "/phase2/complete/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.completePhase2(req, res))
+);
+redirectRouter.post(
+  "/sponsor/open/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.sponsorOpen(req, res))
+);
+redirectRouter.post(
+  "/sponsor/verify/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.sponsorVerify(req, res))
+);
+redirectRouter.post(
+  "/unlock/:sessionId",
+  redirectRateLimitMiddleware,
+  asyncHandler((req, res) => redirectController.unlock(req, res))
+);
+redirectRouter.post(
   "/complete/:sessionId",
   redirectRateLimitMiddleware,
   asyncHandler((req, res) => redirectController.completeVisit(req, res))

@@ -7,6 +7,7 @@ import { hashToken } from "../../utils/hash";
 import { parseUserAgent } from "../../utils/user-agent";
 import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
 import { anonSessionService } from "./anon-session.service";
+import { publicFunnelService } from "./public-funnel.service";
 import { redirectService } from "./redirect.service";
 import { createRedirectSessionToken, verifyRedirectSessionToken } from "./redirect-token";
 
@@ -131,11 +132,194 @@ export class RedirectController {
     res.status(StatusCodes.OK).json({
       success: true,
       data: {
+        sessionId: String(session._id),
         sessionToken,
-        nextRoute: getStageRoute(0, sessionToken),
+        nextRoute: `/visit/${encodeURIComponent(inspected.shortCode)}?rs=${encodeURIComponent(sessionToken)}`,
         shortCode: inspected.shortCode
       }
     });
+  }
+
+  async verifyHuman(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const session = await publicFunnelService.verifyHuman(sessionId);
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          sessionId: String(session._id),
+          currentState: session.currentState,
+          nextRoute: `/monetize/blog/${encodeURIComponent(String(session._id))}?phase=1`
+        }
+      });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Verify human error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to verify human session" });
+    }
+  }
+
+  async startPhase1(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const session = await publicFunnelService.startPhase1(sessionId);
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState, countdownSeconds: 10 } });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Start phase 1 error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to start phase 1" });
+    }
+  }
+
+  async completePhase1(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const session = await publicFunnelService.completePhase1(sessionId);
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState } });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Complete phase 1 error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to complete phase 1" });
+    }
+  }
+
+  async startPhase2(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const session = await publicFunnelService.startPhase2(sessionId);
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState, countdownSeconds: 10 } });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Start phase 2 error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to start phase 2" });
+    }
+  }
+
+  async completePhase2(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const session = await publicFunnelService.completePhase2(sessionId);
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState } });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Complete phase 2 error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to complete phase 2" });
+    }
+  }
+
+  async sponsorOpen(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const result = await publicFunnelService.openSponsor(sessionId);
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          sessionId: String(result.session._id),
+          currentState: result.session.currentState,
+          sponsorUrl: result.sponsorUrl
+        }
+      });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Sponsor open error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to open sponsor" });
+    }
+  }
+
+  async sponsorVerify(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const session = await publicFunnelService.verifySponsor(sessionId);
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState, countdownSeconds: 10 } });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Sponsor verify error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to verify sponsor visit" });
+    }
+  }
+
+  async unlock(req: Request, res: Response): Promise<void> {
+    try {
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
+      const result = await publicFunnelService.unlock(sessionId);
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          redirectUrl: result.redirectUrl,
+          amount: result.payout?.amount ?? 0,
+          adminAmount: result.payout?.adminAmount ?? 0,
+          currency: result.payout?.currency ?? "INR"
+        }
+      });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Unlock error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Unable to unlock destination" });
+    }
   }
 
   async completeVisit(req: Request, res: Response): Promise<void> {
@@ -146,52 +330,14 @@ export class RedirectController {
         return;
       }
 
-      const session = await redirectSessionRepository.findById(sessionId);
-      if (!session) {
-        res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Session not found" });
-        return;
-      }
-
-      const required = [
-        { key: 'step1CompleteAt', ok: Boolean(session.step1CompleteAt) },
-        { key: 'step2CompleteAt', ok: Boolean(session.step2CompleteAt) },
-        { key: 'step3CompleteAt', ok: Boolean(session.step3CompleteAt) },
-        { key: 'step4CompleteAt', ok: Boolean(session.step4CompleteAt) },
-        { key: 'sponsorClickedAt', ok: Boolean(session.sponsorClickedAt) }
-      ];
-
-      const missing = required.filter(r => !r.ok).map(r => r.key);
-      if (missing.length > 0) {
-        console.warn('completeVisit: session missing completion flags', { sessionId, missing });
-        res.status(StatusCodes.FORBIDDEN).json({ success: false, message: 'Session has not completed the monetization flow', missing });
-        return;
-      }
-
-      const inspected = await redirectService.inspectShortCode(session.shortCode);
-      if (inspected.outcome !== "ACTIVE") {
-        res.status(StatusCodes.GONE).json({ success: false, message: inspected.message });
-        return;
-      }
-
-      const payout = await redirectService.creditQualifiedPayout({
-        ownerId: inspected.ownerId,
-        country: session.country || "",
-        shortCode: session.shortCode,
-        clickLogId: session.clickLogId ? String(session.clickLogId) : "",
-        redirectSessionId: String(session._id),
-        visitorIpHash: session.ipHash,
-        fingerprintHash: session.fingerprintHash,
-        memberId: session.memberId ? String(session.memberId) : undefined
-      });
-
-      await redirectSessionRepository.markCompleted(sessionId);
-
+      const result = await publicFunnelService.unlock(sessionId);
       res.status(StatusCodes.OK).json({
         success: true,
         data: {
-          redirectUrl: inspected.targetUrl,
-          amount: payout?.amount ?? 0,
-          currency: payout?.currency ?? "INR"
+          redirectUrl: result.redirectUrl,
+          amount: result.payout?.amount ?? 0,
+          adminAmount: result.payout?.adminAmount ?? 0,
+          currency: result.payout?.currency ?? "INR"
         }
       });
     } catch (error) {
@@ -414,9 +560,19 @@ export class RedirectController {
           currentStep: session.currentStep,
           completedSteps: session.completedSteps,
           isQualified: session.isQualified,
+          currentState: session.currentState,
+          humanVerified: Boolean(session.humanVerified),
+          phase1StartedAt: session.phase1StartedAt ?? null,
+          phase1CompletedAt: session.phase1CompletedAt ?? null,
+          phase2StartedAt: session.phase2StartedAt ?? null,
+          phase2CompletedAt: session.phase2CompletedAt ?? null,
+          sponsorOpenedAt: session.sponsorOpenedAt ?? null,
+          sponsorVerifiedAt: session.sponsorVerifiedAt ?? null,
+          finalUnlockedAt: session.finalUnlockedAt ?? null,
           sponsorClicked: Boolean(session.sponsorClickedAt),
-          canUnlock: Boolean(session.currentStep >= 4 && session.sponsorClickedAt && session.step1CompleteAt && session.step2CompleteAt && session.step3CompleteAt),
-          completedAt: session.completedAt
+          canUnlock: Boolean(session.humanVerified && session.phase1CompletedAt && session.phase2CompletedAt && session.sponsorOpenedAt && session.sponsorVerifiedAt && !session.finalUnlockedAt),
+          completedAt: session.completedAt,
+          shortCode: session.shortCode
         }
       });
     } catch (error) {

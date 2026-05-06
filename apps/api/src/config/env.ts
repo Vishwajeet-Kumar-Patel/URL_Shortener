@@ -15,6 +15,7 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
   CLIENT_ORIGIN: z.string().url("CLIENT_ORIGIN must be a valid URL").transform((val) => val.replace(/\/$/, "")),
   APP_PUBLIC_URL: z.string().url("APP_PUBLIC_URL must be a valid URL"),
+  SPONSOR_OUTBOUND_URL: z.string().url("SPONSOR_OUTBOUND_URL must be a valid URL").optional(),
   APP_ANON_OWNER_ID: z
     .string()
     .regex(/^[0-9a-fA-F]{24}$/, "APP_ANON_OWNER_ID must be a 24-char hex string")

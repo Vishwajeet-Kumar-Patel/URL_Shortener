@@ -1,5 +1,19 @@
 import { model, models, Schema, Types } from "mongoose";
 
+export const PUBLIC_FUNNEL_STATE = {
+  HUMAN_PENDING: "HUMAN_PENDING",
+  HUMAN_VERIFIED: "HUMAN_VERIFIED",
+  PHASE1_ACTIVE: "PHASE1_ACTIVE",
+  PHASE1_COMPLETED: "PHASE1_COMPLETED",
+  PHASE2_ACTIVE: "PHASE2_ACTIVE",
+  PHASE2_COMPLETED: "PHASE2_COMPLETED",
+  SPONSOR_PENDING: "SPONSOR_PENDING",
+  SPONSOR_VERIFIED: "SPONSOR_VERIFIED",
+  UNLOCKED: "UNLOCKED"
+} as const;
+
+export type PublicFunnelState = (typeof PUBLIC_FUNNEL_STATE)[keyof typeof PUBLIC_FUNNEL_STATE];
+
 export interface FunnelStepTiming {
   step: number;
   enteredAt: Date;
@@ -23,6 +37,15 @@ export interface RedirectSessionDocument {
   jsEnabled?: boolean;
   cookiesEnabled?: boolean;
   startedAt: Date;
+  humanVerified?: boolean;
+  phase1StartedAt?: Date;
+  phase1CompletedAt?: Date;
+  phase2StartedAt?: Date;
+  phase2CompletedAt?: Date;
+  sponsorOpenedAt?: Date;
+  sponsorVerifiedAt?: Date;
+  finalUnlockedAt?: Date;
+  currentState: PublicFunnelState;
   sponsorClickedAt?: Date;
   completedAt?: Date;
   // Link to initial raw click log
@@ -80,6 +103,20 @@ const redirectSessionSchema = new Schema<RedirectSessionDocument>(
     cookiesEnabled: { type: Boolean, default: true },
     fingerprintHash: { type: String, trim: true, index: true },
     startedAt: { type: Date, default: () => new Date(), index: true },
+    humanVerified: { type: Boolean, default: false, index: true },
+    phase1StartedAt: { type: Date },
+    phase1CompletedAt: { type: Date },
+    phase2StartedAt: { type: Date },
+    phase2CompletedAt: { type: Date },
+    sponsorOpenedAt: { type: Date },
+    sponsorVerifiedAt: { type: Date },
+    finalUnlockedAt: { type: Date },
+    currentState: {
+      type: String,
+      enum: Object.values(PUBLIC_FUNNEL_STATE),
+      default: PUBLIC_FUNNEL_STATE.HUMAN_PENDING,
+      index: true
+    },
     sponsorClickedAt: { type: Date },
     completedAt: { type: Date },
     // initial raw click log id
@@ -116,6 +153,10 @@ redirectSessionSchema.index(
 redirectSessionSchema.index(
   { memberId: 1, isQualified: 1, createdAt: -1 },
   { name: "idx_redirect_session_member_qualified", sparse: true }
+);
+redirectSessionSchema.index(
+  { currentState: 1, createdAt: -1 },
+  { name: "idx_redirect_session_state_created" }
 );
 redirectSessionSchema.index(
   { expiresAt: 1 },

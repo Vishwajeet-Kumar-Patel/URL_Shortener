@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import { calculateCpmBreakdown } from "../../utils/cpm-calculation";
-import { DEFAULT_CURRENCY } from "../../config/constants";
+import { DEFAULT_CURRENCY, DEFAULT_CPM_RATE } from "../../config/constants";
 import { cpmRateRepository } from "../../repositories/cpm-rate.repository";
 import { memberMetricsRepository } from "../../repositories/member-metrics.repository";
 import { userRepository } from "../../repositories/user.repository";
@@ -53,10 +53,10 @@ export class PayoutAutomationService {
       // Fallback to default rate - use proper type casting
       rate = await cpmRateRepository.getApplicableRate(DEFAULT_CURRENCY);
       if (!rate) {
-        return {
-          success: false,
-          message: "No CPM rate available"
-        };
+        rate = {
+          cpm: DEFAULT_CPM_RATE,
+          currency: DEFAULT_CURRENCY
+        } as never;
       }
     }
 

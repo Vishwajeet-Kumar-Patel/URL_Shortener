@@ -1,6 +1,7 @@
 import { Types, HydratedDocument } from "mongoose";
 import {
   RedirectSessionModel,
+  PUBLIC_FUNNEL_STATE,
   type RedirectSessionDocument,
   type FunnelStepTiming
 } from "../models/redirect-session.model";
@@ -57,6 +58,8 @@ export class RedirectSessionRepository {
         currentStep: 0,
         completedSteps: [],
         startedAt: new Date(),
+        humanVerified: false,
+        currentState: PUBLIC_FUNNEL_STATE.HUMAN_PENDING,
         expiresAt,
         targetUrl: input.targetUrl,
         stepTimings: []
@@ -139,7 +142,180 @@ export class RedirectSessionRepository {
 
     return RedirectSessionModel.findByIdAndUpdate(
       new Types.ObjectId(sessionId),
-      { sponsorClickedAt: new Date() },
+      {
+        sponsorOpenedAt: new Date(),
+        sponsorClickedAt: new Date(),
+        currentState: PUBLIC_FUNNEL_STATE.SPONSOR_PENDING,
+        currentStep: 4
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async verifyHuman(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        humanVerified: { $ne: true },
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          humanVerified: true,
+          currentState: PUBLIC_FUNNEL_STATE.HUMAN_VERIFIED,
+          currentStep: 1
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async startPhase1(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        humanVerified: true,
+        phase1StartedAt: { $exists: false },
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          phase1StartedAt: new Date(),
+          currentState: PUBLIC_FUNNEL_STATE.PHASE1_ACTIVE,
+          currentStep: 1
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async completePhase1(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        phase1StartedAt: { $exists: true },
+        phase1CompletedAt: { $exists: false },
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          phase1CompletedAt: new Date(),
+          currentState: PUBLIC_FUNNEL_STATE.PHASE1_COMPLETED,
+          currentStep: 2
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async startPhase2(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        phase1CompletedAt: { $exists: true },
+        phase2StartedAt: { $exists: false },
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          phase2StartedAt: new Date(),
+          currentState: PUBLIC_FUNNEL_STATE.PHASE2_ACTIVE,
+          currentStep: 2
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async completePhase2(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        phase2StartedAt: { $exists: true },
+        phase2CompletedAt: { $exists: false },
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          phase2CompletedAt: new Date(),
+          currentState: PUBLIC_FUNNEL_STATE.PHASE2_COMPLETED,
+          currentStep: 3
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async markSponsorOpened(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        phase2CompletedAt: { $exists: true },
+        sponsorOpenedAt: { $exists: false },
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          sponsorOpenedAt: new Date(),
+          currentState: PUBLIC_FUNNEL_STATE.SPONSOR_PENDING,
+          currentStep: 4
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async markSponsorVerified(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        sponsorOpenedAt: { $exists: true },
+        sponsorVerifiedAt: { $exists: false },
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          sponsorVerifiedAt: new Date(),
+          sponsorClickedAt: new Date(),
+          currentState: PUBLIC_FUNNEL_STATE.SPONSOR_VERIFIED,
+          currentStep: 4
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async markUnlocked(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(sessionId),
+        finalUnlockedAt: { $exists: false }
+      },
+      {
+        $set: {
+          finalUnlockedAt: new Date(),
+          completedAt: new Date(),
+          isQualified: true,
+          currentState: PUBLIC_FUNNEL_STATE.UNLOCKED,
+          currentStep: 5
+        }
+      },
       { new: true }
     ).exec();
   }
@@ -212,31 +388,12 @@ export class RedirectSessionRepository {
   async markCompleted(sessionId: string): Promise<RedirectSessionEntity | null> {
     if (!Types.ObjectId.isValid(sessionId)) return null;
 
-    const sessionObjectId = new Types.ObjectId(sessionId);
-    const completedAt = new Date();
-
-    const updatedSession = await RedirectSessionModel.findOneAndUpdate(
-      {
-        _id: sessionObjectId,
-        completedAt: { $exists: false }
-      },
-      {
-        $set: {
-          completedAt,
-          isQualified: true,
-          currentStep: 5,
-          step5CompleteAt: completedAt
-        },
-        $addToSet: { completedSteps: 5 }
-      },
-      { new: true }
-    ).exec();
-
+    const updatedSession = await this.markUnlocked(sessionId);
     if (updatedSession) {
       return updatedSession;
     }
 
-    return RedirectSessionModel.findById(sessionObjectId).exec();
+    return RedirectSessionModel.findById(new Types.ObjectId(sessionId)).exec();
   }
 
   async findByShortCodeAndMemberId(

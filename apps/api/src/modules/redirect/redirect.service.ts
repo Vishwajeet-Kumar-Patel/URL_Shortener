@@ -1,4 +1,4 @@
-import { UNIQUE_CLICK_WINDOW_HOURS, DEFAULT_CURRENCY } from "../../config/constants";
+import { UNIQUE_CLICK_WINDOW_HOURS, DEFAULT_CURRENCY, DEFAULT_CPM_RATE } from "../../config/constants";
 import { calculateCpmBreakdown } from "../../utils/cpm-calculation";
 import { cpmRateRepository } from "../../repositories/cpm-rate.repository";
 import { clickRepository } from "../../repositories/click.repository";
@@ -9,6 +9,7 @@ import { visitorQualificationRepository } from "../../repositories/visitor-quali
 import { memberEarningRepository } from "../../repositories/member-earning.repository";
 import { WALLET_TX_SOURCE } from "../../types/common";
 import { walletService } from "../wallet/wallet.service";
+import { adminEarningsService } from "../admin/admin-earnings.service";
 import { URL_STATUS } from "../../types/common";
 import type { RedirectResolution } from "./redirect.types";
 
@@ -90,7 +91,7 @@ export class RedirectService {
     if (!isUnique && finalQualified) {
       finalQualified = false;
     }
-    // Raw open counter is tracked separately from funnel progress and final qualified completion.
+
     await urlRepository.incrementRawOpen(input.shortCode);
 
     const click = await clickRepository.createClickLog({
@@ -128,30 +129,24 @@ export class RedirectService {
     visitorIpHash?: string;
     fingerprintHash?: string;
     memberId?: string;
-  }): Promise<{ amount: number; currency: string } | null> {
-    // 1. Get the URL to check for referred member attribution
+  }): Promise<{ amount: number; adminAmount: number; currency: string } | null> {
     const url = await urlRepository.findByShortCode(input.shortCode);
     if (!url) return null;
 
-    // 2. Determine who gets the payout
-    // If it's an anonymous link, the referred member (createdByMemberId) gets the payout
-    // Otherwise, the ownerId gets the payout
     const isAnonymousLink = String(url.ownerId) === env.APP_ANON_OWNER_ID;
-    const recipientId = isAnonymousLink && url.createdByMemberId 
-      ? String(url.createdByMemberId) 
-      : input.ownerId;
+    const recipientId = isAnonymousLink && url.createdByMemberId ? String(url.createdByMemberId) : input.ownerId;
 
-    // 3. Get CPM rate by country
     let rate = await cpmRateRepository.getApplicableRate(input.country);
     if (!rate || rate.cpm <= 0) {
-      // Fallback to default rate
       rate = await cpmRateRepository.getApplicableRate(DEFAULT_CURRENCY);
       if (!rate) {
-        return null; // No rate available
+        rate = {
+          cpm: DEFAULT_CPM_RATE,
+          currency: DEFAULT_CURRENCY
+        } as never;
       }
     }
 
-    // 4. Calculate payout using unified CPM calculation
     const breakdown = calculateCpmBreakdown(rate.cpm, rate.currency);
 
     const qualification = input.redirectSessionId && input.visitorIpHash
@@ -165,13 +160,13 @@ export class RedirectService {
       : null;
 
     if (qualification?.isDuplicate) {
-      return { amount: 0, currency: rate.currency };
+      return { amount: 0, adminAmount: 0, currency: rate.currency };
     }
 
     if (input.redirectSessionId) {
       const alreadyLogged = await memberEarningRepository.existsForSession(input.redirectSessionId);
       if (alreadyLogged) {
-        return { amount: 0, currency: rate.currency };
+        return { amount: 0, adminAmount: 0, currency: rate.currency };
       }
     }
 
@@ -185,7 +180,6 @@ export class RedirectService {
       });
     }
 
-    // 5. Record the credit in member's wallet
     await walletService.credit(
       recipientId,
       breakdown.memberEarning,
@@ -194,17 +188,24 @@ export class RedirectService {
       `Qualified monetized completion payout (Country: ${input.country || "UNKNOWN"}, CPM: ${rate.cpm})`
     );
 
-    // 6. Update member metrics
     await memberMetricsRepository.getOrCreateMetrics(recipientId);
     await memberMetricsRepository.incrementQualifiedClicks(recipientId, 1);
     await memberMetricsRepository.addEarnings(recipientId, breakdown.memberEarning);
 
     await urlRepository.incrementQualifiedCompletion(input.shortCode);
+    await clickRepository.markClickQualified(input.clickLogId);
 
-    // NOTE: Admin earning (breakdown.adminEarning) is implicitly tracked
-    // It will be recorded in RevenueLog when that model is integrated
+    await adminEarningsService.logRevenue({
+      source: "CPM",
+      amount: breakdown.adminEarning,
+      currency: rate.currency,
+      country: input.country,
+      memberId: recipientId,
+      sessionId: input.redirectSessionId,
+      notes: `Qualified completion payout for ${input.shortCode}`
+    });
 
-    return { amount: breakdown.memberEarning, currency: rate.currency };
+    return { amount: breakdown.memberEarning, adminAmount: breakdown.adminEarning, currency: rate.currency };
   }
 
   async resolveShortCode(input: ResolveInput): Promise<RedirectResolution> {
@@ -226,79 +227,6 @@ export class RedirectService {
     });
 
     return inspected;
-  }
-
-  async resolveShortCodeLegacy(input: ResolveInput): Promise<RedirectResolution> {
-    const url = await urlRepository.findByShortCode(input.shortCode);
-    if (!url) {
-      return {
-        outcome: "NOT_FOUND",
-        message: "This short link does not exist."
-      };
-    }
-
-    if (url.status === URL_STATUS.DELETED) {
-      return {
-        outcome: "DELETED",
-        message: "This short link has been deleted by its owner."
-      };
-    }
-
-    if (url.status === URL_STATUS.HIDDEN) {
-      return {
-        outcome: "HIDDEN",
-        message: "This short link is hidden by its owner."
-      };
-    }
-
-    if (url.status === URL_STATUS.PAUSED) {
-      return {
-        outcome: "PAUSED",
-        message: "This short link has been paused by the owner or admin."
-      };
-    }
-
-    const updatedUrl = await urlRepository.incrementClickForActiveShortCode(input.shortCode);
-    if (!updatedUrl) {
-      return {
-        outcome: "PAUSED",
-        message: "This short link is currently unavailable."
-      };
-    }
-
-    const windowStart = new Date();
-    windowStart.setHours(windowStart.getHours() - UNIQUE_CLICK_WINDOW_HOURS);
-    const alreadyCounted = await clickRepository.existsRecentUniqueClick({
-      shortCode: updatedUrl.shortCode,
-      ipHash: input.ipHash,
-      since: windowStart
-    });
-    const isUnique = !alreadyCounted;
-
-    await clickRepository.createClickLog({
-      urlId: updatedUrl._id,
-      shortCode: updatedUrl.shortCode,
-      ownerId: updatedUrl.ownerId,
-      timestamp: new Date(),
-      ipAddress: input.ipAddress,
-      ipHash: input.ipHash,
-      userAgent: input.userAgent,
-      browser: input.browser,
-      os: input.os,
-      deviceType: input.deviceType,
-      referrer: input.referrer,
-      country: input.country,
-      city: input.city,
-      isUnique
-    });
-
-    return {
-      outcome: "ACTIVE",
-      targetUrl: updatedUrl.normalizedUrl,
-      urlId: String(updatedUrl._id),
-      ownerId: String(updatedUrl.ownerId),
-      shortCode: updatedUrl.shortCode
-    };
   }
 }
 
