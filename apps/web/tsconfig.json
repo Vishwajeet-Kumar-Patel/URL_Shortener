@@ -8,6 +8,7 @@
       "es2022"
     ],
     "allowJs": false,
+    "allowArbitraryExtensions": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
