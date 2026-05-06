@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "npm run build:api && npm run build:web",
     "dev:api": "npm run dev --workspace @link-shortener/api",
     "build:api": "npm run build --workspace @link-shortener/api",
     "start:api": "npm run start --workspace @link-shortener/api",

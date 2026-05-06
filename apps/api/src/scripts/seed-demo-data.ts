@@ -8,7 +8,9 @@ import { WalletModel } from "../models/wallet.model";
 import { WalletLedgerModel } from "../models/wallet-ledger.model";
 import { MemberMetricsModel } from "../models/member-metrics.model";
 import { AnonymousSessionModel } from "../models/anonymous-session.model";
-// import { RedirectSessionModel } from "../models/redirect-session.model"; // Unused
+import { RedirectSessionModel } from "../models/redirect-session.model";
+import { VisitorQualificationModel } from "../models/visitor-qualification.model";
+import { MemberEarningModel } from "../models/member-earning.model";
 import { ReferralModel } from "../models/referral.model";
 import { ROLES, USER_STATUS, URL_STATUS, URL_AD_MODE, WALLET_TX_SOURCE, WALLET_TX_TYPE } from "../types/common";
 import { hashPassword, hashToken } from "../utils/hash";
@@ -51,7 +53,7 @@ const seedDemoData = async (): Promise<void> => {
   for (let i = 0; i < SEED_EMAILS.length; i++) {
     const email = SEED_EMAILS[i];
     const role = i === 0 ? ROLES.ADMIN : ROLES.MEMBER;
-    const name = i === 0 ? "System Admin" : `Partner Member ${i}`;
+    const name = i === 0 ? "System Admin" : i === 1 ? "Vishwajeet Kumar Patel MGS" : `Partner Member ${i}`;
     
     const user = await UserModel.findOneAndUpdate(
       { email },
@@ -216,6 +218,131 @@ const seedDemoData = async (): Promise<void> => {
         );
       }
     }
+  }
+
+  console.info("Seeding staged redirect sessions and earnings...");
+  const stagedUrl = shortUrls.find((url) => String(url.createdByMemberId || ""));
+  const stagedMember = members[0];
+  if (stagedUrl && stagedMember) {
+    const sessionBase = {
+      shortCode: stagedUrl.shortCode,
+      targetUrl: stagedUrl.normalizedUrl,
+      ipAddress: "203.0.113.10",
+      ipHash: hashToken("203.0.113.10"),
+      fingerprintHash: hashToken("sample-fingerprint"),
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0",
+      browser: "Chrome",
+      os: "Windows",
+      deviceType: "desktop",
+      referrer: "https://www.google.com/",
+      country: "IN",
+      city: "Bengaluru",
+      jsEnabled: true,
+      cookiesEnabled: true
+    };
+
+    await RedirectSessionModel.create({
+      ...sessionBase,
+      currentStep: 1,
+      completedSteps: [],
+      startedAt: new Date(Date.now() - 18 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      stepTimings: [{ step: 1, enteredAt: new Date(Date.now() - 12 * 1000) }]
+    });
+
+    await RedirectSessionModel.create({
+      ...sessionBase,
+      currentStep: 3,
+      completedSteps: [1, 2, 3],
+      startedAt: new Date(Date.now() - 35 * 60 * 1000),
+      sponsorClickedAt: new Date(Date.now() - 9 * 60 * 1000),
+      step1CompleteAt: new Date(Date.now() - 30 * 60 * 1000),
+      step2CompleteAt: new Date(Date.now() - 24 * 60 * 1000),
+      step3CompleteAt: new Date(Date.now() - 15 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      stepTimings: [
+        { step: 1, enteredAt: new Date(Date.now() - 30 * 60 * 1000) },
+        { step: 2, enteredAt: new Date(Date.now() - 24 * 60 * 1000) },
+        { step: 3, enteredAt: new Date(Date.now() - 15 * 60 * 1000) }
+      ]
+    });
+
+    const completedSession = await RedirectSessionModel.create({
+      ...sessionBase,
+      currentStep: 5,
+      completedSteps: [1, 2, 3, 4, 5],
+      startedAt: new Date(Date.now() - 52 * 60 * 1000),
+      sponsorClickedAt: new Date(Date.now() - 18 * 60 * 1000),
+      completedAt: new Date(Date.now() - 2 * 60 * 1000),
+      step1CompleteAt: new Date(Date.now() - 46 * 60 * 1000),
+      step2CompleteAt: new Date(Date.now() - 38 * 60 * 1000),
+      step3CompleteAt: new Date(Date.now() - 30 * 60 * 1000),
+      step4CompleteAt: new Date(Date.now() - 12 * 60 * 1000),
+      step5CompleteAt: new Date(Date.now() - 2 * 60 * 1000),
+      isQualified: true,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      stepTimings: [
+        { step: 1, enteredAt: new Date(Date.now() - 46 * 60 * 1000) },
+        { step: 2, enteredAt: new Date(Date.now() - 38 * 60 * 1000) },
+        { step: 3, enteredAt: new Date(Date.now() - 30 * 60 * 1000) },
+        { step: 4, enteredAt: new Date(Date.now() - 12 * 60 * 1000) },
+        { step: 5, enteredAt: new Date(Date.now() - 2 * 60 * 1000) }
+      ]
+    });
+
+    await VisitorQualificationModel.create({
+      ipHash: completedSession.ipHash!,
+      fingerprintHash: completedSession.fingerprintHash,
+      shortCode: completedSession.shortCode,
+      redirectSessionId: completedSession._id,
+      memberId: stagedMember._id,
+      firstCompletedAt: new Date(Date.now() - 2 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+      isDuplicate: false
+    });
+
+    await MemberEarningModel.create({
+      memberId: stagedMember._id,
+      shortLinkId: stagedUrl._id,
+      redirectSessionId: completedSession._id,
+      amount: 12.5,
+      visitorIpHash: completedSession.ipHash!
+    });
+
+    await MemberMetricsModel.updateOne(
+      { memberId: stagedMember._id },
+      {
+        $inc: {
+          totalQualifiedClicks: 1,
+          totalEarnings: 12.5,
+          thisMonthEarnings: 12.5
+        }
+      }
+    );
+
+    await WalletLedgerModel.create({
+      walletId: (await WalletModel.findOne({ userId: stagedMember._id }))?._id,
+      userId: stagedMember._id,
+      amount: 12.5,
+      balanceBefore: 0,
+      balanceAfter: 12.5,
+      type: WALLET_TX_TYPE.CREDIT,
+      source: WALLET_TX_SOURCE.EARNING,
+      referenceId: `redirect-session:${completedSession._id}`,
+      description: "Qualified completion payout",
+      status: "COMPLETED"
+    });
+
+    await WalletModel.updateOne({ userId: stagedMember._id }, { $inc: { balance: 12.5 } });
+
+    await RedirectSessionModel.create({
+      ...sessionBase,
+      currentStep: 0,
+      completedSteps: [],
+      startedAt: new Date(Date.now() - 5 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      stepTimings: []
+    });
   }
 
   console.info("Seeding complete!");

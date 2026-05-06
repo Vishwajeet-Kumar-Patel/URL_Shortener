@@ -16,6 +16,8 @@ userRouter.use(authMiddleware, requireAuthenticatedUser, ensureActiveUser, ensur
 
 userRouter.get("/health", asyncHandler((req, res) => userController.moduleHealth(req, res)));
 userRouter.get("/me", asyncHandler((req, res) => userController.getProfile(req, res)));
+userRouter.get("/:id/anonymous-links", asyncHandler((req, res) => userController.getAnonymousLinks(req, res)));
+userRouter.get("/:id/earnings", asyncHandler((req, res) => userController.getEarnings(req, res)));
 userRouter.patch(
 	"/me",
 	validationMiddleware(updateProfileSchema),

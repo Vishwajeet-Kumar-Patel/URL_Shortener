@@ -5,6 +5,7 @@ import { campaignRepository } from "../../repositories/campaign.repository";
 import { invoiceRepository } from "../../repositories/invoice.repository";
 import { paymentTransactionRepository } from "../../repositories/payment-transaction.repository";
 import { clickRepository } from "../../repositories/click.repository";
+import { RedirectSessionModel } from "../../models/redirect-session.model";
 import { userRepository } from "../../repositories/user.repository";
 import { urlRepository } from "../../repositories/url.repository";
 import { referralRepository } from "../../repositories/referral.repository";
@@ -424,6 +425,7 @@ export class AdminService {
     clicks: { total: number; unique: number };
     invoices: { total: number; paid: number; pending: number };
     revenue: { grossCollected: number };
+    anonymousSessions?: number;
   }> {
     const [users, urls, clicksTotal, clicksUnique, invoices] = await Promise.all([
       userRepository.listUsers({ page: 1, limit: 1_000_000 }),
@@ -432,6 +434,9 @@ export class AdminService {
       clickRepository.countUniqueClicksTotal(),
       invoiceRepository.listAll({ page: 1, limit: 1_000_000 })
     ]);
+
+    // count anonymous redirect sessions for admin overview
+    const anonymousSessionsCount = await RedirectSessionModel.countDocuments({ anonymousSessionId: { $exists: true } });
 
     const paid = invoices.data.filter((inv) => inv.status === INVOICE_STATUS.PAID);
     const pending = invoices.data.filter((inv) => inv.status === INVOICE_STATUS.PENDING);
@@ -461,7 +466,8 @@ export class AdminService {
       },
       revenue: {
         grossCollected
-      }
+      },
+      anonymousSessions: anonymousSessionsCount
     };
   }
 

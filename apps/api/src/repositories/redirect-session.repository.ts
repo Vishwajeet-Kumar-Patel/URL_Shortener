@@ -17,6 +17,7 @@ export class RedirectSessionRepository {
     // optional visitor metadata
     ipAddress?: string;
     ipHash?: string;
+    fingerprintHash?: string;
     userAgent?: string;
     browser?: string;
     os?: string;
@@ -42,6 +43,7 @@ export class RedirectSessionRepository {
         // metadata
         ipAddress: input.ipAddress,
         ipHash: input.ipHash,
+        fingerprintHash: input.fingerprintHash,
         userAgent: input.userAgent,
         browser: input.browser,
         os: input.os,
@@ -52,11 +54,12 @@ export class RedirectSessionRepository {
         jsEnabled: input.jsEnabled,
         cookiesEnabled: input.cookiesEnabled,
         clickLogId: input.clickLogId ? new Types.ObjectId(input.clickLogId) : undefined,
-        currentStep: 1,
+        currentStep: 0,
         completedSteps: [],
+        startedAt: new Date(),
         expiresAt,
         targetUrl: input.targetUrl,
-        stepTimings: [{ step: 1, enteredAt: new Date() }]
+        stepTimings: []
       });
       return session;
     } catch {
@@ -96,7 +99,9 @@ export class RedirectSessionRepository {
 
     const session = await RedirectSessionModel.findByIdAndUpdate(
       new Types.ObjectId(sessionId),
-      updateData,
+      {
+        $set: updateData
+      },
       { new: true }
     ).exec();
 
@@ -105,7 +110,7 @@ export class RedirectSessionRepository {
 
   async addStepTiming(
     sessionId: string,
-    step: number,
+    _step: number,
     timing: FunnelStepTiming
   ): Promise<RedirectSessionEntity | null> {
     if (!Types.ObjectId.isValid(sessionId)) return null;
@@ -113,8 +118,7 @@ export class RedirectSessionRepository {
     return RedirectSessionModel.findByIdAndUpdate(
       new Types.ObjectId(sessionId),
       {
-        $push: { stepTimings: timing },
-        $addToSet: { completedSteps: step }
+        $push: { stepTimings: timing }
       },
       { new: true }
     ).exec();
@@ -125,9 +129,114 @@ export class RedirectSessionRepository {
 
     return RedirectSessionModel.findByIdAndUpdate(
       new Types.ObjectId(sessionId),
-      { isQualified: true },
+      { isQualified: true, completedAt: new Date() },
       { new: true }
     ).exec();
+  }
+
+  async markSponsorClicked(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    return RedirectSessionModel.findByIdAndUpdate(
+      new Types.ObjectId(sessionId),
+      { sponsorClickedAt: new Date() },
+      { new: true }
+    ).exec();
+  }
+
+  async updateStageTimestamp(
+    sessionId: string,
+    stage: 1 | 2 | 3 | 4 | 5
+  ): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    const timestampFieldMap = {
+      1: "step1CompleteAt",
+      2: "step2CompleteAt",
+      3: "step3CompleteAt",
+      4: "step4CompleteAt",
+      5: "step5CompleteAt"
+    } as const;
+
+    return RedirectSessionModel.findByIdAndUpdate(
+      new Types.ObjectId(sessionId),
+      {
+        $set: {
+          [timestampFieldMap[stage]]: new Date(),
+          currentStep: stage
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async markStepComplete(
+    sessionId: string,
+    step: 1 | 2 | 3 | 4
+  ): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    const timestampFieldMap = {
+      1: "step1CompleteAt",
+      2: "step2CompleteAt",
+      3: "step3CompleteAt",
+      4: "step4CompleteAt"
+    } as const;
+
+    const sessionObjectId = new Types.ObjectId(sessionId);
+    const timestampField = timestampFieldMap[step];
+    const timestampValue = new Date();
+
+    const updatedSession = await RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: sessionObjectId,
+        [timestampField]: { $exists: false }
+      },
+      {
+        $set: {
+          [timestampField]: timestampValue,
+          currentStep: Math.min(step + 1, 5)
+        },
+        $addToSet: { completedSteps: step }
+      },
+      { new: true }
+    ).exec();
+
+    if (updatedSession) {
+      return updatedSession;
+    }
+
+    return RedirectSessionModel.findById(sessionObjectId).exec();
+  }
+
+  async markCompleted(sessionId: string): Promise<RedirectSessionEntity | null> {
+    if (!Types.ObjectId.isValid(sessionId)) return null;
+
+    const sessionObjectId = new Types.ObjectId(sessionId);
+    const completedAt = new Date();
+
+    const updatedSession = await RedirectSessionModel.findOneAndUpdate(
+      {
+        _id: sessionObjectId,
+        completedAt: { $exists: false }
+      },
+      {
+        $set: {
+          completedAt,
+          isQualified: true,
+          currentStep: 5,
+          step5CompleteAt: completedAt
+        },
+        $addToSet: { completedSteps: 5 }
+      },
+      { new: true }
+    ).exec();
+
+    if (updatedSession) {
+      return updatedSession;
+    }
+
+    return RedirectSessionModel.findById(sessionObjectId).exec();
   }
 
   async findByShortCodeAndMemberId(

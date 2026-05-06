@@ -1,6 +1,5 @@
 import { StatusCodes } from "http-status-codes";
 import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
-import { redirectService } from "./redirect.service";
 
 type ServiceError = Error & { statusCode?: number };
 
@@ -11,9 +10,6 @@ const buildServiceError = (message: string, statusCode: number): ServiceError =>
 };
 
 export class FunnelValidationService {
-  /**
-   * Validate funnel step and advance if valid
-   */
   async validateAndAdvanceStep(
     sessionId: string,
     currentStep: number,
@@ -30,31 +26,46 @@ export class FunnelValidationService {
     message?: string;
   }> {
     const session = await redirectSessionRepository.findById(sessionId);
-    if (!session || session.currentStep !== currentStep) {
+    if (!session) {
+      throw buildServiceError("Session not found", StatusCodes.NOT_FOUND);
+    }
+
+    // Allow idempotent/duplicate validations: if the session has already
+    // progressed past the requested step, return success rather than
+    // throwing a mismatch. This handles client retries or racey events.
+    if (session.currentStep !== currentStep) {
+      if (session.currentStep >= currentStep + 1) {
+        return {
+          isValid: true,
+          nextStep: Math.min(session.currentStep, 5),
+          message: "Step already completed"
+        };
+      }
       throw buildServiceError("Invalid session or step mismatch", StatusCodes.BAD_REQUEST);
     }
 
     const nextStep = currentStep + 1;
     const maxSteps = 5;
-
-    // Validate step-specific requirements
-    const timing = session.stepTimings.find(t => t.step === currentStep);
     const now = new Date();
-    const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
-    const REQUIRED_WAIT = 9.5; // Allow slight buffer for network/latency
+    const REQUIRED_WAIT = 9.5;
 
     switch (currentStep) {
-      case 1: // Blog/Article page - 10s timer
-        if (secondsElapsed < REQUIRED_WAIT) {
+      case 0: {
+        const startedAt = session.startedAt ?? session.createdAt;
+        const secondsElapsed = (now.getTime() - startedAt.getTime()) / 1000;
+        if (secondsElapsed < 14.5) {
           return {
             isValid: false,
             nextStep: currentStep,
-            message: `Please wait ${Math.ceil(REQUIRED_WAIT - secondsElapsed)} more seconds`
+            message: `Please wait ${Math.ceil(14.5 - secondsElapsed)} more seconds`
           };
         }
         break;
+      }
 
-      case 2: // Scroll unlock + 10s timer
+      case 1: {
+        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
         if (secondsElapsed < REQUIRED_WAIT) {
           return {
             isValid: false,
@@ -62,7 +73,21 @@ export class FunnelValidationService {
             message: `Please wait ${Math.ceil(REQUIRED_WAIT - secondsElapsed)} more seconds`
           };
         }
-        
+        await redirectSessionRepository.markStepComplete(sessionId, 1);
+        break;
+      }
+
+      case 2: {
+        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
+        if (secondsElapsed < 14.5) {
+          return {
+            isValid: false,
+            nextStep: currentStep,
+            message: `Please wait ${Math.ceil(14.5 - secondsElapsed)} more seconds`
+          };
+        }
+
         if (!input.hasScrolledEnough && (!input.scrollPosition || !input.maxScrollPosition)) {
           return {
             isValid: false,
@@ -76,9 +101,21 @@ export class FunnelValidationService {
           maxScrollPosition: input.maxScrollPosition || 100,
           hasScrolledEnough: true
         });
+        await redirectSessionRepository.markStepComplete(sessionId, 2);
         break;
+      }
 
-      case 3: // Sponsored ad/CTA
+      case 3: {
+        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
+        if (secondsElapsed < 14.5) {
+          return {
+            isValid: false,
+            nextStep: currentStep,
+            message: `Please wait ${Math.ceil(14.5 - secondsElapsed)} more seconds`
+          };
+        }
+
         if (!input.ctaClicked) {
           return {
             isValid: false,
@@ -90,9 +127,19 @@ export class FunnelValidationService {
         await redirectSessionRepository.updateStep(sessionId, currentStep, {
           ctaClicked: true
         });
+        await redirectSessionRepository.markSponsorClicked(sessionId);
+        await redirectSessionRepository.markStepComplete(sessionId, 3);
         break;
+      }
 
-      case 4: // Reward verification + final 10s timer
+      case 4: {
+        // Prefer explicit entered-at timing for step 4, but fall back to
+        // sponsor click time or session start to avoid transient races where
+        // the timing record hasn't been written yet.
+        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const enteredAt = timing?.enteredAt ?? session.step4CompleteAt ?? session.sponsorClickedAt ?? session.startedAt ?? session.createdAt;
+        const secondsElapsed = enteredAt ? (now.getTime() - new Date(enteredAt).getTime()) / 1000 : 0;
+
         if (secondsElapsed < REQUIRED_WAIT) {
           return {
             isValid: false,
@@ -100,26 +147,34 @@ export class FunnelValidationService {
             message: `Please wait ${Math.ceil(REQUIRED_WAIT - secondsElapsed)} more seconds`
           };
         }
-        break;
 
-      case 5: // Final unlock
-        // Qualify the session when completing step 5
-        await redirectSessionRepository.markAsQualified(sessionId);
+        if (!session.sponsorClickedAt) {
+          return {
+            isValid: false,
+            nextStep: currentStep,
+            message: "Sponsor verification is required before unlocking"
+          };
+        }
+
+        await redirectSessionRepository.markStepComplete(sessionId, 4);
+        break;
+      }
+
+      case 5:
+        await redirectSessionRepository.markCompleted(sessionId);
         break;
 
       default:
         throw buildServiceError("Invalid step number", StatusCodes.BAD_REQUEST);
     }
 
-    // Add timing for this step
     if (nextStep <= maxSteps) {
+      await redirectSessionRepository.updateStep(sessionId, nextStep, {});
       await redirectSessionRepository.addStepTiming(sessionId, nextStep, {
         step: nextStep,
         enteredAt: new Date()
       });
     }
-
-    // Qualification is handled in step 5 switch above
 
     return {
       isValid: true,
@@ -127,45 +182,27 @@ export class FunnelValidationService {
     };
   }
 
-  /**
-   * Check if session is complete and qualified
-   */
   async getSessionStatus(
     sessionId: string
   ): Promise<{
     isComplete: boolean;
     isQualified: boolean;
     currentStep: number;
-    targetUrl?: string;
+    sponsorClicked: boolean;
   }> {
     const session = await redirectSessionRepository.findById(sessionId);
     if (!session) {
       throw buildServiceError("Session not found", StatusCodes.NOT_FOUND);
     }
 
-    const isComplete = session.currentStep === 5;
-    const isQualified = session.isQualified;
-
-    let targetUrl: string | undefined;
-    if (isComplete) {
-      // Lookup the actual URL from redirect service
-      const resolved = await redirectService.inspectShortCode(session.shortCode);
-      if (resolved.outcome === "ACTIVE") {
-        targetUrl = resolved.targetUrl;
-      }
-    }
-
     return {
-      isComplete,
-      isQualified,
+      isComplete: session.currentStep >= 5,
+      isQualified: session.isQualified,
       currentStep: session.currentStep,
-      targetUrl
+      sponsorClicked: Boolean(session.sponsorClickedAt)
     };
   }
 
-  /**
-   * Get funnel progress for a session
-   */
   async getProgress(
     sessionId: string
   ): Promise<{

@@ -2,7 +2,6 @@ import { StatusCodes } from "http-status-codes";
 import { env } from "../../config/env";
 import { urlRepository } from "../../repositories/url.repository";
 import { subscriptionService } from "../subscriptions/subscription.service";
-import { anonSessionService } from "../redirect/anon-session.service";
 import { URL_AD_MODE, URL_STATUS, type UrlStatus } from "../../types/common";
 import { generateShortCode } from "../../utils/nanoid";
 import { isValidPublicUrl, normalizeUrl } from "../../utils/url";
@@ -25,77 +24,6 @@ const buildServiceError = (message: string, statusCode: number): ServiceError =>
 type ShortUrlEntity = Awaited<ReturnType<typeof urlRepository.findByShortCode>>;
 
 export class UrlService {
-  // Create a public/anonymous short URL. Uses a placeholder owner id so
-  // the existing data model (ownerId required) remains satisfied.
-  async createPublicUrl(
-    input: CreateShortUrlInput,
-    options?: {
-      anonSessionId?: string;
-      createdByMemberId?: string;
-      referralCode?: string;
-      userAgent?: string;
-      ipHash?: string;
-    }
-  ): Promise<UrlListItem> {
-    const normalizedUrl = normalizeUrl(input.originalUrl);
-    if (!isValidPublicUrl(normalizedUrl)) {
-      throw buildServiceError("Please provide a valid public URL", StatusCodes.BAD_REQUEST);
-    }
-
-    const shortCode = input.customAlias ? await this.reserveCustomAlias(input.customAlias) : await this.generateUniqueShortCode();
-
-    const expiresAt = input.expiresAt ? new Date(input.expiresAt) : undefined;
-    if (expiresAt && Number.isNaN(expiresAt.getTime())) {
-      throw buildServiceError("Invalid expiry date", StatusCodes.BAD_REQUEST);
-    }
-
-    // Use the configured anonymous owner id so anonymous links have an owner placeholder.
-    const ANON_OWNER_ID = env.APP_ANON_OWNER_ID;
-
-    const creationData: Record<string, unknown> = {
-      ownerId: ANON_OWNER_ID,
-      shortCode,
-      originalUrl: input.originalUrl.trim(),
-      normalizedUrl,
-      adMode: input.adMode ?? URL_AD_MODE.MONETIZED,
-      isCustomAlias: Boolean(input.customAlias),
-      title: input.title,
-      description: input.description,
-      expiresAt
-    };
-
-    // Add referral attribution if provided
-    let finalMemberId = options?.createdByMemberId;
-    let finalAnonSessionId = options?.anonSessionId;
-
-    if (options?.referralCode && options.userAgent && options.ipHash) {
-      try {
-        const session = await anonSessionService.createSession({
-          userAgent: options.userAgent,
-          ipHash: options.ipHash,
-          referralCode: options.referralCode
-        });
-        finalMemberId = session.memberId;
-        // In a real scenario, we might want to return this session token to the client
-        // but for now we just link it to the URL.
-      } catch (err) {
-        console.error("Failed to create referral session:", err);
-      }
-    }
-
-    if (finalMemberId) {
-      creationData.createdByMemberId = finalMemberId;
-      await anonSessionService.trackLinkGeneration(finalMemberId);
-    }
-
-    if (finalAnonSessionId) {
-      creationData.anonymousSessionId = finalAnonSessionId;
-    }
-
-    const created = await urlRepository.createOne(creationData as Parameters<typeof urlRepository.createOne>[0]);
-
-    return this.toUrlListItem(created);
-  }
   async createBulkUrls(userId: string, input: BulkCreateShortUrlInput): Promise<UrlListItem[]> {
     const plan = await subscriptionService.getPlanForUser(userId);
     const maxLinks = plan?.limits.maxLinks ?? 0;

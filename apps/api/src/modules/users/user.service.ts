@@ -2,11 +2,16 @@ import { randomBytes } from "crypto";
 import { StatusCodes } from "http-status-codes";
 import { EMAIL_VERIFICATION_TOKEN_TTL_HOURS } from "../../config/constants";
 import { env } from "../../config/env";
+import { ShortUrlModel } from "../../models/short-url.model";
+import { MemberEarningModel } from "../../models/member-earning.model";
+import { RedirectSessionModel } from "../../models/redirect-session.model";
+import { MemberMetricsModel } from "../../models/member-metrics.model";
 import { userRepository } from "../../repositories/user.repository";
 import { sendEmail } from "../../utils/email";
 import { buildVerificationEmail } from "../../utils/email-templates";
 import { hashPassword, hashToken, verifyPassword } from "../../utils/hash";
 import type { UpdatePasswordInput, UpdateProfileInput, UserProfile } from "./user.types";
+import type { MemberMetricsDocument } from "../../models/member-metrics.model";
 
 type ServiceError = Error & { statusCode?: number };
 
@@ -36,6 +41,75 @@ export class UserService {
     }
 
     return this.toProfile(user);
+  }
+
+  async getAnonymousLinks(userId: string): Promise<{
+    items: Array<{
+      shortCode: string;
+      shortUrl: string;
+      originalUrl: string;
+      createdAt: Date;
+      totalClicks: number;
+      qualifiedClicks: number;
+    }>;
+  }> {
+    const links = await ShortUrlModel.find({ createdByMemberId: userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return {
+      items: links.map((link) => ({
+        shortCode: link.shortCode,
+        shortUrl: `${env.APP_PUBLIC_URL}/r/${link.shortCode}`,
+        originalUrl: link.originalUrl,
+        createdAt: link.createdAt,
+        totalClicks: link.rawOpenCount ?? link.clickCount ?? 0,
+        qualifiedClicks: link.qualifiedCompletionCount ?? 0
+      }))
+    };
+  }
+
+  async getEarningsSummary(userId: string): Promise<{
+    totalEarnings: number;
+    thisMonthEarnings: number;
+    totalQualifiedClicks: number;
+    breakdown: Array<{ country: string; clicks: number; earnings: number }>;
+  }> {
+    const metrics = (await MemberMetricsModel.findOne({ memberId: userId }).lean()) as
+      | MemberMetricsDocument
+      | null;
+    const earnings = await MemberEarningModel.find({ memberId: userId }).lean();
+
+    const sessions = await RedirectSessionModel.find({
+      _id: { $in: earnings.map((entry) => entry.redirectSessionId) }
+    })
+      .select("country")
+      .lean();
+
+    const sessionCountryById = new Map<string, string>();
+    sessions.forEach((session) => {
+      sessionCountryById.set(String(session._id), session.country || "UNKNOWN");
+    });
+
+    const byCountry = new Map<string, { clicks: number; earnings: number }>();
+    earnings.forEach((entry) => {
+      const country = sessionCountryById.get(String(entry.redirectSessionId)) || "UNKNOWN";
+      const current = byCountry.get(country) || { clicks: 0, earnings: 0 };
+      current.clicks += 1;
+      current.earnings += Number(entry.amount || 0);
+      byCountry.set(country, current);
+    });
+
+    return {
+      totalEarnings: metrics?.totalEarnings ?? 0,
+      thisMonthEarnings: metrics?.thisMonthEarnings ?? 0,
+      totalQualifiedClicks: metrics?.totalQualifiedClicks ?? earnings.length,
+      breakdown: Array.from(byCountry.entries()).map(([country, value]) => ({
+        country,
+        clicks: value.clicks,
+        earnings: Number(value.earnings.toFixed(2))
+      }))
+    };
   }
 
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<UserProfile> {

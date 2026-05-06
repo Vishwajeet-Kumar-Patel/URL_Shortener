@@ -14,6 +14,26 @@ export class UserController {
     res.status(StatusCodes.OK).json({ success: true, data });
   }
 
+  async getAnonymousLinks(req: Request, res: Response): Promise<void> {
+    const userId = String(req.params.id);
+    if (req.authUser!.userId !== userId) {
+      res.status(StatusCodes.FORBIDDEN).json({ success: false, message: "Forbidden" });
+      return;
+    }
+    const data = await userService.getAnonymousLinks(userId);
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
+  async getEarnings(req: Request, res: Response): Promise<void> {
+    const userId = String(req.params.id);
+    if (req.authUser!.userId !== userId) {
+      res.status(StatusCodes.FORBIDDEN).json({ success: false, message: "Forbidden" });
+      return;
+    }
+    const data = await userService.getEarningsSummary(userId);
+    res.status(StatusCodes.OK).json({ success: true, data });
+  }
+
   async updateProfile(req: Request, res: Response): Promise<void> {
     const payload = req.body as UpdateProfileInput;
     const data = await userService.updateProfile(req.authUser!.userId, payload);

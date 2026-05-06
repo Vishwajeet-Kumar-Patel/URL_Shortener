@@ -5,6 +5,8 @@ import { clickRepository } from "../../repositories/click.repository";
 import { urlRepository } from "../../repositories/url.repository";
 import { env } from "../../config/env";
 import { memberMetricsRepository } from "../../repositories/member-metrics.repository";
+import { visitorQualificationRepository } from "../../repositories/visitor-qualification.repository";
+import { memberEarningRepository } from "../../repositories/member-earning.repository";
 import { WALLET_TX_SOURCE } from "../../types/common";
 import { walletService } from "../wallet/wallet.service";
 import { URL_STATUS } from "../../types/common";
@@ -88,8 +90,8 @@ export class RedirectService {
     if (!isUnique && finalQualified) {
       finalQualified = false;
     }
-    // Always increment raw click count for the short URL on initial hit
-    await urlRepository.incrementClickForActiveShortCode(input.shortCode);
+    // Raw open counter is tracked separately from funnel progress and final qualified completion.
+    await urlRepository.incrementRawOpen(input.shortCode);
 
     const click = await clickRepository.createClickLog({
       urlId: input.urlId as never,
@@ -122,6 +124,10 @@ export class RedirectService {
     country?: string;
     shortCode: string;
     clickLogId: string;
+    redirectSessionId?: string;
+    visitorIpHash?: string;
+    fingerprintHash?: string;
+    memberId?: string;
   }): Promise<{ amount: number; currency: string } | null> {
     // 1. Get the URL to check for referred member attribution
     const url = await urlRepository.findByShortCode(input.shortCode);
@@ -148,6 +154,37 @@ export class RedirectService {
     // 4. Calculate payout using unified CPM calculation
     const breakdown = calculateCpmBreakdown(rate.cpm, rate.currency);
 
+    const qualification = input.redirectSessionId && input.visitorIpHash
+      ? await visitorQualificationRepository.claimUniqueCompletion({
+          ipHash: input.visitorIpHash,
+          fingerprintHash: input.fingerprintHash,
+          shortCode: input.shortCode,
+          redirectSessionId: input.redirectSessionId,
+          memberId: recipientId
+        })
+      : null;
+
+    if (qualification?.isDuplicate) {
+      return { amount: 0, currency: rate.currency };
+    }
+
+    if (input.redirectSessionId) {
+      const alreadyLogged = await memberEarningRepository.existsForSession(input.redirectSessionId);
+      if (alreadyLogged) {
+        return { amount: 0, currency: rate.currency };
+      }
+    }
+
+    if (input.redirectSessionId) {
+      await memberEarningRepository.createLedgerEntry({
+        memberId: recipientId,
+        shortLinkId: String(url._id),
+        redirectSessionId: input.redirectSessionId,
+        amount: breakdown.memberEarning,
+        visitorIpHash: input.visitorIpHash || ""
+      });
+    }
+
     // 5. Record the credit in member's wallet
     await walletService.credit(
       recipientId,
@@ -161,6 +198,8 @@ export class RedirectService {
     await memberMetricsRepository.getOrCreateMetrics(recipientId);
     await memberMetricsRepository.incrementQualifiedClicks(recipientId, 1);
     await memberMetricsRepository.addEarnings(recipientId, breakdown.memberEarning);
+
+    await urlRepository.incrementQualifiedCompletion(input.shortCode);
 
     // NOTE: Admin earning (breakdown.adminEarning) is implicitly tracked
     // It will be recorded in RevenueLog when that model is integrated

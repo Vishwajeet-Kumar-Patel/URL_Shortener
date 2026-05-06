@@ -132,7 +132,31 @@ export class UrlRepository {
   async incrementClickForActiveShortCode(shortCode: string): Promise<ShortUrlEntity | null> {
     return ShortUrlModel.findOneAndUpdate(
       { shortCode, status: URL_STATUS.ACTIVE },
-      { $inc: { clickCount: 1 }, $set: { lastClickedAt: new Date() } },
+      { $inc: { clickCount: 1, rawOpenCount: 1 }, $set: { lastClickedAt: new Date() } },
+      { new: true }
+    ).exec();
+  }
+
+  async incrementRawOpen(shortCode: string): Promise<ShortUrlEntity | null> {
+    return ShortUrlModel.findOneAndUpdate(
+      { shortCode, status: URL_STATUS.ACTIVE },
+      { $inc: { clickCount: 1, rawOpenCount: 1 }, $set: { lastClickedAt: new Date() } },
+      { new: true }
+    ).exec();
+  }
+
+  async incrementFunnelProgress(shortCode: string): Promise<ShortUrlEntity | null> {
+    return ShortUrlModel.findOneAndUpdate(
+      { shortCode, status: URL_STATUS.ACTIVE },
+      { $inc: { funnelProgressCount: 1 } },
+      { new: true }
+    ).exec();
+  }
+
+  async incrementQualifiedCompletion(shortCode: string): Promise<ShortUrlEntity | null> {
+    return ShortUrlModel.findOneAndUpdate(
+      { shortCode, status: URL_STATUS.ACTIVE },
+      { $inc: { qualifiedCompletionCount: 1 } },
       { new: true }
     ).exec();
   }

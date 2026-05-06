@@ -8,6 +8,7 @@ import {
   formLabelClass
 } from "@/components/ui/form-classes";
 import { useAuthStore } from "@/store/auth.store";
+import Link from "next/link";
 
 type CreatedUrl = {
   shortUrl: string;
@@ -19,6 +20,18 @@ export const UrlCreateForm = ({ onCreated }: { onCreated: () => Promise<void> })
   const [created, setCreated] = useState<CreatedUrl | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!token) {
+    return (
+      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6">
+        <h2 className="mb-1 text-lg font-semibold text-white">Create short URL</h2>
+        <p className="text-sm text-slate-300">Sign in as a member to generate links and track earnings.</p>
+        <Link className="mt-4 inline-flex rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300" href="/login">
+          Login to shorten
+        </Link>
+      </div>
+    );
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,11 +47,11 @@ export const UrlCreateForm = ({ onCreated }: { onCreated: () => Promise<void> })
       return;
     }
     try {
-      const path = token ? "/urls" : "/urls/public";
-      const opts = token
-        ? { method: "POST", token, body: { originalUrl } }
-        : { method: "POST", body: { originalUrl } };
-      const data = await apiRequest<CreatedUrl>(path, opts as any);
+      const data = await apiRequest<CreatedUrl>("/urls", {
+        method: "POST",
+        token,
+        body: { originalUrl }
+      });
       setCreated(data);
       await onCreated();
       form.reset();

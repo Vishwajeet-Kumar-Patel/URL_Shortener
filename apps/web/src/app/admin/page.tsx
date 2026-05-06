@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth.store";
 
 type AdminOverview = {
   totals: {
+    uniqueClicks: string;
     users: number;
     activeUsers: number;
     bannedUsers: number;
@@ -24,6 +25,8 @@ type AdminOverview = {
 export default function AdminPage() {
   const token = useAuthStore((state) => state.accessToken);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [reports, setReports] = useState<any | null>(null);
+  const [earningsSummary, setEarningsSummary] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,8 +34,21 @@ export default function AdminPage() {
       if (!token) return;
       setError(null);
       try {
-        const data = await apiRequest<AdminOverview>("/analytics/admin/overview?days=30", { token });
-        setOverview(data);
+        const [ov, rep] = await Promise.all([
+          apiRequest<AdminOverview>("/analytics/admin/overview?days=30", { token }),
+          apiRequest<any>("/admin/reports?days=30", { token })
+        ]);
+
+        setOverview(ov);
+        setReports(rep);
+
+        // fetch summary separately for payout total
+        try {
+          const sum = await apiRequest<any>("/admin/earnings/summary?", { token });
+          setEarningsSummary(sum);
+        } catch (e) {
+          // non-fatal
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load overview");
       }
@@ -78,35 +94,46 @@ export default function AdminPage() {
           <section aria-label="Key metrics">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Key metrics</h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <Link
-                className="block rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-600 hover:bg-slate-800/80"
-                href="/admin/users"
-              >
-                <span className="text-sm text-slate-400">Users</span>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview.totals.users}</p>
+              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
+                <span className="text-sm text-slate-400">Total members</span>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.users ?? "—"}</p>
                 <p className="mt-2 text-xs text-indigo-400">View directory →</p>
-              </Link>
-              <Link
-                className="block rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-600 hover:bg-slate-800/80"
-                href="/admin/urls"
-              >
+              </div>
+              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
+                <span className="text-sm text-slate-400">Anonymous users</span>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{reports?.anonymousSessions ?? "—"}</p>
+                <p className="mt-2 text-xs text-indigo-400">Sessions without accounts</p>
+              </div>
+              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
                 <span className="text-sm text-slate-400">Short links</span>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview.totals.urls}</p>
-                <p className="mt-2 text-xs text-indigo-400">Moderate URLs →</p>
-              </Link>
-              <Link
-                className="block rounded-xl border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-600 hover:bg-slate-800/80"
-                href="/admin/clicks"
-              >
-                <span className="text-sm text-slate-400">Clicks (all time)</span>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview.totals.clicks}</p>
-                <p className="mt-2 text-xs text-indigo-400">Traffic story →</p>
-              </Link>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.urls ?? "—"}</p>
+                <p className="mt-2 text-xs text-indigo-400">Total short URLs</p>
+              </div>
+              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
+                <span className="text-sm text-slate-400">Raw clicks</span>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.clicks ?? "—"}</p>
+                <p className="mt-2 text-xs text-indigo-400">All redirects recorded</p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                <span className="text-sm text-slate-400">Qualified views</span>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.uniqueClicks ?? "—"}</p>
+                <p className="mt-2 text-xs text-indigo-400">Validated completions</p>
+              </div>
+              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                <span className="text-sm text-slate-400">Earnings (payout)</span>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-300">₹{earningsSummary?.data?.totalEarnings?.toFixed?.(2) ?? (earningsSummary?.data?.totalEarnings ?? "—")}</p>
+                <p className="mt-2 text-xs text-indigo-400">Platform payouts</p>
+              </div>
+              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                <span className="text-sm text-slate-400">Gross revenue</span>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-white">₹{reports?.revenue?.grossCollected ?? "—"}</p>
+                <p className="mt-2 text-xs text-indigo-400">Collections (period)</p>
+              </div>
               <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
                 <span className="text-sm text-slate-400">Active links</span>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-400">
-                  {overview.totals.activeUrls}
-                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-400">{overview?.totals.activeUrls ?? "—"}</p>
                 <p className="mt-2 text-xs text-slate-500">Currently accepting redirects</p>
               </div>
             </div>

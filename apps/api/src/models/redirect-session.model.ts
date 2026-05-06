@@ -12,6 +12,7 @@ export interface RedirectSessionDocument {
   // Visitor metadata
   ipAddress?: string;
   ipHash?: string;
+  fingerprintHash?: string;
   userAgent?: string;
   browser?: string;
   os?: string;
@@ -21,11 +22,19 @@ export interface RedirectSessionDocument {
   city?: string;
   jsEnabled?: boolean;
   cookiesEnabled?: boolean;
+  startedAt: Date;
+  sponsorClickedAt?: Date;
+  completedAt?: Date;
   // Link to initial raw click log
   clickLogId?: Types.ObjectId;
   memberId?: Types.ObjectId;
   currentStep: number;
   completedSteps: number[];
+  step1CompleteAt?: Date;
+  step2CompleteAt?: Date;
+  step3CompleteAt?: Date;
+  step4CompleteAt?: Date;
+  step5CompleteAt?: Date;
   scrollPosition: number;
   maxScrollPosition: number;
   viewportHeight: number;
@@ -69,11 +78,20 @@ const redirectSessionSchema = new Schema<RedirectSessionDocument>(
     city: { type: String, trim: true },
     jsEnabled: { type: Boolean, default: true },
     cookiesEnabled: { type: Boolean, default: true },
+    fingerprintHash: { type: String, trim: true, index: true },
+    startedAt: { type: Date, default: () => new Date(), index: true },
+    sponsorClickedAt: { type: Date },
+    completedAt: { type: Date },
     // initial raw click log id
     clickLogId: { type: Schema.Types.ObjectId, ref: "ClickLog", index: true, sparse: true },
     memberId: { type: Schema.Types.ObjectId, ref: "User", index: true, sparse: true },
-    currentStep: { type: Number, required: true, default: 1, min: 1, max: 5 },
+    currentStep: { type: Number, required: true, default: 0, min: 0, max: 5 },
     completedSteps: { type: [Number], default: [] },
+    step1CompleteAt: { type: Date },
+    step2CompleteAt: { type: Date },
+    step3CompleteAt: { type: Date },
+    step4CompleteAt: { type: Date },
+    step5CompleteAt: { type: Date },
     scrollPosition: { type: Number, default: 0, min: 0 },
     maxScrollPosition: { type: Number, default: 0, min: 0 },
     viewportHeight: { type: Number, default: 0, min: 0 },

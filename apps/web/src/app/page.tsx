@@ -1,21 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
-import {
-  formButtonPrimaryClass,
-  formInputClass,
-  formLabelClass
-} from "@/components/ui/form-classes";
-import { apiRequest } from "@/lib/api-client";
-import { useAuthStore } from "@/store/auth.store";
-
-type CreatedUrl = {
-  shortUrl: string;
-  shortCode: string;
-};
 
 const featureCards = [
   {
@@ -64,56 +53,22 @@ const faqItems = [
 ];
 
 export default function HomePage() {
-  const token = useAuthStore((state) => state.accessToken);
-  const [anonSubmitting, setAnonSubmitting] = useState(false);
-  const [anonError, setAnonError] = useState<string | null>(null);
-  const [anonCreated, setAnonCreated] = useState<CreatedUrl | null>(null);
+  const router = useRouter();
+  const [url, setUrl] = useState("");
   const [referralCode, setReferralCode] = useState("");
 
-  useEffect(() => {
-    // Read referral_code from cookie
-    const cookies = document.cookie.split(";");
-    const refCookie = cookies.find(c => c.trim().startsWith("referral_code="));
-    if (refCookie) {
-      const code = refCookie.split("=")[1];
-      if (code) {
-        setReferralCode(code);
-      }
+  const handleGenerateLink = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!url.trim()) {
+      alert("Please enter a URL");
+      return;
     }
-  }, []);
 
+    const signupUrl = referralCode
+      ? `/register?ref=${encodeURIComponent(referralCode.trim())}`
+      : "/register";
 
-  const onAnonShorten = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setAnonError(null);
-    setAnonCreated(null);
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const originalUrl = String(formData.get("anonOriginalUrl") ?? "").trim();
-    // Use the state value or form value
-    const finalReferralCode = String(formData.get("referralCode") ?? "").trim() || referralCode;
-    
-    if (!originalUrl) return;
-
-    setAnonSubmitting(true);
-    try {
-      const body: Record<string, unknown> = { originalUrl };
-      if (finalReferralCode) {
-        body.referralCode = finalReferralCode;
-      }
-      
-      const data = await apiRequest<CreatedUrl>("/urls/public", {
-        method: "POST",
-        body
-      });
-      setAnonCreated(data);
-      form.reset();
-    } catch (err) {
-      setAnonError(err instanceof Error ? err.message : "Unable to shorten URL");
-    } finally {
-      setAnonSubmitting(false);
-    }
+    router.push(signupUrl);
   };
 
   return (
@@ -142,69 +97,51 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Anonymous URL Shortening Form */}
           <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5 shadow-2xl sm:p-6">
             <h2 className="text-lg font-semibold text-white">Create a short link</h2>
             <p className="mb-4 mt-1 text-sm text-slate-300">
-              No login needed. Works instantly.
+              Member-only link generation keeps attribution, earnings, and safety tracking tied to a verified account.
             </p>
-            <form className="space-y-4" onSubmit={onAnonShorten}>
+            <form onSubmit={handleGenerateLink} className="space-y-3">
               <div>
-                <label className={formLabelClass} htmlFor="anon-original-url">
-                  Destination URL
+                <label htmlFor="url" className="block text-sm font-medium text-slate-200 mb-2">
+                  Your URL
                 </label>
                 <input
-                  className={formInputClass}
-                  id="anon-original-url"
-                  name="anonOriginalUrl"
-                  placeholder="https://example.com/your-long-url"
-                  required
-                  suppressHydrationWarning
+                  id="url"
                   type="url"
+                  placeholder="https://example.com/your-long-url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  suppressHydrationWarning
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label className={formLabelClass} htmlFor="referral-code">
-                  Referral Code (Optional)
+                <label htmlFor="referral" className="block text-sm font-medium text-slate-200 mb-2">
+                  Referral Code (optional)
                 </label>
                 <input
-                  className={formInputClass}
-                  id="referral-code"
-                  name="referralCode"
-                  placeholder="Enter referral code to support a creator"
-                  suppressHydrationWarning
+                  id="referral"
                   type="text"
+                  placeholder="Enter referral code"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
+                  suppressHydrationWarning
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
-                <p className="mt-1 text-xs text-slate-400">
-                  Have a referral code? Enter it to give them credit for your traffic.
-                </p>
               </div>
               <button
-                className={formButtonPrimaryClass}
-                disabled={anonSubmitting}
-                suppressHydrationWarning
                 type="submit"
+                suppressHydrationWarning
+                className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
               >
-                {anonSubmitting ? "Shortening..." : "Create Short Link"}
+                Generate link
               </button>
+              <p className="text-xs text-slate-400 text-center">
+                Create an account to start shortening links
+              </p>
             </form>
-            {anonError ? <p className="mt-3 text-sm text-rose-600">{anonError}</p> : null}
-            {anonCreated ? (
-              <div className="mt-4 rounded-lg border border-emerald-700 bg-emerald-950/30 p-3">
-                <p className="text-sm font-semibold text-emerald-300">Short URL created</p>
-                <p className="mt-1 break-all text-sm text-emerald-100">{anonCreated.shortUrl}</p>
-                <button 
-                  className="mt-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300"
-                  onClick={() => {
-                    navigator.clipboard.writeText(anonCreated.shortUrl);
-                  }}
-                >
-                  Copy link
-                </button>
-              </div>
-            ) : null}
           </div>
         </section>
 
@@ -235,10 +172,10 @@ export default function HomePage() {
             Get a referral code and share it with creators. Earn CPM for every qualified click their links generate.
           </p>
           <Link 
-            href={token ? "/dashboard/partner/referral-link" : "/register"}
+            href="/register"
             className="mt-4 inline-block rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500"
           >
-            {token ? "Get your referral code" : "Join as a partner"}
+            Join as a partner
           </Link>
         </section>
 

@@ -1,17 +1,14 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getGeoFromHeaders } from "../../utils/geo";
-import { parseUserAgent } from "../../utils/user-agent";
-import { hashToken } from "../../utils/hash";
 import { env } from "../../config/env";
-import { redirectService } from "./redirect.service";
+import { getGeoFromHeaders } from "../../utils/geo";
+import { hashToken } from "../../utils/hash";
+import { parseUserAgent } from "../../utils/user-agent";
 import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
-import { clickRepository } from "../../repositories/click.repository";
 import { anonSessionService } from "./anon-session.service";
-import { adminEarningsService } from "../admin/admin-earnings.service";
-
-// We persist redirect sessions to DB; no in-memory ad sessions used.
+import { redirectService } from "./redirect.service";
+import { createRedirectSessionToken, verifyRedirectSessionToken } from "./redirect-token";
 
 const getClientIp = (req: Request): string => {
   const forwardedFor = req.headers["x-forwarded-for"];
@@ -23,6 +20,27 @@ const getClientIp = (req: Request): string => {
   }
 
   return req.ip || "0.0.0.0";
+};
+
+const resolveSessionId = (value: string): string | null => {
+  const verified = verifyRedirectSessionToken(value);
+  if (verified) return verified;
+  return value.length === 24 ? value : null;
+};
+
+const getStageRoute = (stage: number, sessionToken: string): string => {
+  switch (stage) {
+    case 1:
+      return `/monetize/blog/1?rs=${encodeURIComponent(sessionToken)}`;
+    case 2:
+      return `/monetize/blog/2?rs=${encodeURIComponent(sessionToken)}`;
+    case 3:
+      return `/monetize/blog/3?rs=${encodeURIComponent(sessionToken)}`;
+    case 4:
+      return `/monetize/unlock?rs=${encodeURIComponent(sessionToken)}`;
+    default:
+      return `/monetize/start?rs=${encodeURIComponent(sessionToken)}`;
+  }
 };
 
 export class RedirectController {
@@ -37,7 +55,7 @@ export class RedirectController {
       success: true,
       data: {
         shortCode: String(req.params.shortCode),
-        targetUrl: result.targetUrl
+        visitUrl: `${env.CLIENT_ORIGIN}/visit/${encodeURIComponent(String(req.params.shortCode))}`
       }
     });
   }
@@ -49,10 +67,12 @@ export class RedirectController {
       res.status(StatusCodes.NOT_FOUND).json({ success: false, message: inspected.message });
       return;
     }
+
     const jsEnabled = req.body?.jsEnabled !== false;
     const cookiesEnabled = req.body?.cookiesEnabled !== false;
+    const fingerprint = String(req.body?.fingerprint ?? `${meta.userAgent}:${meta.ipAddress}:${req.headers["accept-language"] ?? ""}`);
+    const fingerprintHash = hashToken(fingerprint);
 
-    // Create initial raw click log and increment raw counter
     const clickResult = await redirectService.recordClick({
       ...meta,
       urlId: inspected.urlId,
@@ -65,14 +85,31 @@ export class RedirectController {
       qualificationReason: "session_started"
     });
 
-    // Create persistent redirect session
+    const referralCode = req.query.ref as string | undefined;
+    let anonId: string | undefined;
+    let memberId: string | undefined;
+    if (referralCode) {
+      try {
+        const anon = await anonSessionService.createSession({
+          userAgent: meta.userAgent,
+          ipHash: meta.ipHash,
+          referralCode
+        });
+        anonId = anon.sessionId;
+        memberId = anon.memberId;
+      } catch {
+        // Referral creation is best-effort.
+      }
+    }
+
     const session = await redirectSessionRepository.createSession({
       shortCode: inspected.shortCode,
-      anonymousSessionId: undefined,
-      memberId: undefined,
+      anonymousSessionId: anonId,
+      memberId,
       targetUrl: inspected.targetUrl,
       ipAddress: meta.ipAddress,
       ipHash: meta.ipHash,
+      fingerprintHash,
       userAgent: meta.userAgent,
       browser: meta.browser,
       os: meta.os,
@@ -90,154 +127,103 @@ export class RedirectController {
       return;
     }
 
-    res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), continueAfterSeconds: 5 } });
+    const sessionToken = createRedirectSessionToken(String(session._id));
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        sessionToken,
+        nextRoute: getStageRoute(0, sessionToken),
+        shortCode: inspected.shortCode
+      }
+    });
   }
 
   async completeVisit(req: Request, res: Response): Promise<void> {
     try {
-      const sessionId = String(req.params.sessionId);
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
       const session = await redirectSessionRepository.findById(sessionId);
-      
       if (!session) {
         res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Session not found" });
         return;
       }
 
-      // Try to mark click as qualified (optional - don't crash if it fails)
-      if (session.clickLogId) {
-        try {
-          await clickRepository.markClickQualified(String(session.clickLogId));
-        } catch (err) {
-          console.error("Failed to mark click qualified:", err);
-        }
+      const required = [
+        { key: 'step1CompleteAt', ok: Boolean(session.step1CompleteAt) },
+        { key: 'step2CompleteAt', ok: Boolean(session.step2CompleteAt) },
+        { key: 'step3CompleteAt', ok: Boolean(session.step3CompleteAt) },
+        { key: 'step4CompleteAt', ok: Boolean(session.step4CompleteAt) },
+        { key: 'sponsorClickedAt', ok: Boolean(session.sponsorClickedAt) }
+      ];
+
+      const missing = required.filter(r => !r.ok).map(r => r.key);
+      if (missing.length > 0) {
+        console.warn('completeVisit: session missing completion flags', { sessionId, missing });
+        res.status(StatusCodes.FORBIDDEN).json({ success: false, message: 'Session has not completed the monetization flow', missing });
+        return;
       }
 
-      // Try to credit payout (optional - don't crash if it fails)
-      try {
-        const inspected = await redirectService.inspectShortCode(session.shortCode);
-        if (inspected.outcome === "ACTIVE") {
-          await redirectService.creditQualifiedPayout({
-            ownerId: inspected.ownerId,
-            country: session.country || "",
-            shortCode: session.shortCode,
-            clickLogId: session.clickLogId ? String(session.clickLogId) : ""
-          });
-        }
-      } catch (err) {
-        console.error("Failed to credit payout:", err);
+      const inspected = await redirectService.inspectShortCode(session.shortCode);
+      if (inspected.outcome !== "ACTIVE") {
+        res.status(StatusCodes.GONE).json({ success: false, message: inspected.message });
+        return;
       }
 
-      // Always return the redirect URL
-      res.status(StatusCodes.OK).json({ 
-        success: true, 
-        data: { redirectUrl: session.targetUrl } 
+      const payout = await redirectService.creditQualifiedPayout({
+        ownerId: inspected.ownerId,
+        country: session.country || "",
+        shortCode: session.shortCode,
+        clickLogId: session.clickLogId ? String(session.clickLogId) : "",
+        redirectSessionId: String(session._id),
+        visitorIpHash: session.ipHash,
+        fingerprintHash: session.fingerprintHash,
+        memberId: session.memberId ? String(session.memberId) : undefined
+      });
+
+      await redirectSessionRepository.markCompleted(sessionId);
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          redirectUrl: inspected.targetUrl,
+          amount: payout?.amount ?? 0,
+          currency: payout?.currency ?? "INR"
+        }
       });
     } catch (error) {
       console.error("Complete visit error:", error);
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-        success: false, 
-        message: "Internal server error" 
-      });
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Internal server error" });
     }
   }
 
   async redirectByShortCode(req: Request, res: Response): Promise<void> {
-    const result = await this.resolveRaw(req);
+    const result = await redirectService.inspectShortCode(String(req.params.shortCode));
 
     if (result.outcome === "ACTIVE") {
-      // Create a redirect session for every hit and record raw click immediately
-      const meta = this.getRequestMeta(req);
-      const jsEnabled = true;
-      const cookiesEnabled = true;
-
-      const clickResult = await redirectService.recordClick({
-        ...meta,
-        urlId: result.urlId,
-        ownerId: result.ownerId,
-        jsEnabled,
-        cookiesEnabled,
-        isBot: false,
-        isSuspicious: false,
-        isQualified: false,
-        qualificationReason: "initial_visit"
-      });
-
-      // If referral is provided, try to create anon session
-      let anonId: string | undefined = undefined;
-      let memberId: string | undefined = undefined;
-      const referralCode = req.query.ref as string | undefined;
-      if (referralCode) {
-        try {
-          const anon = await anonSessionService.createSession({
-            userAgent: meta.userAgent,
-            ipHash: meta.ipHash,
-            referralCode
-          });
-          anonId = anon.sessionId;
-          memberId = anon.memberId;
-        } catch (_) {
-          // ignore referral creation errors; still create session
-        }
-      }
-
-      const session = await redirectSessionRepository.createSession({
-        shortCode: result.shortCode,
-        anonymousSessionId: anonId,
-        memberId: memberId,
-        targetUrl: result.targetUrl,
-        ipAddress: meta.ipAddress,
-        ipHash: meta.ipHash,
-        userAgent: meta.userAgent,
-        browser: meta.browser,
-        os: meta.os,
-        deviceType: meta.deviceType,
-        referrer: meta.referrer,
-        country: meta.country,
-        city: meta.city,
-        jsEnabled,
-        cookiesEnabled,
-        clickLogId: clickResult.clickLogId
-      });
-
-      if (!session) {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to create redirect session" });
-        return;
-      }
-
-      // Redirect visitor into the single monetized blog page using persistent session id
-      // e.g. /blog/monetized?token=sessionId
-      res.redirect(302, `${env.CLIENT_ORIGIN}/blog/monetized?token=${String(session._id)}`);
+      res.redirect(302, `${env.CLIENT_ORIGIN}/visit/${encodeURIComponent(String(req.params.shortCode))}`);
       return;
     }
 
     if (result.outcome === "PAUSED") {
-      res
-        .status(StatusCodes.GONE)
-        .type("html")
-        .send(buildRedirectStatusPage("Paused", result.message));
+      res.status(StatusCodes.GONE).type("html").send(buildRedirectStatusPage("Paused", result.message));
       return;
     }
 
     if (result.outcome === "HIDDEN") {
-      res
-        .status(StatusCodes.NOT_FOUND)
-        .type("html")
-        .send(buildRedirectStatusPage("Hidden", result.message));
+      res.status(StatusCodes.NOT_FOUND).type("html").send(buildRedirectStatusPage("Hidden", result.message));
       return;
     }
 
     if (result.outcome === "DELETED") {
-      res
-        .status(StatusCodes.GONE)
-        .type("html")
-        .send(buildRedirectStatusPage("Deleted", result.message));
+      res.status(StatusCodes.GONE).type("html").send(buildRedirectStatusPage("Deleted", result.message));
       return;
     }
 
-    res
-      .status(StatusCodes.NOT_FOUND)
-      .type("html")
-      .send(buildRedirectStatusPage("Not Found", result.message));
+    res.status(StatusCodes.NOT_FOUND).type("html").send(buildRedirectStatusPage("Not Found", result.message));
   }
 
   private getRequestMeta(req: Request) {
@@ -266,16 +252,14 @@ export class RedirectController {
     };
   }
 
-  private async resolveRaw(req: Request) {
-    return redirectService.resolveShortCode(this.getRequestMeta(req));
-  }
-
-
-
   async validateFunnelStep(req: Request, res: Response): Promise<void> {
     try {
       const { funnelValidationService } = await import("./funnel-validation.service");
-      const sessionId = String(req.params.sessionId);
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
       const { currentStep, scrollPosition, viewportHeight, ctaClicked, hasScrolledEnough } = req.body;
 
       const result = await funnelValidationService.validateAndAdvanceStep(sessionId, currentStep, {
@@ -290,164 +274,116 @@ export class RedirectController {
         data: {
           isValid: result.isValid,
           nextStep: result.nextStep,
-          message: result.message
+          message: result.message,
+          nextRoute: getStageRoute(result.nextStep, String(req.body?.sessionToken ?? req.params.sessionId))
         }
       });
-    } catch (error) {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Failed to validate funnel step"
-      });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Validate funnel step error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to validate funnel step" });
     }
   }
 
   async getFunnelProgress(req: Request, res: Response): Promise<void> {
     try {
       const { funnelValidationService } = await import("./funnel-validation.service");
-      const sessionId = String(req.params.sessionId);
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
 
       const progress = await funnelValidationService.getProgress(sessionId);
 
       if (!progress) {
-        res.status(StatusCodes.NOT_FOUND).json({
-          success: false,
-          message: "Funnel session not found"
-        });
+        res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Funnel session not found" });
         return;
       }
 
-      res.status(StatusCodes.OK).json({
-        success: true,
-        data: progress
-      });
-    } catch (error) {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Failed to get funnel progress"
-      });
+      res.status(StatusCodes.OK).json({ success: true, data: progress });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Get funnel progress error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to get funnel progress" });
     }
   }
 
   async getFunnelStatus(req: Request, res: Response): Promise<void> {
     try {
       const { funnelValidationService } = await import("./funnel-validation.service");
-      const sessionId = String(req.params.sessionId);
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
 
       const status = await funnelValidationService.getSessionStatus(sessionId);
 
-      res.status(StatusCodes.OK).json({
-        success: true,
-        data: status
-      });
-    } catch (error) {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Failed to get funnel status"
-      });
+      res.status(StatusCodes.OK).json({ success: true, data: status });
+    } catch (error: any) {
+      if (error && typeof error.statusCode === "number") {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+        return;
+      }
+      console.error("Get funnel status error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false, message: "Failed to get funnel status" });
     }
   }
 
-  // New: receive single-page monetization events from public blog page
   async sessionEvent(req: Request, res: Response): Promise<void> {
     try {
-      const sessionId = String(req.params.sessionId);
-      const { event, scrollPosition, maxScrollPosition, viewportHeight, placement } = req.body as any;
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
 
+      const { event, scrollPosition, maxScrollPosition, viewportHeight } = req.body as Record<string, unknown>;
       if (!event) {
         res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Missing event" });
         return;
       }
 
-      // Map events to repository updates
-      switch (event) {
+      switch (String(event)) {
         case "timer1":
-          // entered phase 2 (scroll phase)
-          await redirectSessionRepository.addStepTiming(sessionId, 2, { step: 2, enteredAt: new Date() });
-          break;
-        case "ad_timer1_popup":
-          await redirectSessionRepository.addStepTiming(sessionId, 2, { step: 2, enteredAt: new Date() });
-          {
-            const session = await redirectSessionRepository.findById(sessionId);
-            await adminEarningsService.logRevenue({
-              source: "AD_POPUP_IMPRESSION",
-              amount: 0,
-              currency: "INR",
-              country: session?.country,
-              memberId: session?.memberId ? String(session.memberId) : undefined,
-              sessionId,
-              notes: `Ad popup impression captured (${event}) on ${placement || "blog_monetized"}`
-            });
-          }
-          break;
-        case "ad_timer1_click":
-          await redirectSessionRepository.updateStep(sessionId, 2, { hasScrolledEnough: true });
-          {
-            const session = await redirectSessionRepository.findById(sessionId);
-            await adminEarningsService.logRevenue({
-              source: "AD_POPUP_CLICK",
-              amount: 0,
-              currency: "INR",
-              country: session?.country,
-              memberId: session?.memberId ? String(session.memberId) : undefined,
-              sessionId,
-              notes: `Ad popup click captured (${event}) on ${placement || "blog_monetized"}`
-            });
-          }
+          await redirectSessionRepository.updateStageTimestamp(sessionId, 1);
+          await redirectSessionRepository.updateStep(sessionId, 1, {});
           break;
         case "scroll":
           await redirectSessionRepository.updateStep(sessionId, 2, {
-            scrollPosition: scrollPosition || 100,
-            maxScrollPosition: maxScrollPosition || 100,
-            viewportHeight: viewportHeight || 0,
+            scrollPosition: Number(scrollPosition || 100),
+            maxScrollPosition: Number(maxScrollPosition || 100),
+            viewportHeight: Number(viewportHeight || 0),
             hasScrolledEnough: true
           });
-          // mark entry to next timer step
-          await redirectSessionRepository.addStepTiming(sessionId, 3, { step: 3, enteredAt: new Date() });
+          await redirectSessionRepository.updateStageTimestamp(sessionId, 2);
           break;
         case "timer2":
-          await redirectSessionRepository.addStepTiming(sessionId, 4, { step: 4, enteredAt: new Date() });
+          await redirectSessionRepository.updateStageTimestamp(sessionId, 2);
           break;
-        case "ad_timer2_popup":
-          await redirectSessionRepository.addStepTiming(sessionId, 4, { step: 4, enteredAt: new Date() });
-          {
-            const session = await redirectSessionRepository.findById(sessionId);
-            await adminEarningsService.logRevenue({
-              source: "AD_POPUP_IMPRESSION",
-              amount: 0,
-              currency: "INR",
-              country: session?.country,
-              memberId: session?.memberId ? String(session.memberId) : undefined,
-              sessionId,
-              notes: `Ad popup impression captured (${event}) on ${placement || "blog_monetized"}`
-            });
-          }
-          break;
-        case "ad_timer2_click":
-          await redirectSessionRepository.updateStep(sessionId, 4, { ctaClicked: true });
-          {
-            const session = await redirectSessionRepository.findById(sessionId);
-            await adminEarningsService.logRevenue({
-              source: "AD_POPUP_CLICK",
-              amount: 0,
-              currency: "INR",
-              country: session?.country,
-              memberId: session?.memberId ? String(session.memberId) : undefined,
-              sessionId,
-              notes: `Ad popup click captured (${event}) on ${placement || "blog_monetized"}`
-            });
-          }
+        case "timer3":
+          await redirectSessionRepository.updateStageTimestamp(sessionId, 3);
           break;
         case "sponsor":
+          await redirectSessionRepository.markSponsorClicked(sessionId);
+          // Ensure step 3 is recorded as completed when a sponsor click occurs.
+          await redirectSessionRepository.markStepComplete(sessionId, 3);
           await redirectSessionRepository.updateStep(sessionId, 4, { ctaClicked: true });
-          // sponsor opened; prepare final step
-          await redirectSessionRepository.addStepTiming(sessionId, 5, { step: 5, enteredAt: new Date() });
           break;
         case "focus":
-          // final qualification
           await redirectSessionRepository.markAsQualified(sessionId);
           break;
+        case "ad_timer1_popup":
+        case "ad_timer2_popup":
+          break;
         default:
-          // unknown event - ignore
           break;
       }
 
@@ -458,10 +394,14 @@ export class RedirectController {
     }
   }
 
-  // New: public status for session
   async getSessionStatus(req: Request, res: Response): Promise<void> {
     try {
-      const sessionId = String(req.params.sessionId);
+      const sessionId = resolveSessionId(String(req.params.sessionId));
+      if (!sessionId) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: "Invalid session token" });
+        return;
+      }
+
       const session = await redirectSessionRepository.findById(sessionId);
       if (!session) {
         res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Session not found" });
@@ -474,7 +414,9 @@ export class RedirectController {
           currentStep: session.currentStep,
           completedSteps: session.completedSteps,
           isQualified: session.isQualified,
-          targetUrl: session.targetUrl
+          sponsorClicked: Boolean(session.sponsorClickedAt),
+          canUnlock: Boolean(session.currentStep >= 4 && session.sponsorClickedAt && session.step1CompleteAt && session.step2CompleteAt && session.step3CompleteAt),
+          completedAt: session.completedAt
         }
       });
     } catch (error) {

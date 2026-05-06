@@ -19,6 +19,9 @@ export interface ShortUrlDocument {
   title?: string;
   description?: string;
   clickCount: number;
+  rawOpenCount: number;
+  funnelProgressCount: number;
+  qualifiedCompletionCount: number;
   lastClickedAt?: Date;
   expiresAt?: Date;
   createdByRole: Role;
@@ -59,6 +62,9 @@ const shortUrlSchema = new Schema<ShortUrlDocument>(
     title: { type: String, trim: true, maxlength: 255 },
     description: { type: String, trim: true, maxlength: 1000 },
     clickCount: { type: Number, default: 0, min: 0 },
+    rawOpenCount: { type: Number, default: 0, min: 0 },
+    funnelProgressCount: { type: Number, default: 0, min: 0 },
+    qualifiedCompletionCount: { type: Number, default: 0, min: 0 },
     lastClickedAt: { type: Date },
     expiresAt: { type: Date },
     createdByRole: {
