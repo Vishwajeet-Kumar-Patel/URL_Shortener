@@ -28,6 +28,7 @@ export default function VisitShortCodePage() {
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countdownSeconds, setCountdownSeconds] = useState(10);
 
   useEffect(() => {
     const start = async () => {
@@ -52,6 +53,14 @@ export default function VisitShortCodePage() {
     void start();
   }, [shortCode]);
 
+  useEffect(() => {
+    if (countdownSeconds > 0) {
+      const timer = window.setTimeout(() => setCountdownSeconds((v) => Math.max(0, v - 1)), 1000);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [countdownSeconds]);
+
   const handleVerifyHuman = async () => {
     if (!sessionId) return;
 
@@ -61,7 +70,14 @@ export default function VisitShortCodePage() {
         method: "POST"
       });
 
-      router.push(result.nextRoute || `/monetize/blog/${encodeURIComponent(sessionId)}?phase=1`);
+      // Convert old query-param format to unified single-page blog format
+      let nextRoute = result.nextRoute || `/monetize/blog/${encodeURIComponent(sessionId)}`;
+      if (nextRoute.includes("?phase=") || nextRoute.includes("/1")) {
+        // Old format: /monetize/blog/{sessionId}?phase=X or /monetize/blog/{sessionId}/1 → unified: /monetize/blog/{sessionId}
+        nextRoute = `/monetize/blog/${encodeURIComponent(sessionId)}`;
+      }
+
+      router.push(nextRoute);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to verify this visitor.");
       setVerifying(false);
@@ -107,13 +123,14 @@ export default function VisitShortCodePage() {
                 <button
                   type="button"
                   onClick={handleVerifyHuman}
-                  disabled={!checkboxChecked || !sessionId || verifying}
+                  disabled={!checkboxChecked || !sessionId || verifying || countdownSeconds > 0}
                   className="mt-5 w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
                 >
-                  {verifying ? "Verifying…" : "Verify Human"}
+                  {verifying ? "Verifying…" : countdownSeconds > 0 ? `Wait ${countdownSeconds}s` : "Verify Human"}
                 </button>
 
                 {loading ? <p className="mt-4 text-sm text-slate-400">Preparing your visit session…</p> : null}
+                {countdownSeconds > 0 && !loading ? <p className="mt-4 text-sm text-cyan-300">Verification enabled in {countdownSeconds} second{countdownSeconds === 1 ? "" : "s"}…</p> : null}
                 {sessionId ? <p className="mt-3 text-xs uppercase tracking-[0.22em] text-slate-500">Session {sessionId}</p> : null}
               </div>
 
