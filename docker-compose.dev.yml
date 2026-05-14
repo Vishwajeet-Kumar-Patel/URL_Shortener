@@ -19,9 +19,9 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      # For development with hot reload
       - ./apps/api/src:/app/apps/api/src
-    # Override CMD for development watch mode
+      - /app/node_modules
+      - /app/apps/api/node_modules
     command: npm run dev --workspace @link-shortener/api
 
   web:
@@ -31,8 +31,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # For development with hot reload
       - ./apps/web/src:/app/apps/web/src
       - ./apps/web/public:/app/apps/web/public
-    # Override CMD for development
+      - /app/node_modules
+      - /app/apps/web/node_modules
     command: npm run dev --workspace @link-shortener/web

@@ -66,7 +66,7 @@ services:
     networks:
       - linkshort-network
     healthcheck:
-      test: node -e "require('http').get('http://localhost:5000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+      test: node -e "require('http').get('http://localhost:5000/api/v1/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
       interval: 30s
       timeout: 10s
       retries: 3

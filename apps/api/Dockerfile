@@ -35,7 +35,7 @@ COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
 
 # Install production dependencies only
-RUN npm install --prefer-offline --no-audit --no-fund --only=production && \
+RUN npm install --prefer-offline --no-audit --no-fund --omit=dev && \
     npm cache clean --force
 
 # Copy built application from builder stage
@@ -49,7 +49,7 @@ EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+    CMD node -e "require('http').get('http://localhost:5000/api/v1/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 # Start application
 CMD ["node", "apps/api/dist/server.js"]
