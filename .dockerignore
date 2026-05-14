@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+dist
+build
+.next
+out
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE and tools
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.git
+.gitignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Testing
+.nyc_output
+coverage
+.mocharc.json
+
+# Misc
+README.md
+LICENSE
+CHANGELOG.md
+.editorconfig
+
+# Node modules from monorepo
+apps/*/node_modules
+packages/*/node_modules

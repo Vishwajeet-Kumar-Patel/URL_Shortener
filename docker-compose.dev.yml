@@ -1,0 +1,38 @@
+# Development Docker Compose Configuration
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  mongodb:
+    restart: no
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27017:27017"
+
+  api:
+    restart: no
+    environment:
+      NODE_ENV: development
+    ports:
+      - "5000:5000"
+    volumes:
+      # For development with hot reload
+      - ./apps/api/src:/app/apps/api/src
+    # Override CMD for development watch mode
+    command: npm run dev --workspace @link-shortener/api
+
+  web:
+    restart: no
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      # For development with hot reload
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+    # Override CMD for development
+    command: npm run dev --workspace @link-shortener/web
