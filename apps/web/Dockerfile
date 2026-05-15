@@ -1,10 +1,10 @@
 # Stage 1: Builder
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Disable corepack to ensure npm is used exclusively
-RUN corepack disable
+# Enable corepack for Yarn support
+#RUN corepack enable
 
 # Build-time arguments for Next.js
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
@@ -16,18 +16,17 @@ ENV NODE_ENV=${NODE_ENV} \
     NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL} \
     NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
-# Copy root and web package.json files
-COPY package*.json ./
-COPY .npmrc ./
-COPY apps/web/package*.json ./apps/web/
+# Copy root package.json and lock file
+COPY package.json yarn.lock ./
+COPY apps/web/package.json ./apps/web/
 COPY apps/web/tsconfig.json ./apps/web/
 COPY apps/web/next.config.ts ./apps/web/
 COPY apps/web/tailwind.config.ts ./apps/web/
 COPY apps/web/postcss.config.js ./apps/web/
 COPY tsconfig.base.json ./
 
-# Install all dependencies including dev (NODE_ENV=production would skip devDeps otherwise)
-RUN npm install --include=dev
+# Install all dependencies including dev
+RUN yarn install --frozen-lockfile
 
 # Copy source code
 COPY apps/web/src ./apps/web/src
@@ -35,44 +34,33 @@ COPY apps/web/src ./apps/web/src
 # Ensure public dir exists (may be empty)
 RUN mkdir -p ./apps/web/public
 
-# Build the application with environment variables passed inline
-RUN npm run build --workspace @link-shortener/web
+# Build the application
+RUN yarn workspace @link-shortener/web build
 
 # Stage 2: Runtime
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Set environment to production
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 
-# Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy root package.json
-COPY package*.json ./
-COPY .npmrc ./
-
-# Copy Next.js built files from builder
-COPY --from=builder --chown=nodejs:nodejs /app/apps/web/package*.json ./apps/web/
-COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next ./apps/web/.next
+# Standalone output bundles everything — no yarn install needed.
+# outputFileTracingRoot = monorepo root, so standalone structure mirrors
+# the monorepo: server.js lives at apps/web/server.js inside the bundle.
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nodejs:nodejs /app/apps/web/public ./apps/web/public
-COPY --from=builder --chown=nodejs:nodejs /app/apps/web/next.config.ts ./apps/web/
 
-# Install production dependencies only
-RUN npm install --prefer-offline --no-audit --no-fund --omit=dev --legacy-peer-deps && \
-    npm cache clean --force
-
-# Change to nodejs user
 USER nodejs
 
-# Expose port
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Start application
-CMD ["npm", "start", "--workspace", "@link-shortener/web"]
+CMD ["node", "apps/web/server.js"]
