@@ -59,6 +59,9 @@ services:
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
       RAZORPAY_API_BASE: ${RAZORPAY_API_BASE:-https://api.razorpay.com/v1}
       CONTACT_TO_EMAIL: ${CONTACT_TO_EMAIL:-}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Purple-Merit}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@gmail.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Signup@123}
     ports:
       - "5000:5000"
     networks:
