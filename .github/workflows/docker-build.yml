@@ -12,7 +12,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Image name must be lowercase
+  IMAGE_NAME: purplemerit/linkshort
 
 jobs:
   build-api:

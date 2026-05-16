@@ -11,6 +11,10 @@ services:
       - "27018:27017"
 
   api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: builder
     restart: no
     environment:
       NODE_ENV: development
@@ -23,6 +27,10 @@ services:
     command: npm run dev:api
 
   web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: builder
     restart: no
     environment:
       NODE_ENV: development
