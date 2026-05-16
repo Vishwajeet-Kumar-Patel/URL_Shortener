@@ -93,11 +93,6 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # ---------------------------------------------------------
-# Generate Prisma Client
-# ---------------------------------------------------------
-RUN npm run prisma:generate --workspace=@link-shortener/api
-
-# ---------------------------------------------------------
 # Copy Built Application
 # ---------------------------------------------------------
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./apps/api/dist
