@@ -3,7 +3,7 @@ import { model, models, Schema, Types } from "mongoose";
 export interface ClickLogDocument {
   urlId: Types.ObjectId;
   shortCode: string;
-  ownerId: Types.ObjectId;
+  ownerId: Types.ObjectId | string;
   timestamp: Date;
   ipAddress: string;
   ipHash?: string;
@@ -29,7 +29,7 @@ const clickLogSchema = new Schema<ClickLogDocument>(
   {
     urlId: { type: Schema.Types.ObjectId, ref: "ShortUrl", required: true, index: true },
     shortCode: { type: String, required: true, trim: true, index: true, maxlength: 32 },
-    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    ownerId: { type: Schema.Types.Mixed, required: true, index: true },
     timestamp: { type: Date, required: true, default: Date.now, index: true },
     ipAddress: { type: String, required: true, trim: true, maxlength: 128 },
     ipHash: { type: String, trim: true, index: true },

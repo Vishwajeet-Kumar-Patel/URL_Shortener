@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
 import { env } from "./env";
+import { prisma } from "./prisma";
 
 export const connectDatabase = async (): Promise<void> => {
   try {
-    await mongoose.connect(env.MONGODB_URI);
-    console.info("MongoDB connected successfully");
+    await Promise.all([prisma.$connect(), mongoose.connect(env.MONGODB_URI)]);
+    console.info("PostgreSQL and MongoDB connected successfully");
   } catch (error) {
-    console.error("MongoDB connection failed", error);
+    console.error("Database connection failed", error);
     throw error;
   }
 };

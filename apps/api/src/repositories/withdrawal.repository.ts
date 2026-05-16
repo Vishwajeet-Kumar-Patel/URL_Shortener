@@ -1,61 +1,48 @@
-import { ClientSession, HydratedDocument, isValidObjectId } from "mongoose";
-import { WithdrawalModel, type WithdrawalDocument } from "../models/withdrawal.model";
-import type { WithdrawalStatus } from "../types/common";
+import { prisma } from "../config/prisma";
+import type { Prisma, Withdrawal } from "@prisma/client";
 
-type WithdrawalEntity = HydratedDocument<WithdrawalDocument>;
+type Tx = Prisma.TransactionClient;
 
 export class WithdrawalRepository {
-  async createWithdrawal(input: Partial<WithdrawalDocument>, session?: ClientSession): Promise<WithdrawalEntity> {
-    if (session) {
-      const [created] = await WithdrawalModel.create([input], { session });
-      return created;
-    }
-    return WithdrawalModel.create(input);
+  async createWithdrawal(input: Partial<Withdrawal>, tx?: Tx): Promise<Withdrawal> {
+    const db = tx ?? prisma;
+    return db.withdrawal.create({ data: input as any });
   }
 
-  async listByUser(userId: string, input: { page: number; limit: number }): Promise<{ data: WithdrawalEntity[]; total: number }> {
-    if (!isValidObjectId(userId)) return { data: [], total: 0 };
+  async listByUser(userId: string, input: { page: number; limit: number }): Promise<{ data: Withdrawal[]; total: number }> {
+    if (!userId) return { data: [], total: 0 };
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      WithdrawalModel.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      WithdrawalModel.countDocuments({ userId })
+      prisma.withdrawal.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.withdrawal.count({ where: { userId } })
     ]);
-
     return { data, total };
   }
 
-  async listAll(input: { page: number; limit: number; status?: WithdrawalStatus }): Promise<{ data: WithdrawalEntity[]; total: number }> {
-    const filter: Record<string, unknown> = {};
-    if (input.status) filter.status = input.status;
-
+  async listAll(input: { page: number; limit: number; status?: string }): Promise<{ data: Withdrawal[]; total: number }> {
+    const where: Record<string, unknown> = {};
+    if (input.status) (where as any).status = input.status;
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      WithdrawalModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      WithdrawalModel.countDocuments(filter)
+      prisma.withdrawal.findMany({ where: where as any, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.withdrawal.count({ where: where as any })
     ]);
-
     return { data, total };
   }
 
   async updateStatus(
     withdrawalId: string,
-    status: WithdrawalStatus,
+    status: string,
     update: Record<string, unknown>,
-    session?: ClientSession
+    tx?: Tx
   ) {
-    if (!isValidObjectId(withdrawalId)) return null;
-    return WithdrawalModel.findByIdAndUpdate(
-      withdrawalId,
-      { $set: { status, ...update } },
-      { new: true }
-    )
-      .session(session ?? null)
-      .exec();
+    const db = tx ?? prisma;
+    return db.withdrawal.update({ where: { id: withdrawalId }, data: { status, ...update } as any });
   }
 
-  async findById(withdrawalId: string, session?: ClientSession) {
-    if (!isValidObjectId(withdrawalId)) return null;
-    return WithdrawalModel.findById(withdrawalId).session(session ?? null).exec();
+  async findById(withdrawalId: string, tx?: Tx) {
+    const db = tx ?? prisma;
+    return db.withdrawal.findUnique({ where: { id: withdrawalId } });
   }
 }
 

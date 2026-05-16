@@ -9,7 +9,7 @@ import {
 } from "../types/common";
 
 export interface ShortUrlDocument {
-  ownerId: Types.ObjectId;
+  ownerId: Types.ObjectId | string;
   shortCode: string;
   originalUrl: string;
   normalizedUrl: string;
@@ -25,7 +25,7 @@ export interface ShortUrlDocument {
   lastClickedAt?: Date;
   expiresAt?: Date;
   createdByRole: Role;
-  createdByMemberId?: Types.ObjectId;
+  createdByMemberId?: Types.ObjectId | string;
   anonymousSessionId?: Types.ObjectId;
   deletedAt?: Date;
   createdAt: Date;
@@ -34,7 +34,7 @@ export interface ShortUrlDocument {
 
 const shortUrlSchema = new Schema<ShortUrlDocument>(
   {
-    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    ownerId: { type: Schema.Types.Mixed, required: true, index: true },
     shortCode: {
       type: String,
       required: true,
@@ -73,12 +73,7 @@ const shortUrlSchema = new Schema<ShortUrlDocument>(
       required: true,
       default: ROLES.MEMBER
     },
-    createdByMemberId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      index: true,
-      sparse: true
-    },
+    createdByMemberId: { type: Schema.Types.Mixed, index: true, sparse: true },
     anonymousSessionId: {
       type: Schema.Types.ObjectId,
       ref: "AnonymousSession",

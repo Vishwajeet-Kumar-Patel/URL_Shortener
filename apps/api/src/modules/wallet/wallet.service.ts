@@ -1,5 +1,6 @@
 import { StatusCodes } from "http-status-codes";
-import { ClientSession, startSession } from "mongoose";
+import { prisma } from "../../config/prisma";
+import type { Prisma } from "@prisma/client";
 import { walletRepository } from "../../repositories/wallet.repository";
 import { walletLedgerRepository } from "../../repositories/wallet-ledger.repository";
 import { WALLET_TX_SOURCE, WALLET_TX_TYPE, type WalletTxSource } from "../../types/common";
@@ -31,8 +32,8 @@ export class WalletService {
         source: entry.source,
         amount: entry.amount,
         balanceAfter: entry.balanceAfter,
-        referenceId: entry.referenceId,
-        memo: entry.memo,
+        referenceId: entry.referenceId ?? undefined,
+        memo: entry.memo ?? undefined,
         createdAt: entry.createdAt
       })),
       pagination: {
@@ -50,7 +51,7 @@ export class WalletService {
     source: WalletTxSource = WALLET_TX_SOURCE.ADJUSTMENT,
     referenceId?: string,
     memo?: string,
-    session?: ClientSession
+    session?: Prisma.TransactionClient
   ): Promise<void> {
     if (amount <= 0) {
       throw buildServiceError("Amount must be greater than zero", StatusCodes.BAD_REQUEST);
@@ -95,7 +96,7 @@ export class WalletService {
     source: WalletTxSource = WALLET_TX_SOURCE.ADJUSTMENT,
     referenceId?: string,
     memo?: string,
-    session?: ClientSession
+    session?: Prisma.TransactionClient
   ): Promise<void> {
     if (amount <= 0) {
       throw buildServiceError("Amount must be greater than zero", StatusCodes.BAD_REQUEST);
@@ -124,19 +125,19 @@ export class WalletService {
     }, session);
   }
 
-  async moveToPending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
+  async moveToPending(userId: string, amount: number, referenceId?: string, session?: Prisma.TransactionClient): Promise<void> {
     if (amount <= 0) {
       throw buildServiceError("Amount must be greater than zero", StatusCodes.BAD_REQUEST);
     }
 
-    const wallet = await walletRepository.getOrCreateWallet(userId, session);
+    const wallet = await walletRepository.getOrCreateWallet(userId, session as any);
     const nextBalance = wallet.balance;
     const nextPending = wallet.pendingAmount + amount;
 
     await walletRepository.updateBalances(userId, {
       balance: nextBalance,
       pendingAmount: nextPending
-    }, session);
+    }, session as any);
 
     await walletLedgerRepository.createEntry({
       userId: wallet.userId,
@@ -146,10 +147,10 @@ export class WalletService {
       balanceAfter: nextBalance,
       referenceId,
       memo: "Withdrawal requested"
-    }, session);
+    }, session as any);
   }
 
-  async releasePending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
+  async releasePending(userId: string, amount: number, referenceId?: string, session?: Prisma.TransactionClient): Promise<void> {
     const wallet = await walletRepository.getOrCreateWallet(userId, session);
     if (wallet.pendingAmount < amount) {
       throw buildServiceError("Insufficient pending withdrawal balance", StatusCodes.BAD_REQUEST);
@@ -165,7 +166,7 @@ export class WalletService {
     await walletRepository.updateBalances(userId, {
       balance: nextBalance,
       pendingAmount: nextPending
-    }, session);
+    }, session as any);
 
     await walletLedgerRepository.createEntry({
       userId: wallet.userId,
@@ -175,10 +176,10 @@ export class WalletService {
       balanceAfter: nextBalance,
       referenceId,
       memo: "Withdrawal processed"
-    }, session);
+    }, session as any);
   }
 
-  async refundPending(userId: string, amount: number, referenceId?: string, session?: ClientSession): Promise<void> {
+  async refundPending(userId: string, amount: number, referenceId?: string, session?: Prisma.TransactionClient): Promise<void> {
     const wallet = await walletRepository.getOrCreateWallet(userId, session);
     if (wallet.pendingAmount < amount) {
       throw buildServiceError("Insufficient pending withdrawal balance", StatusCodes.BAD_REQUEST);
@@ -190,7 +191,7 @@ export class WalletService {
     await walletRepository.updateBalances(userId, {
       balance: nextBalance,
       pendingAmount: nextPending
-    }, session);
+    }, session as any);
 
     await walletLedgerRepository.createEntry({
       userId: wallet.userId,
@@ -200,18 +201,13 @@ export class WalletService {
       balanceAfter: nextBalance,
       referenceId,
       memo: "Withdrawal rejected"
-    }, session);
+    }, session as any);
   }
 
   async requestWithdrawalAtomic(userId: string, amount: number): Promise<void> {
-    const session = await startSession();
-    try {
-      await session.withTransaction(async () => {
-        await this.moveToPending(userId, amount, undefined, session);
-      });
-    } finally {
-      await session.endSession();
-    }
+    await prisma.$transaction(async (tx) => {
+      await this.moveToPending(userId, amount, undefined, tx as Prisma.TransactionClient);
+    });
   }
 }
 

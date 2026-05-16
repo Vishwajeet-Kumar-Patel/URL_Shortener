@@ -12,6 +12,7 @@ dotenv.config({ path: apiLocalEnvPath, override: shouldOverrideShellEnv });
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(5000),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
   CLIENT_ORIGIN: z.string().url("CLIENT_ORIGIN must be a valid URL").transform((val) => val.replace(/\/$/, "")),
   APP_PUBLIC_URL: z.string().url("APP_PUBLIC_URL must be a valid URL"),

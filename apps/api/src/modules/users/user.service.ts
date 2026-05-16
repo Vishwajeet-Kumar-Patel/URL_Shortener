@@ -217,7 +217,7 @@ export class UserService {
       role: user.role,
       status: user.status,
       isEmailVerified: user.isEmailVerified,
-      avatarUrl: user.avatarUrl,
+      avatarUrl: user.avatarUrl ?? undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };

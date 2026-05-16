@@ -1,36 +1,28 @@
-import { ClientSession, HydratedDocument, isValidObjectId } from "mongoose";
-import { WalletLedgerModel, type WalletLedgerDocument } from "../models/wallet-ledger.model";
-import { WALLET_TX_SOURCE } from "../types/common";
+import { prisma } from "../config/prisma";
+import type { Prisma, WalletLedger } from "@prisma/client";
 
-type WalletLedgerEntity = HydratedDocument<WalletLedgerDocument>;
+type Tx = Prisma.TransactionClient;
 
 export class WalletLedgerRepository {
-  async createEntry(input: Partial<WalletLedgerDocument>, session?: ClientSession): Promise<WalletLedgerEntity> {
-    if (session) {
-      const [created] = await WalletLedgerModel.create([input], { session });
-      return created;
-    }
-    return WalletLedgerModel.create(input);
+  async createEntry(input: Partial<WalletLedger>, tx?: Tx): Promise<WalletLedger> {
+    const db = tx ?? prisma;
+    return db.walletLedger.create({ data: { ...input } as any });
   }
 
-  async listByUser(userId: string, input: { page: number; limit: number }): Promise<{ data: WalletLedgerEntity[]; total: number }> {
-    if (!isValidObjectId(userId)) return { data: [], total: 0 };
+  async listByUser(userId: string, input: { page: number; limit: number }): Promise<{ data: WalletLedger[]; total: number }> {
+    if (!userId) return { data: [], total: 0 };
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      WalletLedgerModel.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      WalletLedgerModel.countDocuments({ userId })
+      prisma.walletLedger.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.walletLedger.count({ where: { userId } })
     ]);
 
     return { data, total };
   }
 
   async existsEarningReference(userId: string, referenceId: string): Promise<boolean> {
-    if (!isValidObjectId(userId)) return false;
-    const existing = await WalletLedgerModel.exists({
-      userId,
-      source: WALLET_TX_SOURCE.EARNING,
-      referenceId
-    });
+    if (!userId) return false;
+    const existing = await prisma.walletLedger.findFirst({ where: { userId, source: "EARNING", referenceId } });
     return Boolean(existing);
   }
 }

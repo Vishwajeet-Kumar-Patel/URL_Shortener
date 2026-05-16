@@ -11,7 +11,7 @@ import {
 } from "../types/common";
 
 export interface CampaignDocument {
-  ownerId: Types.ObjectId;
+  ownerId: Types.ObjectId | string;
   name: string;
   type: CampaignType;
   status: CampaignStatus;
@@ -41,7 +41,7 @@ export interface CampaignDocument {
 
 const campaignSchema = new Schema<CampaignDocument>(
   {
-    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    ownerId: { type: Schema.Types.Mixed, required: true, index: true },
     name: { type: String, required: true, trim: true, maxlength: 120 },
     type: { type: String, enum: Object.values(CAMPAIGN_TYPE), required: true },
     status: {

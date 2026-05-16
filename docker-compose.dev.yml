@@ -1,8 +1,6 @@
 # Development Docker Compose Configuration
 # Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
-version: '3.8'
-
 services:
   mongodb:
     restart: no
@@ -10,7 +8,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
     ports:
-      - "27017:27017"
+      - "27018:27017"
 
   api:
     restart: no
@@ -22,7 +20,7 @@ services:
       - ./apps/api/src:/app/apps/api/src
       - /app/node_modules
       - /app/apps/api/node_modules
-    command: npm run dev --workspace @link-shortener/api
+    command: npm run dev:api
 
   web:
     restart: no
@@ -35,4 +33,4 @@ services:
       - ./apps/web/public:/app/apps/web/public
       - /app/node_modules
       - /app/apps/web/node_modules
-    command: npm run dev --workspace @link-shortener/web
+    command: npm run dev:web

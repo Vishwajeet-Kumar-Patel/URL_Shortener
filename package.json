@@ -8,11 +8,18 @@
   ],
   "scripts": {
     "build": "npm run build:api && npm run build:web",
-    "dev:api": "npm run dev --workspace @link-shortener/api",
-    "build:api": "npm run build --workspace @link-shortener/api",
-    "start:api": "npm run start --workspace @link-shortener/api",
-    "dev:web": "npm run dev --workspace @link-shortener/web",
-    "build:web": "npm run build --workspace @link-shortener/web",
-    "start:web": "npm run start --workspace @link-shortener/web"
+    "dev:api": "npm --prefix apps/api run dev",
+    "build:api": "npm --prefix apps/api run build",
+    "start:api": "npm --prefix apps/api run start",
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "start:web": "npm --prefix apps/web run start"
+  },
+  "dependencies": {
+    "@prisma/debug": "^7.8.0",
+    "@swc/helpers": "^0.5.21",
+    "base64url": "^3.0.1",
+    "call-bound": "^1.0.4",
+    "memory-pager": "^1.5.0"
   }
 }

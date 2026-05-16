@@ -4,10 +4,9 @@ import {
   EMAIL_VERIFICATION_TOKEN_TTL_HOURS,
   PASSWORD_RESET_TOKEN_TTL_HOURS
 } from "../../config/constants";
-import type { HydratedDocument } from "mongoose";
 import { env } from "../../config/env";
-import type { UserDocument } from "../../models/user.model";
 import { userRepository } from "../../repositories/user.repository";
+import type { UserRecord } from "../../repositories/user.repository";
 import { referralRepository } from "../../repositories/referral.repository";
 import { ROLES, USER_STATUS } from "../../types/common";
 import { hashPassword, hashToken, verifyPassword } from "../../utils/hash";
@@ -330,7 +329,7 @@ export class AuthService {
   }
 
   private async issueSessionForUser(
-    user: HydratedDocument<UserDocument>
+    user: UserRecord
   ): Promise<{ user: AuthenticatedUser; tokens: AuthTokens }> {
     await this.normalizeLegacyUserRole(user);
 
@@ -342,7 +341,7 @@ export class AuthService {
     return { user: this.toAuthenticatedUser(user), tokens };
   }
 
-  private async normalizeLegacyUserRole(user: HydratedDocument<UserDocument>): Promise<void> {
+  private async normalizeLegacyUserRole(user: UserRecord): Promise<void> {
     if (String(user.role) !== "USER") {
       return;
     }
@@ -359,7 +358,7 @@ export class AuthService {
   }
 
   private attachHashedRefreshToken(
-    user: HydratedDocument<UserDocument>,
+    user: UserRecord,
     refreshToken: string
   ): void {
     const now = new Date();
@@ -381,7 +380,7 @@ export class AuthService {
   }
 
   private toAuthenticatedUser(
-    user: HydratedDocument<UserDocument>
+    user: UserRecord
   ): AuthenticatedUser {
     return {
       userId: user.id,

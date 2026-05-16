@@ -1,59 +1,88 @@
-import { HydratedDocument, isValidObjectId, Types } from "mongoose";
-import { ReferralModel, type ReferralDocument } from "../models/referral.model";
-import { ReferralEarningModel, type ReferralEarningDocument } from "../models/referral-earning.model";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma";
 
-type ReferralEntity = HydratedDocument<ReferralDocument>;
-type ReferralEarningEntity = HydratedDocument<ReferralEarningDocument>;
+type ReferralRecord = {
+  id: string;
+  ownerId: string;
+  code: string;
+  referredUserIds: string[];
+  totalReferred: number;
+  totalEarnings: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type ReferralEarningRecord = {
+  id: string;
+  referrerId: string;
+  referredUserId: string;
+  invoiceId?: string | null;
+  amount: number;
+  grossAmount: number;
+  ratePercent: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 const makeCode = (): string => Math.random().toString(36).slice(2, 10).toUpperCase();
 
 export class ReferralRepository {
-  async getOrCreateProfile(ownerId: string): Promise<ReferralEntity | null> {
-    if (!isValidObjectId(ownerId)) return null;
-    const existing = await ReferralModel.findOne({ ownerId }).exec();
+  async getOrCreateProfile(ownerId: string): Promise<ReferralRecord | null> {
+    const existing = await prisma.referral.findUnique({ where: { ownerId } });
     if (existing) return existing;
 
     for (let i = 0; i < 5; i += 1) {
       try {
-        return await ReferralModel.create({
-          ownerId,
-          code: makeCode(),
-          referredUserIds: [],
-          totalReferred: 0,
-          totalEarnings: 0
+        return await prisma.referral.create({
+          data: {
+            ownerId,
+            code: makeCode(),
+            referredUserIds: [],
+            totalReferred: 0,
+            totalEarnings: 0
+          }
         });
-      } catch {
-        // retry with another code
+      } catch (error) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+          throw error;
+        }
       }
     }
+
     return null;
   }
 
-  async findByCode(code: string): Promise<ReferralEntity | null> {
-    return ReferralModel.findOne({ code: code.trim().toUpperCase() }).exec();
+  async findByCode(code: string): Promise<ReferralRecord | null> {
+    return prisma.referral.findUnique({ where: { code: code.trim().toUpperCase() } });
   }
 
   async attachReferredUser(code: string, referredUserId: string): Promise<boolean> {
-    if (!isValidObjectId(referredUserId)) return false;
     const profile = await this.findByCode(code);
     if (!profile) return false;
-    if (String(profile.ownerId) === referredUserId) return false;
+    if (profile.ownerId === referredUserId) return false;
 
-    const alreadyLinked = profile.referredUserIds.some((id) => String(id) === referredUserId);
-    if (alreadyLinked) return true;
+    if (profile.referredUserIds.includes(referredUserId)) {
+      return true;
+    }
 
-    const hasOtherReferrer = await ReferralModel.exists({ referredUserIds: new Types.ObjectId(referredUserId) });
+    const hasOtherReferrer = await prisma.referral.findFirst({
+      where: { referredUserIds: { has: referredUserId } }
+    });
     if (hasOtherReferrer) return false;
 
-    profile.referredUserIds.push(new Types.ObjectId(referredUserId));
-    profile.totalReferred = profile.referredUserIds.length;
-    await profile.save();
+    await prisma.referral.update({
+      where: { id: profile.id },
+      data: {
+        referredUserIds: { push: referredUserId },
+        totalReferred: { increment: 1 }
+      }
+    });
+
     return true;
   }
 
-  async findByReferredUser(referredUserId: string): Promise<ReferralEntity | null> {
-    if (!isValidObjectId(referredUserId)) return null;
-    return ReferralModel.findOne({ referredUserIds: new Types.ObjectId(referredUserId) }).exec();
+  async findByReferredUser(referredUserId: string): Promise<ReferralRecord | null> {
+    return prisma.referral.findFirst({ where: { referredUserIds: { has: referredUserId } } });
   }
 
   async addEarning(input: {
@@ -62,24 +91,25 @@ export class ReferralRepository {
     invoiceId?: string;
     grossAmount: number;
     ratePercent: number;
-  }): Promise<ReferralEarningEntity | null> {
-    if (!isValidObjectId(input.referrerId) || !isValidObjectId(input.referredUserId)) return null;
+  }): Promise<ReferralEarningRecord | null> {
     const amount = Number(((input.grossAmount * input.ratePercent) / 100).toFixed(2));
     if (amount <= 0) return null;
 
-    const row = await ReferralEarningModel.create({
-      referrerId: input.referrerId,
-      referredUserId: input.referredUserId,
-      invoiceId: input.invoiceId,
-      amount,
-      grossAmount: input.grossAmount,
-      ratePercent: input.ratePercent
+    const row = await prisma.referralEarning.create({
+      data: {
+        referrerId: input.referrerId,
+        referredUserId: input.referredUserId,
+        invoiceId: input.invoiceId,
+        amount,
+        grossAmount: input.grossAmount,
+        ratePercent: input.ratePercent
+      }
     });
 
-    await ReferralModel.updateOne(
-      { ownerId: input.referrerId },
-      { $inc: { totalEarnings: amount } }
-    ).exec();
+    await prisma.referral.update({
+      where: { ownerId: input.referrerId },
+      data: { totalEarnings: { increment: amount } }
+    });
 
     return row;
   }
@@ -87,17 +117,18 @@ export class ReferralRepository {
   async listEarningsByReferrer(
     referrerId: string,
     input: { page: number; limit: number }
-  ): Promise<{ data: ReferralEarningEntity[]; total: number }> {
-    if (!isValidObjectId(referrerId)) return { data: [], total: 0 };
+  ): Promise<{ data: ReferralEarningRecord[]; total: number }> {
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      ReferralEarningModel.find({ referrerId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(input.limit)
-        .exec(),
-      ReferralEarningModel.countDocuments({ referrerId })
+      prisma.referralEarning.findMany({
+        where: { referrerId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: input.limit
+      }),
+      prisma.referralEarning.count({ where: { referrerId } })
     ]);
+
     return { data, total };
   }
 }

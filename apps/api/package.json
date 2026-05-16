@@ -5,6 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "npx tsx watch src/server.ts",
+    "migrate:mongo-to-postgres": "tsx src/scripts/migrate-mongo-to-postgres.ts",
+    "migrate:users-to-postgres": "tsx src/scripts/migrate-users-to-postgres.ts",
+    "prisma:generate": "prisma generate",
     "prebuild": "node -e \"const fs=require('fs'); if (fs.existsSync('node_modules/express') && fs.existsSync('node_modules/typescript') && fs.existsSync('node_modules/@types/node')) process.exit(0); process.exit(1);\" || npm install --include=dev --no-package-lock",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
@@ -20,6 +23,7 @@
     "worker:announcements": "npx tsx src/scripts/worker-announcements.ts"
   },
   "dependencies": {
+    "@prisma/client": "^6.16.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
@@ -29,6 +33,7 @@
     "helmet": "^7.2.0",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.3",
+    "memory-pager": "^1.5.0",
     "mongoose": "^8.19.3",
     "morgan": "^1.10.1",
     "nanoid": "^5.1.9",
@@ -50,6 +55,8 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/supertest": "^7.2.0",
+    "esbuild": "^0.28.0",
+    "prisma": "^6.16.0",
     "supertest": "^7.2.2",
     "tsx": "^4.20.6",
     "typescript": "^6.0.3",

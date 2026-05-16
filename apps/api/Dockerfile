@@ -1,55 +1,111 @@
-# Stage 1: Builder
+# =========================================================
+# Stage 1 — Builder
+# =========================================================
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root and api package.json files
+# ---------------------------------------------------------
+# Environment Variables
+# ---------------------------------------------------------
+ENV NODE_ENV=production
+
+# ---------------------------------------------------------
+# Copy Root Workspace Files
+# ---------------------------------------------------------
 COPY package*.json ./
-COPY apps/api/package*.json ./apps/api/
-COPY apps/api/tsconfig.json ./apps/api/
 COPY tsconfig.base.json ./
 
-# Install dependencies
+# ---------------------------------------------------------
+# Copy Full API Workspace
+# ---------------------------------------------------------
+COPY apps/api ./apps/api
+
+# ---------------------------------------------------------
+# Install Dependencies
+# ---------------------------------------------------------
 RUN npm install --prefer-offline --no-audit --no-fund
 
-# Copy source code
-COPY apps/api/src ./apps/api/src
+# ---------------------------------------------------------
+# Generate Prisma Client
+# ---------------------------------------------------------
+RUN npm run prisma:generate --workspace=@link-shortener/api
 
-# Build the application
-RUN npm run build --workspace @link-shortener/api
+# ---------------------------------------------------------
+# Build API
+# ---------------------------------------------------------
+RUN npm run build --workspace=@link-shortener/api
 
-# Stage 2: Runtime
-FROM node:20-alpine
+# =========================================================
+# Stage 2 — Production Runtime
+# =========================================================
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Set environment to production
+# ---------------------------------------------------------
+# Runtime Environment Variables
+# ---------------------------------------------------------
 ENV NODE_ENV=production
+ENV PORT=5000
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# ---------------------------------------------------------
+# Create Non-Root User
+# ---------------------------------------------------------
+RUN addgroup -S nodejs -g 1001 && \
+    adduser -S apiuser -u 1001
 
-# Copy root and api package.json files
+# ---------------------------------------------------------
+# Copy Root Package Files
+# ---------------------------------------------------------
 COPY package*.json ./
-COPY apps/api/package*.json ./apps/api/
 
-# Install production dependencies only
-RUN npm install --prefer-offline --no-audit --no-fund --omit=dev && \
+# ---------------------------------------------------------
+# Copy API Workspace Files
+# ---------------------------------------------------------
+COPY apps/api/package*.json ./apps/api/
+COPY apps/api/prisma ./apps/api/prisma
+
+# ---------------------------------------------------------
+# Install Production Dependencies
+# ---------------------------------------------------------
+RUN npm install --omit=dev --prefer-offline --no-audit --no-fund && \
     npm cache clean --force
 
-# Copy built application from builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist
+# ---------------------------------------------------------
+# Generate Prisma Client
+# ---------------------------------------------------------
+RUN npm run prisma:generate --workspace=@link-shortener/api
 
-# Change to nodejs user
-USER nodejs
+# ---------------------------------------------------------
+# Copy Built Application
+# ---------------------------------------------------------
+COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./apps/api/dist
 
-# Expose port
+# ---------------------------------------------------------
+# Copy Generated Prisma Client
+# ---------------------------------------------------------
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# ---------------------------------------------------------
+# Use Non-Root User
+# ---------------------------------------------------------
+USER apiuser
+
+# ---------------------------------------------------------
+# Expose Application Port
+# ---------------------------------------------------------
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5000/api/v1/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+# ---------------------------------------------------------
+# Health Check
+# ---------------------------------------------------------
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD wget -qO- http://localhost:5000/api/v1/health || exit 1
 
-# Start application
+# ---------------------------------------------------------
+# Start API Server
+# ---------------------------------------------------------
 CMD ["node", "apps/api/dist/server.js"]

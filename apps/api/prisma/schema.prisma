@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  ADVERTISER
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
+enum WalletTxType {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTxSource {
+  EARNING
+  WITHDRAWAL
+  TOPUP
+  ADJUSTMENT
+  REFERRAL_EARNING
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model User {
+  id                         String            @id @default(cuid())
+  name                       String
+  email                      String            @unique
+  passwordHash               String
+  authProvider               String            @default("LOCAL")
+  googleId                   String?           @unique
+  avatarUrl                  String?
+  role                       Role              @default(MEMBER)
+  status                     UserStatus        @default(ACTIVE)
+  isEmailVerified            Boolean           @default(false)
+  emailVerificationTokenHash String?
+  emailVerificationExpiresAt DateTime?
+  passwordResetTokenHash     String?
+  passwordResetExpiresAt     DateTime?
+  lastLoginAt                DateTime?
+  refreshTokens              UserRefreshToken[]
+  referrals                  Referral[]        @relation("ReferralOwner")
+  referralEarningsAsReferrer  ReferralEarning[] @relation("ReferralEarningReferrer")
+  referralEarningsAsReferred  ReferralEarning[] @relation("ReferralEarningReferred")
+  wallets                    Wallet[]
+  walletLedgerEntries        WalletLedger[]
+  withdrawals                Withdrawal[]
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+
+  @@index([role, status], map: "idx_user_role_status")
+  @@index([googleId], map: "idx_user_google_id")
+}
+
+model UserRefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  revokedAt  DateTime?
+  ip         String?
+  deviceInfo String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, expiresAt], map: "idx_user_refresh_token_user_time")
+  @@unique([userId, tokenHash], map: "uniq_user_refresh_token")
+}
+
+model Referral {
+  id               String   @id @default(cuid())
+  ownerId          String   @unique
+  code             String   @unique
+  referredUserIds  String[]  @default([])
+  totalReferred    Int      @default(0)
+  totalEarnings    Float    @default(0)
+  owner            User     @relation("ReferralOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([code], map: "idx_referral_code")
+  @@index([referredUserIds], type: Gin, map: "idx_referral_referred_user")
+}
+
+model ReferralEarning {
+  id             String   @id @default(cuid())
+  referrerId     String
+  referredUserId String
+  invoiceId      String?
+  amount         Float
+  grossAmount    Float
+  ratePercent    Float
+  referrer       User     @relation("ReferralEarningReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUser   User     @relation("ReferralEarningReferred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([referrerId, createdAt], map: "idx_referral_earning_referrer_time")
+}
+
+model Wallet {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  balance       Float    @default(0)
+  pendingAmount Float    @default(0)
+  lastUpdatedAt DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WalletLedger {
+  id           String         @id @default(cuid())
+  userId       String
+  type         WalletTxType
+  source       WalletTxSource
+  amount       Float
+  balanceAfter Float
+  referenceId  String?
+  memo         String?
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([userId, createdAt], map: "idx_wallet_ledger_user_time")
+  @@unique([userId, source, referenceId], map: "uniq_wallet_earning_reference")
+}
+
+model Withdrawal {
+  id            String           @id @default(cuid())
+  userId        String
+  amount        Float
+  status        WithdrawalStatus @default(PENDING)
+  payoutMethod  String?
+  payoutAccount String?
+  memo          String?
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+  processedAt   DateTime?
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([userId, createdAt], map: "idx_withdrawal_user_time")
+}
+
+// Generic store for MongoDB documents during migration. Keeps original _id as text and
+// the full document in JSONB so we can migrate incrementally to normalized tables.
+model RawDocument {
+  id         String   @id @default(uuid())
+  collection String
+  mongoId    String
+  document   Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([collection], map: "idx_rawdocument_collection")
+  @@index([mongoId], map: "idx_rawdocument_mongoid")
+}

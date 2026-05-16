@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
-import { Types } from "mongoose";
-import { startSession } from "mongoose";
+// removed unused mongoose Types import
+import { prisma } from "../../config/prisma";
 import { withdrawalRepository } from "../../repositories/withdrawal.repository";
 import { walletService } from "../wallet/wallet.service";
 import { WITHDRAWAL_STATUS } from "../../types/common";
@@ -16,27 +16,22 @@ const buildServiceError = (message: string, statusCode: number): ServiceError =>
 
 export class WithdrawalService {
   async requestWithdrawal(userId: string, input: CreateWithdrawalInput): Promise<WithdrawalListItem> {
-    const session = await startSession();
     let created: Awaited<ReturnType<typeof withdrawalRepository.createWithdrawal>> | null = null;
-    try {
-      await session.withTransaction(async () => {
-        await walletService.moveToPending(userId, input.amount, undefined, session);
+    await prisma.$transaction(async (tx) => {
+      await walletService.moveToPending(userId, input.amount, undefined, tx as any);
 
-        created = await withdrawalRepository.createWithdrawal(
-          {
-            userId: new Types.ObjectId(userId),
-            amount: input.amount,
-            status: WITHDRAWAL_STATUS.PENDING,
-            payoutMethod: input.payoutMethod,
-            payoutAccount: input.payoutAccount,
-            memo: input.memo
-          },
-          session
-        );
-      });
-    } finally {
-      await session.endSession();
-    }
+      created = await withdrawalRepository.createWithdrawal(
+        {
+          userId,
+          amount: input.amount,
+          status: WITHDRAWAL_STATUS.PENDING,
+          payoutMethod: input.payoutMethod,
+          payoutAccount: input.payoutAccount,
+          memo: input.memo
+        },
+        tx as any
+      );
+    });
     if (!created) {
       throw buildServiceError("Unable to request withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
     }
@@ -77,64 +72,59 @@ export class WithdrawalService {
   }
 
   async updateStatus(withdrawalId: string, status: string, memo?: string): Promise<WithdrawalListItem> {
-    const session = await startSession();
     let updated: Awaited<ReturnType<typeof withdrawalRepository.findById>> | null = null;
-    try {
-      await session.withTransaction(async () => {
-        const existing = await withdrawalRepository.findById(withdrawalId, session);
-        if (!existing) {
-          throw buildServiceError("Withdrawal not found", StatusCodes.NOT_FOUND);
-        }
+    await prisma.$transaction(async (tx) => {
+      const existing = await withdrawalRepository.findById(withdrawalId, tx as any);
+      if (!existing) {
+        throw buildServiceError("Withdrawal not found", StatusCodes.NOT_FOUND);
+      }
 
-        if (status === WITHDRAWAL_STATUS.REJECTED) {
-          await walletService.refundPending(String(existing.userId), existing.amount, withdrawalId, session);
-          updated = await withdrawalRepository.updateStatus(
-            withdrawalId,
-            WITHDRAWAL_STATUS.REJECTED,
-            {
-              rejectedAt: new Date(),
-              memo
-            },
-            session
-          );
-          if (!updated) throw buildServiceError("Unable to update withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
-          return;
-        }
+      if (status === WITHDRAWAL_STATUS.REJECTED) {
+        await walletService.refundPending(String(existing.userId), existing.amount, withdrawalId, tx as any);
+        updated = await withdrawalRepository.updateStatus(
+          withdrawalId,
+          WITHDRAWAL_STATUS.REJECTED,
+          {
+            rejectedAt: new Date(),
+            memo
+          },
+          tx as any
+        );
+        if (!updated) throw buildServiceError("Unable to update withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
+        return;
+      }
 
-        if (status === WITHDRAWAL_STATUS.APPROVED) {
-          await walletService.releasePending(String(existing.userId), existing.amount, withdrawalId, session);
-          updated = await withdrawalRepository.updateStatus(
-            withdrawalId,
-            WITHDRAWAL_STATUS.APPROVED,
-            {
-              approvedAt: new Date(),
-              memo
-            },
-            session
-          );
-          if (!updated) throw buildServiceError("Unable to update withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
-          return;
-        }
+      if (status === WITHDRAWAL_STATUS.APPROVED) {
+        await walletService.releasePending(String(existing.userId), existing.amount, withdrawalId, tx as any);
+        updated = await withdrawalRepository.updateStatus(
+          withdrawalId,
+          WITHDRAWAL_STATUS.APPROVED,
+          {
+            approvedAt: new Date(),
+            memo
+          },
+          tx as any
+        );
+        if (!updated) throw buildServiceError("Unable to update withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
+        return;
+      }
 
-        if (status === WITHDRAWAL_STATUS.PAID) {
-          updated = await withdrawalRepository.updateStatus(
-            withdrawalId,
-            WITHDRAWAL_STATUS.PAID,
-            {
-              processedAt: new Date(),
-              memo
-            },
-            session
-          );
-          if (!updated) throw buildServiceError("Unable to update withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
-          return;
-        }
+      if (status === WITHDRAWAL_STATUS.PAID) {
+        updated = await withdrawalRepository.updateStatus(
+          withdrawalId,
+          WITHDRAWAL_STATUS.PAID,
+          {
+            processedAt: new Date(),
+            memo
+          },
+          tx as any
+        );
+        if (!updated) throw buildServiceError("Unable to update withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
+        return;
+      }
 
-        throw buildServiceError("Unsupported withdrawal status", StatusCodes.BAD_REQUEST);
-      });
-    } finally {
-      await session.endSession();
-    }
+      throw buildServiceError("Unsupported withdrawal status", StatusCodes.BAD_REQUEST);
+    });
 
     if (!updated) {
       throw buildServiceError("Unable to update withdrawal", StatusCodes.INTERNAL_SERVER_ERROR);
@@ -151,13 +141,13 @@ export class WithdrawalService {
       id: row.id,
       amount: row.amount,
       status: row.status,
-      payoutMethod: row.payoutMethod,
-      payoutAccount: row.payoutAccount,
-      memo: row.memo,
+      payoutMethod: row.payoutMethod ?? undefined,
+      payoutAccount: row.payoutAccount ?? undefined,
+      memo: row.memo ?? undefined,
       createdAt: row.createdAt,
-      approvedAt: row.approvedAt,
-      rejectedAt: row.rejectedAt,
-      processedAt: row.processedAt
+      approvedAt: row.approvedAt ?? undefined,
+      rejectedAt: row.rejectedAt ?? undefined,
+      processedAt: row.processedAt ?? undefined
     };
   }
 }
