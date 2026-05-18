@@ -48,7 +48,7 @@ export class PayoutAutomationService {
     }
 
     // Get CPM rate by country
-    let rate = await cpmRateRepository.getApplicableRate(session.country);
+    let rate = await cpmRateRepository.getApplicableRate(session.country ?? undefined);
     if (!rate || rate.cpm <= 0) {
       // Fallback to default rate - use proper type casting
       rate = await cpmRateRepository.getApplicableRate(DEFAULT_CURRENCY);
@@ -112,7 +112,7 @@ export class PayoutAutomationService {
       source: "CPM",
       amount: breakdown.adminEarning,
       currency: rate.currency,
-      country: session.country,
+      country: session.country ?? undefined,
       memberId: String(session.memberId),
       sessionId,
       notes: `CPM ${breakdown.adminEarning} (20% margin from ${rate.cpm} CPM rate)`

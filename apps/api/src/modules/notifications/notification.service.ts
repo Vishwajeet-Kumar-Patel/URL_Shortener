@@ -1,4 +1,3 @@
-import { Types } from "mongoose";
 import { announcementRepository } from "../../repositories/announcement.repository";
 import { announcementJobRepository } from "../../repositories/announcement-job.repository";
 import { emailLogRepository } from "../../repositories/email-log.repository";
@@ -35,7 +34,7 @@ export class NotificationService {
     });
 
     const log = await emailLogRepository.createEmailLog({
-      userId: new Types.ObjectId(input.userId),
+      userId: input.userId,
       email: input.recipientEmail,
       eventType: input.eventType,
       status: EMAIL_DELIVERY_STATUS.PENDING,
@@ -89,7 +88,7 @@ export class NotificationService {
     await announcementJobRepository.enqueueMany(
       users.data.map((user) => ({
         announcementId: input.announcementId,
-        userId: String(user._id),
+        userId: user.id,
         email: user.email,
         maxRetries: input.maxRetries ?? 2
       }))
@@ -123,7 +122,7 @@ export class NotificationService {
         body: announcement.body
       });
       const log = await emailLogRepository.createEmailLog({
-        userId: new Types.ObjectId(String(user._id)),
+        userId: user.id,
         email: user.email,
         eventType: EMAIL_EVENT_TYPE.ADMIN_ANNOUNCEMENT,
         status: EMAIL_DELIVERY_STATUS.PENDING,

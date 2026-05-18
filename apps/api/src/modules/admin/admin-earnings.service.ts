@@ -1,8 +1,8 @@
 // filepath: apps/api/src/modules/admin/admin-earnings.service.ts
 
-import { RevenueLogModel } from "../../models/revenue-log.model";
-import { UserModel } from "../../models/user.model";
-import { InvoiceModel } from "../../models/invoice.model";
+import { userRepository } from "../../repositories/user.repository";
+import { invoiceRepository } from "../../repositories/invoice.repository";
+import { revenueLogRepository } from "../../repositories/revenue-log.repository";
 import { INVOICE_STATUS, INVOICE_TYPE } from "../../types/common";
 
 export interface EarningsBreakdown {
@@ -28,9 +28,7 @@ export class AdminEarningsService {
    */
   async getEarningsBreakdown(since: Date, until: Date): Promise<EarningsBreakdown> {
     // Get all revenue logs in the period
-    const logs = await RevenueLogModel.find({
-      createdAt: { $gte: since, $lte: until }
-    }).lean();
+    const logs = await revenueLogRepository.listInRange(since, until);
 
     let totalEarnings = 0;
     const bySource: Record<string, number> = {
@@ -81,11 +79,12 @@ export class AdminEarningsService {
     }
 
     // Get subscription revenue by plan (if not already in logs)
-    const paidInvoices = await InvoiceModel.find({
-       type: INVOICE_TYPE.PLAN_PURCHASE,
-      status: INVOICE_STATUS.PAID,
-      createdAt: { $gte: since, $lte: until }
-    }).lean();
+    const paidInvoices = (await invoiceRepository.listAll({
+      page: 1,
+      limit: 1_000_000,
+      type: INVOICE_TYPE.PLAN_PURCHASE,
+      status: INVOICE_STATUS.PAID
+    })).data.filter((invoice) => invoice.createdAt >= since && invoice.createdAt <= until);
 
     const byPlanMap: Record<string, { amount: number; members: Set<string> }> = {};
 
@@ -144,20 +143,18 @@ export class AdminEarningsService {
     const breakdown = await this.getEarningsBreakdown(since, until);
 
     // Get member count (approximate)
-    const totalMembers = await UserModel.countDocuments({});
+    const totalMembers = (await userRepository.listUsers({ page: 1, limit: 1_000_000 })).total;
 
     // Get paid subscriptions
-    const paidInvoices = await InvoiceModel.countDocuments({
+    const paidInvoices = (await invoiceRepository.listAll({
+      page: 1,
+      limit: 1_000_000,
       type: INVOICE_TYPE.PLAN_PURCHASE,
-      status: INVOICE_STATUS.PAID,
-      createdAt: { $gte: since, $lte: until }
-    });
+      status: INVOICE_STATUS.PAID
+    })).data.filter((invoice) => invoice.createdAt >= since && invoice.createdAt <= until).length;
 
     const totalActiveSubscriptions = paidInvoices;
-    const totalQualifiedClicks = await RevenueLogModel.countDocuments({
-      source: "CPM",
-      createdAt: { $gte: since, $lte: until }
-    });
+    const totalQualifiedClicks = await revenueLogRepository.countBySourceInRange("CPM", since, until);
 
     return {
       totalEarnings: breakdown.totalEarnings,
@@ -188,7 +185,7 @@ export class AdminEarningsService {
     invoiceId?: string;
     notes?: string;
   }): Promise<void> {
-    await RevenueLogModel.create({
+    await revenueLogRepository.create({
       source: input.source,
       amount: input.amount,
       currency: input.currency || "INR",
@@ -197,8 +194,7 @@ export class AdminEarningsService {
       planId: input.planId,
       sessionId: input.sessionId,
       invoiceId: input.invoiceId,
-      notes: input.notes,
-      createdAt: new Date()
+      notes: input.notes
     });
   }
 }

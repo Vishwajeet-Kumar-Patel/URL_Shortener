@@ -60,7 +60,7 @@ export class RedirectService {
     return {
       outcome: "ACTIVE",
       targetUrl: url.normalizedUrl,
-      urlId: String(url._id),
+      urlId: String(url.id),
       ownerId: String(url.ownerId),
       shortCode: url.shortCode
     };
@@ -173,7 +173,7 @@ export class RedirectService {
     if (input.redirectSessionId) {
       await memberEarningRepository.createLedgerEntry({
         memberId: recipientId,
-        shortLinkId: String(url._id),
+        shortLinkId: String(url.id),
         redirectSessionId: input.redirectSessionId,
         amount: breakdown.memberEarning,
         visitorIpHash: input.visitorIpHash || ""

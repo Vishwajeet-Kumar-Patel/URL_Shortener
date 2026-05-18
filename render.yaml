@@ -22,8 +22,6 @@ services:
       - key: NODE_ENV
         value: production
       # Render injects PORT automatically — keep it or omit; API defaults to 5000 if unset.
-      - key: MONGODB_URI
-        sync: false
       - key: CLIENT_ORIGIN
         sync: false
       - key: APP_PUBLIC_URL

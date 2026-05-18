@@ -21,29 +21,6 @@ services:
       retries: 5
       start_period: 15s
 
-  # MongoDB Database
-  mongodb:
-    image: mongo:8.3.2-noble
-    container_name: linkshort-mongodb
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-root}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
-      MONGO_INITDB_DATABASE: ${MONGO_DB:-linkshort}
-    ports:
-      - "27018:27017"
-    volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
-    networks:
-      - linkshort-network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-
   # API Service
   api:
     build:
@@ -54,13 +31,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mongodb:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 5000
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-linkshort}?schema=public
-      MONGODB_URI: mongodb://${MONGO_USER:-root}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-linkshort}?authSource=admin
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3000}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:5000}
       SPONSOR_OUTBOUND_URL: ${SPONSOR_OUTBOUND_URL:-https://example.com}
@@ -132,8 +106,4 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
-  mongodb_data:
-    driver: local
-  mongodb_config:
     driver: local

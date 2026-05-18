@@ -12,7 +12,7 @@ Purplemerit is a monetized URL shortener built around signed redirect sessions, 
 
 ## Main Surfaces
 
-- `apps/api`: Express API, MongoDB models, redirect session engine, wallet, referrals, analytics.
+- `apps/api`: Express API, Prisma/PostgreSQL data layer, redirect session engine, wallet, referrals, analytics.
 - `apps/web`: Next.js marketing pages, public visit flow, monetized blog pages, and dashboards.
 
 ## Redirect Flow

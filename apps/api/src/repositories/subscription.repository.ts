@@ -1,25 +1,39 @@
-import { HydratedDocument, isValidObjectId } from "mongoose";
-import { SubscriptionModel, type SubscriptionDocument } from "../models/subscription.model";
+import { prisma } from "../config/prisma";
 import type { SubscriptionStatus } from "../types/common";
 
-type SubscriptionEntity = HydratedDocument<SubscriptionDocument>;
+export type SubscriptionRecord = {
+  id: string;
+  userId: string;
+  planId: string;
+  status: SubscriptionStatus;
+  startsAt: Date;
+  endsAt: Date | null;
+  renewAt: Date | null;
+  canceledAt: Date | null;
+  provider: string | null;
+  providerSubscriptionId: string | null;
+  latestInvoiceId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export class SubscriptionRepository {
-  async findActiveByUser(userId: string): Promise<SubscriptionEntity | null> {
-    if (!isValidObjectId(userId)) return null;
-    return SubscriptionModel.findOne({
-      userId,
-      status: "ACTIVE",
-      $or: [{ endsAt: { $exists: false } }, { endsAt: { $gt: new Date() } }]
-    }).exec();
+  async findActiveByUser(userId: string): Promise<SubscriptionRecord | null> {
+    return (await prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: "ACTIVE",
+        OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }]
+      },
+      orderBy: { createdAt: "desc" }
+    })) as SubscriptionRecord | null;
   }
 
   async cancelActiveByUser(userId: string): Promise<void> {
-    if (!isValidObjectId(userId)) return;
-    await SubscriptionModel.updateMany(
-      { userId, status: "ACTIVE" },
-      { $set: { status: "CANCELED", canceledAt: new Date() } }
-    ).exec();
+    await prisma.subscription.updateMany({
+      where: { userId, status: "ACTIVE" },
+      data: { status: "CANCELED", canceledAt: new Date() }
+    });
   }
 
   async createSubscription(input: {
@@ -31,17 +45,16 @@ export class SubscriptionRepository {
     renewAt?: Date;
     provider?: string;
     providerSubscriptionId?: string;
-  }): Promise<SubscriptionEntity> {
-    return SubscriptionModel.create(input);
+  }): Promise<SubscriptionRecord> {
+    return prisma.subscription.create({ data: input }) as Promise<SubscriptionRecord>;
   }
 
-  async updateStatus(subscriptionId: string, status: SubscriptionStatus): Promise<SubscriptionEntity | null> {
-    if (!isValidObjectId(subscriptionId)) return null;
-    return SubscriptionModel.findByIdAndUpdate(
-      subscriptionId,
-      { $set: { status } },
-      { new: true }
-    ).exec();
+  async updateStatus(subscriptionId: string, status: SubscriptionStatus): Promise<SubscriptionRecord | null> {
+    try {
+      return (await prisma.subscription.update({ where: { id: subscriptionId }, data: { status } })) as SubscriptionRecord;
+    } catch {
+      return null;
+    }
   }
 }
 

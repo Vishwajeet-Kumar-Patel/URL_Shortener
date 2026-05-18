@@ -1,5 +1,3 @@
-import { Types } from "mongoose";
-
 export const ROLES = {
   ADMIN: "ADMIN",
   MEMBER: "MEMBER",
@@ -144,4 +142,4 @@ export const TARGET_DEVICE = {
 
 export type TargetDevice = (typeof TARGET_DEVICE)[keyof typeof TARGET_DEVICE];
 
-export type MongoId = Types.ObjectId;
+export type MongoId = string;

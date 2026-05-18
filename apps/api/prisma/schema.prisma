@@ -39,6 +39,116 @@ enum WithdrawalStatus {
   PAID
 }
 
+enum PlanInterval {
+  FREE
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PENDING
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
+enum UrlStatus {
+  ACTIVE
+  PAUSED
+  HIDDEN
+  DELETED
+}
+
+enum UrlAdMode {
+  DIRECT
+  MONETIZED
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum CampaignType {
+  INTERSTITIAL
+  BANNER
+  POPUP
+  DIRECT
+}
+
+enum TargetDevice {
+  ALL
+  DESKTOP
+  MOBILE
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
+
+enum InvoiceType {
+  PLAN_PURCHASE
+  CAMPAIGN
+  WALLET_TOPUP
+}
+
+enum PaymentProvider {
+  RAZORPAY
+}
+
+enum RedirectFunnelState {
+  HUMAN_PENDING
+  HUMAN_VERIFIED
+  PHASE1_ACTIVE
+  PHASE1_COMPLETED
+  PHASE2_ACTIVE
+  PHASE2_COMPLETED
+  SPONSOR_PENDING
+  SPONSOR_VERIFIED
+  UNLOCKED
+}
+
+enum AnnouncementAudience {
+  ALL
+  ADMIN
+  MEMBER
+  ADVERTISER
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SENT
+  FAILED
+}
+
+enum AnnouncementJobStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum RevenueSource {
+  SUBSCRIPTION
+  CPM
+  REFERRAL
+  ADJUSTMENT
+  AD_POPUP_IMPRESSION
+  AD_POPUP_CLICK
+}
+
 model User {
   id                         String            @id @default(cuid())
   name                       String
@@ -159,6 +269,391 @@ model Withdrawal {
   updatedAt     DateTime         @updatedAt
 
   @@index([userId, createdAt], map: "idx_withdrawal_user_time")
+}
+
+model Plan {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  currency    String       @default("INR")
+  interval    PlanInterval @default(FREE)
+  isActive    Boolean      @default(true)
+  isDefault   Boolean      @default(false)
+  limits      Json
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([isDefault], map: "idx_plan_default")
+  @@index([isActive, interval], map: "idx_plan_active_interval")
+  @@index([name], map: "idx_plan_name")
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String
+  planId                 String
+  status                 SubscriptionStatus @default(PENDING)
+  startsAt               DateTime           @default(now())
+  endsAt                 DateTime?
+  renewAt                DateTime?
+  canceledAt             DateTime?
+  provider               String?
+  providerSubscriptionId String?
+  latestInvoiceId        String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([userId, status], map: "idx_subscription_user_status")
+  @@index([planId, status], map: "idx_subscription_plan_status")
+}
+
+model ShortUrl {
+  id                       String    @id @default(cuid())
+  ownerId                  String
+  shortCode                String    @unique
+  originalUrl              String
+  normalizedUrl            String
+  status                   UrlStatus @default(ACTIVE)
+  adMode                   UrlAdMode @default(DIRECT)
+  isCustomAlias            Boolean   @default(false)
+  title                    String?
+  description              String?
+  clickCount               Int       @default(0)
+  rawOpenCount             Int       @default(0)
+  funnelProgressCount      Int       @default(0)
+  qualifiedCompletionCount Int       @default(0)
+  lastClickedAt            DateTime?
+  expiresAt                DateTime?
+  createdByRole            Role      @default(MEMBER)
+  createdByMemberId        String?
+  anonymousSessionId       String?
+  deletedAt                DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@index([ownerId, createdAt(sort: Desc)], map: "idx_short_url_owner_created_at")
+  @@index([status], map: "idx_short_url_status")
+  @@index([createdByMemberId, createdAt(sort: Desc)], map: "idx_short_url_member_created_at")
+}
+
+model ClickLog {
+  id                  String   @id @default(cuid())
+  urlId               String
+  shortCode           String
+  ownerId             String
+  timestamp           DateTime @default(now())
+  ipAddress           String
+  ipHash              String?
+  userAgent           String
+  browser             String?
+  os                  String?
+  deviceType          String?
+  referrer            String?
+  country             String?
+  city                String?
+  isUnique            Boolean  @default(false)
+  jsEnabled           Boolean  @default(false)
+  cookiesEnabled      Boolean  @default(false)
+  isBot               Boolean  @default(false)
+  isSuspicious        Boolean  @default(false)
+  isQualified         Boolean  @default(false)
+  qualificationReason String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([urlId, timestamp(sort: Desc)], map: "idx_click_log_url_time")
+  @@index([ownerId, timestamp(sort: Desc)], map: "idx_click_log_owner_time")
+  @@index([shortCode, timestamp(sort: Desc)], map: "idx_click_log_code_time")
+  @@index([shortCode, ipHash, timestamp(sort: Desc)], map: "idx_click_log_unique")
+  @@index([ownerId, isUnique, timestamp(sort: Desc)], map: "idx_click_log_owner_unique")
+  @@index([ownerId, isQualified, timestamp(sort: Desc)], map: "idx_click_log_owner_qualified")
+}
+
+model Campaign {
+  id                     String         @id @default(cuid())
+  ownerId                String
+  name                   String
+  type                   CampaignType
+  status                 CampaignStatus @default(DRAFT)
+  targetDevice           TargetDevice   @default(ALL)
+  targetCountries        String[]       @default([])
+  targetExcludeCountries String[]       @default([])
+  targetBrowsers         String[]       @default([])
+  targetOs               String[]       @default([])
+  targetLanguages        String[]       @default([])
+  budgetTotal            Float
+  budgetSpent            Float          @default(0)
+  landingUrl             String?
+  creativeTitle          String?
+  creativeBody           String?
+  creativeCta            String?
+  creativeImageUrl       String?
+  creativeVideoUrl       String?
+  moderationNote         String?
+  moderatedAt            DateTime?
+  moderatedBy            String?
+  startsAt               DateTime?
+  endsAt                 DateTime?
+  createdByRole          Role
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([ownerId, createdAt(sort: Desc)], map: "idx_campaign_owner_created_at")
+  @@index([status, type], map: "idx_campaign_status_type")
+}
+
+model AnonymousSession {
+  id           String   @id @default(cuid())
+  memberId     String?
+  referralCode String?
+  sessionToken String    @unique
+  userAgent    String
+  ipHash       String
+  isValid      Boolean   @default(true)
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([sessionToken, expiresAt], map: "idx_anon_session_token_expiry")
+  @@index([memberId, createdAt(sort: Desc)], map: "idx_anon_session_member_created")
+  @@index([ipHash, createdAt(sort: Desc)], map: "idx_anon_session_ip_created")
+}
+
+model RedirectSession {
+  id                 String             @id @default(cuid())
+  shortCode          String
+  anonymousSessionId String?
+  ipAddress          String?
+  ipHash             String?
+  fingerprintHash    String?
+  userAgent          String?
+  browser            String?
+  os                 String?
+  deviceType         String?
+  referrer           String?
+  country            String?
+  city               String?
+  jsEnabled          Boolean            @default(true)
+  cookiesEnabled     Boolean            @default(true)
+  startedAt          DateTime           @default(now())
+  humanVerified      Boolean            @default(false)
+  phase1StartedAt    DateTime?
+  phase1CompletedAt  DateTime?
+  phase2StartedAt    DateTime?
+  phase2CompletedAt  DateTime?
+  sponsorOpenedAt    DateTime?
+  sponsorVerifiedAt  DateTime?
+  finalUnlockedAt    DateTime?
+  currentState       RedirectFunnelState @default(HUMAN_PENDING)
+  sponsorClickedAt   DateTime?
+  completedAt        DateTime?
+  clickLogId         String?
+  memberId           String?
+  currentStep        Int                @default(0)
+  completedSteps     Int[]              @default([])
+  step1CompleteAt    DateTime?
+  step2CompleteAt    DateTime?
+  step3CompleteAt    DateTime?
+  step4CompleteAt    DateTime?
+  step5CompleteAt    DateTime?
+  scrollPosition     Int                @default(0)
+  maxScrollPosition  Int                @default(0)
+  viewportHeight     Int                @default(0)
+  hasScrolledEnough  Boolean            @default(false)
+  ctaClicked         Boolean            @default(false)
+  expiresAt          DateTime
+  stepTimings        Json
+  isQualified        Boolean            @default(false)
+  targetUrl          String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([shortCode, createdAt(sort: Desc)], map: "idx_redirect_session_code_created")
+  @@index([anonymousSessionId, createdAt(sort: Desc)], map: "idx_redirect_session_anon_created")
+  @@index([memberId, isQualified, createdAt(sort: Desc)], map: "idx_redirect_session_member_qualified")
+  @@index([currentState, createdAt(sort: Desc)], map: "idx_redirect_session_state_created")
+  @@index([expiresAt], map: "idx_redirect_session_expiry")
+}
+
+model MemberMetrics {
+  id                           String   @id @default(cuid())
+  memberId                     String   @unique
+  totalAnonymousUsersBrought   Int      @default(0)
+  totalAnonymousLinksGenerated Int      @default(0)
+  totalQualifiedClicks         Int      @default(0)
+  totalEarnings                Float    @default(0)
+  thisMonthEarnings            Float    @default(0)
+  thisMonthUsers               Int      @default(0)
+  lastCalculatedAt             DateTime @default(now())
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  @@index([totalEarnings(sort: Desc)], map: "idx_member_metrics_earnings")
+  @@index([thisMonthEarnings(sort: Desc)], map: "idx_member_metrics_monthly_earnings")
+}
+
+model MemberEarning {
+  id                String   @id @default(cuid())
+  memberId          String
+  shortLinkId       String
+  redirectSessionId  String   @unique
+  amount            Float
+  visitorIpHash     String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([memberId, createdAt(sort: Desc)], map: "idx_member_earning_member_time")
+  @@index([shortLinkId, createdAt(sort: Desc)], map: "idx_member_earning_link_time")
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  userId            String
+  type              InvoiceType
+  status            InvoiceStatus
+  amount            Float
+  currency          String
+  provider          PaymentProvider?
+  providerOrderId   String?
+  providerPaymentId String?
+  providerSignature String?
+  referenceId       String?
+  metadata          Json
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_invoice_user_created_at")
+}
+
+model PaymentTransaction {
+  id         String           @id @default(cuid())
+  invoiceId  String?
+  provider   PaymentProvider
+  eventType  String
+  payload    Json
+  signature  String?
+  receivedAt DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([provider, eventType, receivedAt(sort: Desc)], map: "idx_payment_tx_event")
+}
+
+model CpmRate {
+  id          String   @id @default(cuid())
+  countryCode String   @unique
+  cpm         Float
+  currency    String   @default("USD")
+  isActive    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([countryCode], map: "idx_cpm_rate_country_code")
+}
+
+model VisitorQualification {
+  id                String   @id @default(cuid())
+  ipHash            String
+  fingerprintHash   String?
+  shortCode         String
+  redirectSessionId String   @unique
+  memberId          String?
+  firstCompletedAt  DateTime @default(now())
+  expiresAt         DateTime
+  isDuplicate       Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([ipHash, expiresAt(sort: Desc)], map: "idx_visitor_qualification_ip_expiry")
+  @@index([fingerprintHash, expiresAt(sort: Desc)], map: "idx_visitor_qualification_fingerprint_expiry")
+  @@index([shortCode, expiresAt(sort: Desc)], map: "idx_visitor_qualification_shortcode_expiry")
+}
+
+model AdminSetting {
+  id                 String   @id @default(cuid())
+  key                String   @unique @default("default")
+  maintenanceMode    Boolean  @default(false)
+  maintenanceMessage String?
+  allowedDomains     String[] @default([])
+  smtp               Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([updatedAt(sort: Desc)], map: "idx_admin_settings_updated")
+}
+
+model Announcement {
+  id             String               @id @default(cuid())
+  title          String
+  body           String
+  audience       AnnouncementAudience
+  status         AnnouncementStatus   @default(DRAFT)
+  sentAt         DateTime?
+  createdBy      String
+  totalRecipients Int                 @default(0)
+  sentCount      Int                  @default(0)
+  failedCount    Int                  @default(0)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([createdAt(sort: Desc)], map: "idx_announcement_created")
+}
+
+model AnnouncementJob {
+  id             String                @id @default(cuid())
+  announcementId String
+  userId         String
+  email          String
+  attempts       Int                   @default(0)
+  maxRetries     Int                   @default(2)
+  status         AnnouncementJobStatus @default(PENDING)
+  nextAttemptAt  DateTime              @default(now())
+  lastError      String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([announcementId, userId], map: "uniq_announcement_user_job")
+  @@index([status, nextAttemptAt], map: "idx_announcement_job_queue")
+  @@index([announcementId], map: "idx_announcement_job_announcement")
+}
+
+model EmailLog {
+  id                String              @id @default(cuid())
+  userId            String
+  email             String
+  eventType         String
+  payload           Json
+  status            EmailDeliveryStatus @default(PENDING)
+  providerMessageId String?
+  error             String?
+  sentAt            DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_email_log_user_created_at")
+  @@index([eventType, status, createdAt(sort: Desc)], map: "idx_email_log_event_status_created_at")
+}
+
+model RevenueLog {
+  id        String        @id @default(cuid())
+  source    RevenueSource
+  country   String?
+  amount    Float
+  currency  String        @default("INR")
+  memberId  String?
+  planId    String?
+  sessionId String?
+  invoiceId String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([source, createdAt(sort: Desc)], map: "idx_revenue_source_date")
+  @@index([country, createdAt(sort: Desc)], map: "idx_revenue_country_date")
+  @@index([createdAt], map: "idx_revenue_date")
 }
 
 // Generic store for MongoDB documents during migration. Keeps original _id as text and

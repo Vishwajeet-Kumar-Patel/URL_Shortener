@@ -237,9 +237,9 @@ export class UrlService {
       isCustomAlias: doc.isCustomAlias ?? false,
       status: doc.status ?? URL_STATUS.ACTIVE,
       clickCount: doc.clickCount,
-      title: doc.title,
-      description: doc.description,
-      expiresAt: doc.expiresAt,
+      title: doc.title ?? undefined,
+      description: doc.description ?? undefined,
+      expiresAt: doc.expiresAt ?? undefined,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt
     };

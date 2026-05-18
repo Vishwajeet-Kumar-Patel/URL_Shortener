@@ -5,7 +5,7 @@ import { campaignRepository } from "../../repositories/campaign.repository";
 import { invoiceRepository } from "../../repositories/invoice.repository";
 import { paymentTransactionRepository } from "../../repositories/payment-transaction.repository";
 import { clickRepository } from "../../repositories/click.repository";
-import { RedirectSessionModel } from "../../models/redirect-session.model";
+import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
 import { userRepository } from "../../repositories/user.repository";
 import { urlRepository } from "../../repositories/url.repository";
 import { referralRepository } from "../../repositories/referral.repository";
@@ -349,12 +349,12 @@ export class AdminService {
       status: campaign.status,
       budgetTotal: campaign.budgetTotal,
       budgetSpent: campaign.budgetSpent,
-      landingUrl: campaign.landingUrl,
-      creativeTitle: campaign.creativeTitle,
-      creativeBody: campaign.creativeBody,
-      creativeCta: campaign.creativeCta,
-      creativeImageUrl: campaign.creativeImageUrl,
-      creativeVideoUrl: campaign.creativeVideoUrl,
+      landingUrl: campaign.landingUrl ?? undefined,
+      creativeTitle: campaign.creativeTitle ?? undefined,
+      creativeBody: campaign.creativeBody ?? undefined,
+      creativeCta: campaign.creativeCta ?? undefined,
+      creativeImageUrl: campaign.creativeImageUrl ?? undefined,
+      creativeVideoUrl: campaign.creativeVideoUrl ?? undefined,
       targetDevice: campaign.targetDevice,
       targetCountries: campaign.targetCountries,
       targetExcludeCountries: campaign.targetExcludeCountries,
@@ -436,7 +436,7 @@ export class AdminService {
     ]);
 
     // count anonymous redirect sessions for admin overview
-    const anonymousSessionsCount = await RedirectSessionModel.countDocuments({ anonymousSessionId: { $exists: true } });
+    const anonymousSessionsCount = await redirectSessionRepository.countWithAnonymousSession();
 
     const paid = invoices.data.filter((inv) => inv.status === INVOICE_STATUS.PAID);
     const pending = invoices.data.filter((inv) => inv.status === INVOICE_STATUS.PENDING);

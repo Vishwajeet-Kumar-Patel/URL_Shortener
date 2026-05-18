@@ -1,17 +1,39 @@
-import { FilterQuery, HydratedDocument, isValidObjectId } from "mongoose";
-import { ShortUrlModel, type ShortUrlDocument } from "../models/short-url.model";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma";
 import { URL_STATUS, type UrlAdMode, type UrlStatus } from "../types/common";
 
-type ShortUrlEntity = HydratedDocument<ShortUrlDocument>;
+export type ShortUrlRecord = {
+  id: string;
+  ownerId: string;
+  shortCode: string;
+  originalUrl: string;
+  normalizedUrl: string;
+  status: UrlStatus;
+  adMode: UrlAdMode;
+  isCustomAlias: boolean;
+  title: string | null;
+  description: string | null;
+  clickCount: number;
+  rawOpenCount: number;
+  funnelProgressCount: number;
+  qualifiedCompletionCount: number;
+  lastClickedAt: Date | null;
+  expiresAt: Date | null;
+  createdByRole: string;
+  createdByMemberId: string | null;
+  anonymousSessionId: string | null;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export class UrlRepository {
-  async findByShortCode(shortCode: string): Promise<ShortUrlEntity | null> {
-    return ShortUrlModel.findOne({ shortCode }).exec();
+  async findByShortCode(shortCode: string): Promise<ShortUrlRecord | null> {
+    return (await prisma.shortUrl.findUnique({ where: { shortCode } })) as ShortUrlRecord | null;
   }
 
   async existsByShortCode(shortCode: string): Promise<boolean> {
-    const exists = await ShortUrlModel.exists({ shortCode });
-    return Boolean(exists);
+    return Boolean(await prisma.shortUrl.findUnique({ where: { shortCode }, select: { id: true } }));
   }
 
   async createOne(input: {
@@ -24,18 +46,20 @@ export class UrlRepository {
     title?: string;
     description?: string;
     expiresAt?: Date;
-  }): Promise<ShortUrlEntity> {
-    return ShortUrlModel.create({
-      ownerId: input.ownerId,
-      shortCode: input.shortCode,
-      originalUrl: input.originalUrl,
-      normalizedUrl: input.normalizedUrl,
-      adMode: input.adMode,
-      isCustomAlias: input.isCustomAlias,
-      title: input.title,
-      description: input.description,
-      expiresAt: input.expiresAt
-    });
+  }): Promise<ShortUrlRecord> {
+    return prisma.shortUrl.create({
+      data: {
+        ownerId: input.ownerId,
+        shortCode: input.shortCode,
+        originalUrl: input.originalUrl,
+        normalizedUrl: input.normalizedUrl,
+        adMode: input.adMode,
+        isCustomAlias: input.isCustomAlias,
+        title: input.title,
+        description: input.description,
+        expiresAt: input.expiresAt
+      }
+    }) as Promise<ShortUrlRecord>;
   }
 
   async findByOwnerWithFilters(input: {
@@ -44,29 +68,44 @@ export class UrlRepository {
     limit: number;
     status?: UrlStatus;
     search?: string;
-  }): Promise<{ data: ShortUrlEntity[]; total: number }> {
-    const filter: FilterQuery<ShortUrlDocument> = { ownerId: input.ownerId };
-
-    if (input.status) {
-      filter.status = input.status;
-    }
-
+  }): Promise<{ data: ShortUrlRecord[]; total: number }> {
+    const where: Record<string, unknown> = { ownerId: input.ownerId };
+    if (input.status) where.status = input.status;
     if (input.search) {
-      const regex = new RegExp(input.search, "i");
-      filter.$or = [{ shortCode: regex }, { originalUrl: regex }, { title: regex }];
+      where.OR = [
+        { shortCode: { contains: input.search, mode: "insensitive" } },
+        { originalUrl: { contains: input.search, mode: "insensitive" } },
+        { title: { contains: input.search, mode: "insensitive" } }
+      ];
     }
 
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      ShortUrlModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      ShortUrlModel.countDocuments(filter)
+      prisma.shortUrl.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.shortUrl.count({ where })
     ]);
 
-    return { data, total };
+    return { data: data as ShortUrlRecord[], total };
   }
 
   async countByOwner(ownerId: string): Promise<number> {
-    return ShortUrlModel.countDocuments({ ownerId }).exec();
+    return prisma.shortUrl.count({ where: { ownerId } });
+  }
+
+  async countByStatus(status: UrlStatus): Promise<number> {
+    return prisma.shortUrl.count({ where: { status } });
+  }
+
+  async countAll(): Promise<number> {
+    return prisma.shortUrl.count();
+  }
+
+  async findByCreatedByMemberId(memberId: string): Promise<ShortUrlRecord[]> {
+    return (await prisma.shortUrl.findMany({ where: { createdByMemberId: memberId }, orderBy: { createdAt: "desc" } })) as ShortUrlRecord[];
+  }
+
+  async findByAnonymousSessionId(anonymousSessionId: string): Promise<ShortUrlRecord[]> {
+    return (await prisma.shortUrl.findMany({ where: { anonymousSessionId }, orderBy: { createdAt: "desc" } })) as ShortUrlRecord[];
   }
 
   async listAllWithFilters(input: {
@@ -75,90 +114,84 @@ export class UrlRepository {
     status?: UrlStatus;
     search?: string;
     ownerId?: string;
-  }): Promise<{ data: ShortUrlEntity[]; total: number }> {
-    const filter: FilterQuery<ShortUrlDocument> = {};
-    if (input.status) {
-      filter.status = input.status;
-    }
-    if (input.ownerId) {
-      filter.ownerId = input.ownerId;
-    }
+  }): Promise<{ data: ShortUrlRecord[]; total: number }> {
+    const where: Record<string, unknown> = {};
+    if (input.status) where.status = input.status;
+    if (input.ownerId) where.ownerId = input.ownerId;
     if (input.search) {
-      const regex = new RegExp(input.search, "i");
-      filter.$or = [{ shortCode: regex }, { originalUrl: regex }, { title: regex }];
+      where.OR = [
+        { shortCode: { contains: input.search, mode: "insensitive" } },
+        { originalUrl: { contains: input.search, mode: "insensitive" } },
+        { title: { contains: input.search, mode: "insensitive" } }
+      ];
     }
 
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      ShortUrlModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      ShortUrlModel.countDocuments(filter)
+      prisma.shortUrl.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.shortUrl.count({ where })
     ]);
-    return { data, total };
+    return { data: data as ShortUrlRecord[], total };
   }
 
-  async findByIdAndOwner(urlId: string, ownerId: string): Promise<ShortUrlEntity | null> {
-    if (!isValidObjectId(urlId)) return null;
-    return ShortUrlModel.findOne({ _id: urlId, ownerId }).exec();
+  async findByIdAndOwner(urlId: string, ownerId: string): Promise<ShortUrlRecord | null> {
+    return (await prisma.shortUrl.findFirst({ where: { id: urlId, ownerId } })) as ShortUrlRecord | null;
   }
 
-  async findById(urlId: string): Promise<ShortUrlEntity | null> {
-    if (!isValidObjectId(urlId)) return null;
-    return ShortUrlModel.findById(urlId).exec();
+  async findById(urlId: string): Promise<ShortUrlRecord | null> {
+    return (await prisma.shortUrl.findUnique({ where: { id: urlId } })) as ShortUrlRecord | null;
   }
 
-  async updateStatus(urlId: string, status: UrlStatus): Promise<ShortUrlEntity | null> {
-    if (!isValidObjectId(urlId)) return null;
-    return ShortUrlModel.findByIdAndUpdate(
-      urlId,
-      {
-        $set: {
-          status,
-          deletedAt: status === URL_STATUS.DELETED ? new Date() : undefined
-        }
-      },
-      { new: true }
-    ).exec();
+  async updateStatus(urlId: string, status: UrlStatus): Promise<ShortUrlRecord | null> {
+    try {
+      return (await prisma.shortUrl.update({
+        where: { id: urlId },
+        data: { status, deletedAt: status === URL_STATUS.DELETED ? new Date() : null }
+      })) as ShortUrlRecord;
+    } catch {
+      return null;
+    }
   }
 
-  async updateByOwner(urlId: string, ownerId: string, update: Partial<ShortUrlDocument>): Promise<ShortUrlEntity | null> {
-    if (!isValidObjectId(urlId)) return null;
-    return ShortUrlModel.findOneAndUpdate(
-      { _id: urlId, ownerId },
-      { $set: update },
-      { new: true }
-    ).exec();
+  async updateByOwner(urlId: string, ownerId: string, update: Partial<ShortUrlRecord>): Promise<ShortUrlRecord | null> {
+    const current = await prisma.shortUrl.findFirst({ where: { id: urlId, ownerId } });
+    if (!current) return null;
+    return (await prisma.shortUrl.update({ where: { id: urlId }, data: update as Prisma.ShortUrlUpdateInput })) as ShortUrlRecord;
   }
 
-  async incrementClickForActiveShortCode(shortCode: string): Promise<ShortUrlEntity | null> {
-    return ShortUrlModel.findOneAndUpdate(
-      { shortCode, status: URL_STATUS.ACTIVE },
-      { $inc: { clickCount: 1, rawOpenCount: 1 }, $set: { lastClickedAt: new Date() } },
-      { new: true }
-    ).exec();
+  async incrementClickForActiveShortCode(shortCode: string): Promise<ShortUrlRecord | null> {
+    const current = await prisma.shortUrl.findFirst({ where: { shortCode, status: URL_STATUS.ACTIVE } });
+    if (!current) return null;
+    return (await prisma.shortUrl.update({
+      where: { id: current.id },
+      data: {
+        clickCount: { increment: 1 },
+        rawOpenCount: { increment: 1 },
+        lastClickedAt: new Date()
+      }
+    })) as ShortUrlRecord;
   }
 
-  async incrementRawOpen(shortCode: string): Promise<ShortUrlEntity | null> {
-    return ShortUrlModel.findOneAndUpdate(
-      { shortCode, status: URL_STATUS.ACTIVE },
-      { $inc: { clickCount: 1, rawOpenCount: 1 }, $set: { lastClickedAt: new Date() } },
-      { new: true }
-    ).exec();
+  async incrementRawOpen(shortCode: string): Promise<ShortUrlRecord | null> {
+    return this.incrementClickForActiveShortCode(shortCode);
   }
 
-  async incrementFunnelProgress(shortCode: string): Promise<ShortUrlEntity | null> {
-    return ShortUrlModel.findOneAndUpdate(
-      { shortCode, status: URL_STATUS.ACTIVE },
-      { $inc: { funnelProgressCount: 1 } },
-      { new: true }
-    ).exec();
+  async incrementFunnelProgress(shortCode: string): Promise<ShortUrlRecord | null> {
+    const current = await prisma.shortUrl.findFirst({ where: { shortCode, status: URL_STATUS.ACTIVE } });
+    if (!current) return null;
+    return (await prisma.shortUrl.update({
+      where: { id: current.id },
+      data: { funnelProgressCount: { increment: 1 } }
+    })) as ShortUrlRecord;
   }
 
-  async incrementQualifiedCompletion(shortCode: string): Promise<ShortUrlEntity | null> {
-    return ShortUrlModel.findOneAndUpdate(
-      { shortCode, status: URL_STATUS.ACTIVE },
-      { $inc: { qualifiedCompletionCount: 1 } },
-      { new: true }
-    ).exec();
+  async incrementQualifiedCompletion(shortCode: string): Promise<ShortUrlRecord | null> {
+    const current = await prisma.shortUrl.findFirst({ where: { shortCode, status: URL_STATUS.ACTIVE } });
+    if (!current) return null;
+    return (await prisma.shortUrl.update({
+      where: { id: current.id },
+      data: { qualifiedCompletionCount: { increment: 1 } }
+    })) as ShortUrlRecord;
   }
 }
 

@@ -1,15 +1,14 @@
-import { HydratedDocument, isValidObjectId, Types } from "mongoose";
-import { AnnouncementJobModel, type AnnouncementJobDocument } from "../models/announcement-job.model";
+import { prisma } from "../config/prisma";
 
-type AnnouncementJobEntity = HydratedDocument<AnnouncementJobDocument>;
+type AnnouncementJobEntity = Awaited<ReturnType<typeof prisma.announcementJob.findFirst>>;
 
 export class AnnouncementJobRepository {
   async enqueueMany(input: Array<{ announcementId: string; userId: string; email: string; maxRetries: number }>): Promise<void> {
     const rows = input
-      .filter((row) => isValidObjectId(row.announcementId) && isValidObjectId(row.userId))
+      .filter((row) => Boolean(row.announcementId && row.userId))
       .map((row) => ({
-        announcementId: new Types.ObjectId(row.announcementId),
-        userId: new Types.ObjectId(row.userId),
+        announcementId: row.announcementId,
+        userId: row.userId,
         email: row.email,
         maxRetries: row.maxRetries,
         attempts: 0,
@@ -17,73 +16,68 @@ export class AnnouncementJobRepository {
         nextAttemptAt: new Date()
       }));
     if (rows.length === 0) return;
-    await AnnouncementJobModel.insertMany(rows, { ordered: false }).catch(() => undefined);
+    await prisma.announcementJob.createMany({ data: rows, skipDuplicates: true });
   }
 
-  async claimBatch(limit: number): Promise<AnnouncementJobEntity[]> {
+  async claimBatch(limit: number): Promise<NonNullable<AnnouncementJobEntity>[]> {
     const now = new Date();
-    const jobs = await AnnouncementJobModel.find({
-      status: "PENDING",
-      nextAttemptAt: { $lte: now }
-    })
-      .sort({ nextAttemptAt: 1 })
-      .limit(limit)
-      .exec();
+    const jobs = await prisma.announcementJob.findMany({
+      where: {
+        status: "PENDING",
+        nextAttemptAt: { lte: now }
+      },
+      orderBy: { nextAttemptAt: "asc" },
+      take: limit
+    });
 
-    const ids = jobs.map((j) => j._id);
+    const ids = jobs.map((j) => j.id);
     if (ids.length > 0) {
-      await AnnouncementJobModel.updateMany(
-        { _id: { $in: ids }, status: "PENDING" },
-        { $set: { status: "PROCESSING" } }
-      ).exec();
+      await prisma.announcementJob.updateMany({
+        where: { id: { in: ids }, status: "PENDING" },
+        data: { status: "PROCESSING" }
+      });
     }
 
-    return AnnouncementJobModel.find({ _id: { $in: ids }, status: "PROCESSING" }).exec();
+    return prisma.announcementJob.findMany({ where: { id: { in: ids }, status: "PROCESSING" } });
   }
 
   async markSent(id: string): Promise<void> {
-    if (!isValidObjectId(id)) return;
-    await AnnouncementJobModel.updateOne(
-      { _id: id },
-      {
-        $set: {
-          status: "SENT",
-          nextAttemptAt: new Date()
-        }
+    await prisma.announcementJob.update({
+      where: { id },
+      data: {
+        status: "SENT",
+        nextAttemptAt: new Date()
       }
-    ).exec();
+    });
   }
 
   async markFailure(id: string, input: { error: string; nextAttemptAt: Date; final: boolean }): Promise<void> {
-    if (!isValidObjectId(id)) return;
-    await AnnouncementJobModel.updateOne(
-      { _id: id },
-      {
-        $inc: { attempts: 1 },
-        $set: {
-          status: input.final ? "FAILED" : "PENDING",
-          lastError: input.error,
-          nextAttemptAt: input.nextAttemptAt
-        }
+    await prisma.announcementJob.update({
+      where: { id },
+      data: {
+        attempts: { increment: 1 },
+        status: input.final ? "FAILED" : "PENDING",
+        lastError: input.error,
+        nextAttemptAt: input.nextAttemptAt
       }
-    ).exec();
+    });
   }
 
   async getStatsByAnnouncement(announcementId: string): Promise<{ total: number; sent: number; failed: number }> {
-    if (!isValidObjectId(announcementId)) return { total: 0, sent: 0, failed: 0 };
     const [total, sent, failed] = await Promise.all([
-      AnnouncementJobModel.countDocuments({ announcementId }),
-      AnnouncementJobModel.countDocuments({ announcementId, status: "SENT" }),
-      AnnouncementJobModel.countDocuments({ announcementId, status: "FAILED" })
+      prisma.announcementJob.count({ where: { announcementId } }),
+      prisma.announcementJob.count({ where: { announcementId, status: "SENT" } }),
+      prisma.announcementJob.count({ where: { announcementId, status: "FAILED" } })
     ]);
     return { total, sent, failed };
   }
 
   async countPendingByAnnouncement(announcementId: string): Promise<number> {
-    if (!isValidObjectId(announcementId)) return 0;
-    return AnnouncementJobModel.countDocuments({
-      announcementId,
-      status: { $in: ["PENDING", "PROCESSING"] }
+    return prisma.announcementJob.count({
+      where: {
+        announcementId,
+        status: { in: ["PENDING", "PROCESSING"] }
+      }
     });
   }
 }

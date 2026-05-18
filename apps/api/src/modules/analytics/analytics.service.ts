@@ -1,8 +1,7 @@
 import { StatusCodes } from "http-status-codes";
-import { ShortUrlModel } from "../../models/short-url.model";
-import { UserModel } from "../../models/user.model";
 import { clickRepository } from "../../repositories/click.repository";
 import { urlRepository } from "../../repositories/url.repository";
+import { userRepository } from "../../repositories/user.repository";
 import { URL_STATUS, USER_STATUS } from "../../types/common";
 
 type ServiceError = Error & { statusCode?: number };
@@ -30,11 +29,11 @@ export class AnalyticsService {
     };
   }> {
     const [urls, active, paused, hidden, deleted, clicks, uniqueClicks, clicksByDay, uniqueClicksByDay] = await Promise.all([
-      ShortUrlModel.countDocuments({ ownerId: userId }),
-      ShortUrlModel.countDocuments({ ownerId: userId, status: URL_STATUS.ACTIVE }),
-      ShortUrlModel.countDocuments({ ownerId: userId, status: URL_STATUS.PAUSED }),
-      ShortUrlModel.countDocuments({ ownerId: userId, status: URL_STATUS.HIDDEN }),
-      ShortUrlModel.countDocuments({ ownerId: userId, status: URL_STATUS.DELETED }),
+      urlRepository.countByOwner(userId),
+      urlRepository.listAllWithFilters({ page: 1, limit: 1_000_000, ownerId: userId, status: URL_STATUS.ACTIVE }).then((result) => result.total),
+      urlRepository.listAllWithFilters({ page: 1, limit: 1_000_000, ownerId: userId, status: URL_STATUS.PAUSED }).then((result) => result.total),
+      urlRepository.listAllWithFilters({ page: 1, limit: 1_000_000, ownerId: userId, status: URL_STATUS.HIDDEN }).then((result) => result.total),
+      urlRepository.listAllWithFilters({ page: 1, limit: 1_000_000, ownerId: userId, status: URL_STATUS.DELETED }).then((result) => result.total),
       clickRepository.countClicksByOwner(userId),
       clickRepository.countUniqueClicksByOwner(userId),
       clickRepository.getDailyClicks({ ownerId: userId, days }),
@@ -79,14 +78,14 @@ export class AnalyticsService {
       clicksByDay,
       uniqueClicksByDay
     ] = await Promise.all([
-      UserModel.countDocuments({}),
-      UserModel.countDocuments({ status: USER_STATUS.ACTIVE }),
-      UserModel.countDocuments({ status: USER_STATUS.BANNED }),
-      ShortUrlModel.countDocuments({}),
-      ShortUrlModel.countDocuments({ status: URL_STATUS.ACTIVE }),
-      ShortUrlModel.countDocuments({ status: URL_STATUS.PAUSED }),
-      ShortUrlModel.countDocuments({ status: URL_STATUS.HIDDEN }),
-      ShortUrlModel.countDocuments({ status: URL_STATUS.DELETED }),
+      userRepository.listUsers({ page: 1, limit: 1_000_000 }).then((result) => result.total),
+      userRepository.listUsers({ page: 1, limit: 1_000_000, status: USER_STATUS.ACTIVE }).then((result) => result.total),
+      userRepository.listUsers({ page: 1, limit: 1_000_000, status: USER_STATUS.BANNED }).then((result) => result.total),
+      urlRepository.countAll(),
+      urlRepository.countByStatus(URL_STATUS.ACTIVE),
+      urlRepository.countByStatus(URL_STATUS.PAUSED),
+      urlRepository.countByStatus(URL_STATUS.HIDDEN),
+      urlRepository.countByStatus(URL_STATUS.DELETED),
       clickRepository.countClicksTotal(),
       clickRepository.countUniqueClicksTotal(),
       clickRepository.getDailyClicks({ days }),

@@ -1,15 +1,14 @@
-import { HydratedDocument } from "mongoose";
-import { CpmRateModel, type CpmRateDocument } from "../models/cpm-rate.model";
+import { prisma } from "../config/prisma";
 
-type CpmRateEntity = HydratedDocument<CpmRateDocument>;
+type CpmRateEntity = Awaited<ReturnType<typeof prisma.cpmRate.findFirst>>;
 
 export class CpmRateRepository {
-  async listAll(): Promise<CpmRateEntity[]> {
-    return CpmRateModel.find({}).sort({ countryCode: 1 }).exec();
+  async listAll(): Promise<NonNullable<CpmRateEntity>[]> {
+    return prisma.cpmRate.findMany({ orderBy: { countryCode: "asc" } });
   }
 
-  async getByCountryCode(countryCode: string): Promise<CpmRateEntity | null> {
-    return CpmRateModel.findOne({ countryCode: countryCode.trim().toUpperCase() }).exec();
+  async getByCountryCode(countryCode: string): Promise<NonNullable<CpmRateEntity> | null> {
+    return prisma.cpmRate.findUnique({ where: { countryCode: countryCode.trim().toUpperCase() } });
   }
 
   async upsert(input: {
@@ -18,31 +17,32 @@ export class CpmRateRepository {
     currency: string;
     isActive?: boolean;
     notes?: string;
-  }): Promise<CpmRateEntity> {
-    return (await CpmRateModel.findOneAndUpdate(
-      { countryCode: input.countryCode.trim().toUpperCase() },
-      {
-        $set: {
-          cpm: input.cpm,
-          currency: input.currency.trim().toUpperCase(),
-          isActive: input.isActive ?? true,
-          notes: input.notes
-        },
-        $setOnInsert: {
-          countryCode: input.countryCode.trim().toUpperCase()
-        }
+  }): Promise<NonNullable<CpmRateEntity>> {
+    return prisma.cpmRate.upsert({
+      where: { countryCode: input.countryCode.trim().toUpperCase() },
+      create: {
+        countryCode: input.countryCode.trim().toUpperCase(),
+        cpm: input.cpm,
+        currency: input.currency.trim().toUpperCase(),
+        isActive: input.isActive ?? true,
+        notes: input.notes
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    ).exec()) as CpmRateEntity;
+      update: {
+        cpm: input.cpm,
+        currency: input.currency.trim().toUpperCase(),
+        isActive: input.isActive ?? true,
+        notes: input.notes
+      }
+    });
   }
 
-  async getApplicableRate(countryCode?: string): Promise<CpmRateEntity | null> {
+  async getApplicableRate(countryCode?: string): Promise<NonNullable<CpmRateEntity> | null> {
     const normalized = countryCode?.trim().toUpperCase();
     if (normalized) {
-      const exact = await CpmRateModel.findOne({ countryCode: normalized, isActive: true }).exec();
+      const exact = await prisma.cpmRate.findFirst({ where: { countryCode: normalized, isActive: true } });
       if (exact) return exact;
     }
-    return CpmRateModel.findOne({ countryCode: "DEFAULT", isActive: true }).exec();
+    return prisma.cpmRate.findFirst({ where: { countryCode: "DEFAULT", isActive: true } });
   }
 }
 

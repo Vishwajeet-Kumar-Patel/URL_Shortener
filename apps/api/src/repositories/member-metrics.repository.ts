@@ -1,137 +1,103 @@
-import { Types, HydratedDocument } from "mongoose";
-import { MemberMetricsModel, type MemberMetricsDocument } from "../models/member-metrics.model";
+import { prisma } from "../config/prisma";
 
-type MemberMetricsEntity = HydratedDocument<MemberMetricsDocument>;
+export type MemberMetricsRecord = {
+  id: string;
+  memberId: string;
+  totalAnonymousUsersBrought: number;
+  totalAnonymousLinksGenerated: number;
+  totalQualifiedClicks: number;
+  totalEarnings: number;
+  thisMonthEarnings: number;
+  thisMonthUsers: number;
+  lastCalculatedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export class MemberMetricsRepository {
-  async getOrCreateMetrics(memberId: string): Promise<MemberMetricsEntity | null> {
-    if (!Types.ObjectId.isValid(memberId)) return null;
-
-    const objId = new Types.ObjectId(memberId);
-    const existing = await MemberMetricsModel.findOne({ memberId: objId }).exec();
-
-    if (existing) return existing;
+  async getOrCreateMetrics(memberId: string): Promise<MemberMetricsRecord | null> {
+    const existing = await prisma.memberMetrics.findUnique({ where: { memberId } });
+    if (existing) return existing as MemberMetricsRecord;
 
     try {
-      return await MemberMetricsModel.create({
-        memberId: objId,
-        totalAnonymousUsersBrought: 0,
-        totalAnonymousLinksGenerated: 0,
-        totalQualifiedClicks: 0,
-        totalEarnings: 0,
-        thisMonthEarnings: 0,
-        thisMonthUsers: 0
-      });
+      return (await prisma.memberMetrics.create({
+        data: {
+          memberId,
+          totalAnonymousUsersBrought: 0,
+          totalAnonymousLinksGenerated: 0,
+          totalQualifiedClicks: 0,
+          totalEarnings: 0,
+          thisMonthEarnings: 0,
+          thisMonthUsers: 0,
+          lastCalculatedAt: new Date()
+        }
+      })) as MemberMetricsRecord;
     } catch {
       return null;
     }
   }
 
   async incrementUsersBrought(memberId: string, count: number = 1): Promise<boolean> {
-    if (!Types.ObjectId.isValid(memberId)) return false;
-
-    const result = await MemberMetricsModel.updateOne(
-      { memberId: new Types.ObjectId(memberId) },
-      {
-        $inc: {
-          totalAnonymousUsersBrought: count,
-          thisMonthUsers: count
-        }
+    const result = await prisma.memberMetrics.updateMany({
+      where: { memberId },
+      data: {
+        totalAnonymousUsersBrought: { increment: count },
+        thisMonthUsers: { increment: count }
       }
-    ).exec();
-
-    return result.modifiedCount > 0;
+    });
+    return result.count > 0;
   }
 
   async incrementLinksGenerated(memberId: string, count: number = 1): Promise<boolean> {
-    if (!Types.ObjectId.isValid(memberId)) return false;
-
-    const result = await MemberMetricsModel.updateOne(
-      { memberId: new Types.ObjectId(memberId) },
-      {
-        $inc: {
-          totalAnonymousLinksGenerated: count
-        }
-      }
-    ).exec();
-
-    return result.modifiedCount > 0;
+    const result = await prisma.memberMetrics.updateMany({
+      where: { memberId },
+      data: { totalAnonymousLinksGenerated: { increment: count } }
+    });
+    return result.count > 0;
   }
 
   async incrementQualifiedClicks(memberId: string, count: number = 1): Promise<boolean> {
-    if (!Types.ObjectId.isValid(memberId)) return false;
-
-    const result = await MemberMetricsModel.updateOne(
-      { memberId: new Types.ObjectId(memberId) },
-      {
-        $inc: {
-          totalQualifiedClicks: count
-        }
-      }
-    ).exec();
-
-    return result.modifiedCount > 0;
+    const result = await prisma.memberMetrics.updateMany({
+      where: { memberId },
+      data: { totalQualifiedClicks: { increment: count } }
+    });
+    return result.count > 0;
   }
 
   async addEarnings(memberId: string, amount: number, isThisMonth: boolean = true): Promise<boolean> {
-    if (!Types.ObjectId.isValid(memberId)) return false;
-
-    const update: Record<string, unknown> = {
-      $inc: {
-        totalEarnings: amount
+    const result = await prisma.memberMetrics.updateMany({
+      where: { memberId },
+      data: {
+        totalEarnings: { increment: amount },
+        ...(isThisMonth ? { thisMonthEarnings: { increment: amount } } : {})
       }
-    };
-
-    if (isThisMonth) {
-      update.$inc = { ...(update.$inc || {}), thisMonthEarnings: amount };
-    }
-
-    const result = await MemberMetricsModel.updateOne(
-      { memberId: new Types.ObjectId(memberId) },
-      update
-    ).exec();
-
-    return result.modifiedCount > 0;
+    });
+    return result.count > 0;
   }
 
   async updateCalculatedAt(memberId: string): Promise<boolean> {
-    if (!Types.ObjectId.isValid(memberId)) return false;
-
-    const result = await MemberMetricsModel.updateOne(
-      { memberId: new Types.ObjectId(memberId) },
-      { lastCalculatedAt: new Date() }
-    ).exec();
-
-    return result.modifiedCount > 0;
+    const result = await prisma.memberMetrics.updateMany({ where: { memberId }, data: { lastCalculatedAt: new Date() } });
+    return result.count > 0;
   }
 
-  async findByMemberId(memberId: string): Promise<MemberMetricsEntity | null> {
-    if (!Types.ObjectId.isValid(memberId)) return null;
-    return MemberMetricsModel.findOne({ memberId: new Types.ObjectId(memberId) }).exec();
+  async findByMemberId(memberId: string): Promise<MemberMetricsRecord | null> {
+    return (await prisma.memberMetrics.findUnique({ where: { memberId } })) as MemberMetricsRecord | null;
   }
 
-  async getTopEarners(limit: number = 10): Promise<MemberMetricsEntity[]> {
-    return MemberMetricsModel.find()
-      .sort({ totalEarnings: -1 })
-      .limit(limit)
-      .exec();
+  async getTopEarners(limit: number = 10): Promise<MemberMetricsRecord[]> {
+    return (await prisma.memberMetrics.findMany({ orderBy: { totalEarnings: "desc" }, take: limit })) as MemberMetricsRecord[];
   }
 
-  async getTopThisMonth(limit: number = 10): Promise<MemberMetricsEntity[]> {
-    return MemberMetricsModel.find()
-      .sort({ thisMonthEarnings: -1 })
-      .limit(limit)
-      .exec();
+  async getTopThisMonth(limit: number = 10): Promise<MemberMetricsRecord[]> {
+    return (await prisma.memberMetrics.findMany({ orderBy: { thisMonthEarnings: "desc" }, take: limit })) as MemberMetricsRecord[];
+  }
+
+  async find(where: Record<string, unknown>): Promise<MemberMetricsRecord[]> {
+    return (await prisma.memberMetrics.findMany({ where })) as MemberMetricsRecord[];
   }
 
   async resetMonthlyMetrics(): Promise<void> {
-    await MemberMetricsModel.updateMany(
-      {},
-      {
-        thisMonthEarnings: 0,
-        thisMonthUsers: 0
-      }
-    ).exec();
+    await prisma.memberMetrics.updateMany({ data: { thisMonthEarnings: 0, thisMonthUsers: 0 } });
   }
 }
 

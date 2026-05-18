@@ -1,6 +1,4 @@
-import type { HydratedDocument } from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import type { InvoiceDocument } from "../../models/invoice.model";
 import { invoiceRepository } from "../../repositories/invoice.repository";
 import type { InvoiceListItem, ListInvoicesQuery } from "./invoice.types";
 
@@ -53,19 +51,23 @@ export class InvoiceService {
     return this.toItem(invoice);
   }
 
-  private toItem(invoice: HydratedDocument<InvoiceDocument>): InvoiceListItem {
+  private toItem(invoice: Awaited<ReturnType<typeof invoiceRepository.findById>>): InvoiceListItem {
+    if (!invoice) {
+      throw buildServiceError("Invoice not found", StatusCodes.NOT_FOUND);
+    }
+
     return {
-      id: String(invoice._id),
+      id: invoice.id,
       type: invoice.type as InvoiceListItem["type"],
       status: invoice.status as InvoiceListItem["status"],
       amount: invoice.amount,
       currency: invoice.currency,
       provider: invoice.provider as InvoiceListItem["provider"],
-      providerOrderId: invoice.providerOrderId,
-      providerPaymentId: invoice.providerPaymentId,
-      referenceId: invoice.referenceId,
+      providerOrderId: invoice.providerOrderId ?? undefined,
+      providerPaymentId: invoice.providerPaymentId ?? undefined,
+      referenceId: invoice.referenceId ?? undefined,
       createdAt: invoice.createdAt,
-      paidAt: invoice.paidAt
+      paidAt: invoice.paidAt ?? undefined
     };
   }
 }

@@ -28,8 +28,8 @@ export class SubscriptionService {
       interval: plan.interval,
       status: active.status,
       startsAt: active.startsAt,
-      endsAt: active.endsAt,
-      renewAt: active.renewAt
+      endsAt: active.endsAt ?? undefined,
+      renewAt: active.renewAt ?? undefined
     };
   }
 

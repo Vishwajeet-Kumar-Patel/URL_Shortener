@@ -1,5 +1,4 @@
 import { StatusCodes } from "http-status-codes";
-// removed unused mongoose Types import
 import { prisma } from "../../config/prisma";
 import { withdrawalRepository } from "../../repositories/withdrawal.repository";
 import { walletService } from "../wallet/wallet.service";

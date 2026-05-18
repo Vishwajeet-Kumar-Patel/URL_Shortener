@@ -52,7 +52,7 @@ export class PublicFunnelService {
     const session = await this.loadSession(sessionId);
 
     return {
-      sessionId: String(session._id),
+      sessionId: String(session.id),
       shortCode: session.shortCode,
       currentState: session.currentState,
       humanVerified: Boolean(session.humanVerified),
@@ -249,13 +249,13 @@ export class PublicFunnelService {
     requireElapsed(session.sponsorVerifiedAt, "Sponsor countdown");
 
     const payout = await redirectService.creditQualifiedPayout({
-      ownerId: String(session.memberId ?? session._id),
+      ownerId: String(session.memberId ?? session.id),
       country: session.country || "",
       shortCode: session.shortCode,
       clickLogId: session.clickLogId ? String(session.clickLogId) : "",
-      redirectSessionId: String(session._id),
-      visitorIpHash: session.ipHash,
-      fingerprintHash: session.fingerprintHash,
+      redirectSessionId: String(session.id),
+      visitorIpHash: session.ipHash ?? undefined,
+      fingerprintHash: session.fingerprintHash ?? undefined,
       memberId: session.memberId ? String(session.memberId) : undefined
     });
 

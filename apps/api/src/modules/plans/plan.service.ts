@@ -67,7 +67,7 @@ export class PlanService {
     return {
       id: plan.id,
       name: plan.name,
-      description: plan.description,
+      description: plan.description ?? undefined,
       price: plan.price,
       currency: plan.currency,
       interval: plan.interval,

@@ -2,16 +2,15 @@ import { randomBytes } from "crypto";
 import { StatusCodes } from "http-status-codes";
 import { EMAIL_VERIFICATION_TOKEN_TTL_HOURS } from "../../config/constants";
 import { env } from "../../config/env";
-import { ShortUrlModel } from "../../models/short-url.model";
-import { MemberEarningModel } from "../../models/member-earning.model";
-import { RedirectSessionModel } from "../../models/redirect-session.model";
-import { MemberMetricsModel } from "../../models/member-metrics.model";
+import { urlRepository } from "../../repositories/url.repository";
+import { memberEarningRepository } from "../../repositories/member-earning.repository";
+import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
+import { memberMetricsRepository } from "../../repositories/member-metrics.repository";
 import { userRepository } from "../../repositories/user.repository";
 import { sendEmail } from "../../utils/email";
 import { buildVerificationEmail } from "../../utils/email-templates";
 import { hashPassword, hashToken, verifyPassword } from "../../utils/hash";
 import type { UpdatePasswordInput, UpdateProfileInput, UserProfile } from "./user.types";
-import type { MemberMetricsDocument } from "../../models/member-metrics.model";
 
 type ServiceError = Error & { statusCode?: number };
 
@@ -53,9 +52,7 @@ export class UserService {
       qualifiedClicks: number;
     }>;
   }> {
-    const links = await ShortUrlModel.find({ createdByMemberId: userId })
-      .sort({ createdAt: -1 })
-      .lean();
+    const links = await urlRepository.findByCreatedByMemberId(userId);
 
     return {
       items: links.map((link) => ({
@@ -75,25 +72,20 @@ export class UserService {
     totalQualifiedClicks: number;
     breakdown: Array<{ country: string; clicks: number; earnings: number }>;
   }> {
-    const metrics = (await MemberMetricsModel.findOne({ memberId: userId }).lean()) as
-      | MemberMetricsDocument
-      | null;
-    const earnings = await MemberEarningModel.find({ memberId: userId }).lean();
-
-    const sessions = await RedirectSessionModel.find({
-      _id: { $in: earnings.map((entry) => entry.redirectSessionId) }
-    })
-      .select("country")
-      .lean();
+    const metrics = await memberMetricsRepository.findByMemberId(userId);
+    const earnings = await memberEarningRepository.listByMemberId(userId);
+    const sessions = await redirectSessionRepository.findByIds(
+      earnings.map((entry) => entry.redirectSessionId)
+    );
 
     const sessionCountryById = new Map<string, string>();
     sessions.forEach((session) => {
-      sessionCountryById.set(String(session._id), session.country || "UNKNOWN");
+      sessionCountryById.set(session.id, session.country || "UNKNOWN");
     });
 
     const byCountry = new Map<string, { clicks: number; earnings: number }>();
     earnings.forEach((entry) => {
-      const country = sessionCountryById.get(String(entry.redirectSessionId)) || "UNKNOWN";
+      const country = sessionCountryById.get(entry.redirectSessionId) || "UNKNOWN";
       const current = byCountry.get(country) || { clicks: 0, earnings: 0 };
       current.clicks += 1;
       current.earnings += Number(entry.amount || 0);

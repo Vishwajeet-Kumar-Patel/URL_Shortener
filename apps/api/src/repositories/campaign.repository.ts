@@ -1,8 +1,36 @@
-import { HydratedDocument, isValidObjectId } from "mongoose";
-import { CampaignModel, type CampaignDocument } from "../models/campaign.model";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma";
 import { CAMPAIGN_STATUS, type CampaignStatus, type CampaignType, type Role, type TargetDevice } from "../types/common";
 
-type CampaignEntity = HydratedDocument<CampaignDocument>;
+export type CampaignRecord = {
+  id: string;
+  ownerId: string;
+  name: string;
+  type: CampaignType;
+  status: CampaignStatus;
+  targetDevice: TargetDevice;
+  targetCountries: string[];
+  targetExcludeCountries: string[];
+  targetBrowsers: string[];
+  targetOs: string[];
+  targetLanguages: string[];
+  budgetTotal: number;
+  budgetSpent: number;
+  landingUrl: string | null;
+  creativeTitle: string | null;
+  creativeBody: string | null;
+  creativeCta: string | null;
+  creativeImageUrl: string | null;
+  creativeVideoUrl: string | null;
+  moderationNote: string | null;
+  moderatedAt: Date | null;
+  moderatedBy: string | null;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  createdByRole: Role;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export class CampaignRepository {
   async createCampaign(input: {
@@ -25,28 +53,30 @@ export class CampaignRepository {
     startsAt?: Date;
     endsAt?: Date;
     createdByRole: Role;
-  }): Promise<CampaignEntity> {
-    return CampaignModel.create({
-      ownerId: input.ownerId,
-      name: input.name,
-      type: input.type,
-      targetDevice: input.targetDevice,
-      targetCountries: input.targetCountries,
-      targetExcludeCountries: input.targetExcludeCountries,
-      targetBrowsers: input.targetBrowsers,
-      targetOs: input.targetOs,
-      targetLanguages: input.targetLanguages,
-      budgetTotal: input.budgetTotal,
-      landingUrl: input.landingUrl,
-      creativeTitle: input.creativeTitle,
-      creativeBody: input.creativeBody,
-      creativeCta: input.creativeCta,
-      creativeImageUrl: input.creativeImageUrl,
-      creativeVideoUrl: input.creativeVideoUrl,
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
-      createdByRole: input.createdByRole
-    });
+  }): Promise<CampaignRecord> {
+    return prisma.campaign.create({
+      data: {
+        ownerId: input.ownerId,
+        name: input.name,
+        type: input.type,
+        targetDevice: input.targetDevice,
+        targetCountries: input.targetCountries ?? [],
+        targetExcludeCountries: input.targetExcludeCountries ?? [],
+        targetBrowsers: input.targetBrowsers ?? [],
+        targetOs: input.targetOs ?? [],
+        targetLanguages: input.targetLanguages ?? [],
+        budgetTotal: input.budgetTotal,
+        landingUrl: input.landingUrl,
+        creativeTitle: input.creativeTitle,
+        creativeBody: input.creativeBody,
+        creativeCta: input.creativeCta,
+        creativeImageUrl: input.creativeImageUrl,
+        creativeVideoUrl: input.creativeVideoUrl,
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+        createdByRole: input.createdByRole
+      }
+    }) as Promise<CampaignRecord>;
   }
 
   async listByOwner(input: {
@@ -54,37 +84,31 @@ export class CampaignRepository {
     page: number;
     limit: number;
     status?: CampaignStatus;
-  }): Promise<{ data: CampaignEntity[]; total: number }> {
-    const filter: Record<string, unknown> = { ownerId: input.ownerId };
-    if (input.status) {
-      filter.status = input.status;
-    }
+  }): Promise<{ data: CampaignRecord[]; total: number }> {
+    const where: Prisma.CampaignWhereInput = { ownerId: input.ownerId };
+    if (input.status) where.status = input.status;
 
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      CampaignModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      CampaignModel.countDocuments(filter)
+      prisma.campaign.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.campaign.count({ where })
     ]);
 
-    return { data, total };
+    return { data: data as CampaignRecord[], total };
   }
 
-  async findByIdAndOwner(campaignId: string, ownerId: string): Promise<CampaignEntity | null> {
-    if (!isValidObjectId(campaignId)) return null;
-    return CampaignModel.findOne({ _id: campaignId, ownerId }).exec();
+  async findByIdAndOwner(campaignId: string, ownerId: string): Promise<CampaignRecord | null> {
+    return (await prisma.campaign.findFirst({ where: { id: campaignId, ownerId } })) as CampaignRecord | null;
   }
 
   async updateStatus(
     campaignId: string,
     ownerId: string,
     status: CampaignStatus
-  ): Promise<CampaignEntity | null> {
-    if (!isValidObjectId(campaignId)) return null;
-    return CampaignModel.findOneAndUpdate(
-      { _id: campaignId, ownerId },
-      { $set: { status } },
-      { new: true }
-    ).exec();
+  ): Promise<CampaignRecord | null> {
+    const current = await prisma.campaign.findFirst({ where: { id: campaignId, ownerId } });
+    if (!current) return null;
+    return (await prisma.campaign.update({ where: { id: campaignId }, data: { status } })) as CampaignRecord;
   }
 
   async listAll(input: {
@@ -93,63 +117,55 @@ export class CampaignRepository {
     status?: CampaignStatus;
     ownerId?: string;
     search?: string;
-  }): Promise<{ data: CampaignEntity[]; total: number }> {
-    const filter: Record<string, unknown> = {};
-    if (input.status) {
-      filter.status = input.status;
-    }
-    if (input.ownerId) {
-      filter.ownerId = input.ownerId;
-    }
+  }): Promise<{ data: CampaignRecord[]; total: number }> {
+    const where: Prisma.CampaignWhereInput = {};
+    if (input.status) where.status = input.status;
+    if (input.ownerId) where.ownerId = input.ownerId;
     if (input.search) {
-      const regex = new RegExp(input.search, "i");
-      filter.$or = [{ name: regex }];
+      where.OR = [{ name: { contains: input.search, mode: "insensitive" } }];
     }
 
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      CampaignModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      CampaignModel.countDocuments(filter)
+      prisma.campaign.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.campaign.count({ where })
     ]);
 
-    return { data, total };
+    return { data: data as CampaignRecord[], total };
   }
 
-  async findById(campaignId: string): Promise<CampaignEntity | null> {
-    if (!isValidObjectId(campaignId)) return null;
-    return CampaignModel.findById(campaignId).exec();
+  async findById(campaignId: string): Promise<CampaignRecord | null> {
+    return (await prisma.campaign.findUnique({ where: { id: campaignId } })) as CampaignRecord | null;
   }
 
   async updateStatusById(campaignId: string, status: CampaignStatus, input?: {
     moderationNote?: string;
     moderatedBy?: string;
     moderatedAt?: Date;
-  }): Promise<CampaignEntity | null> {
-    if (!isValidObjectId(campaignId)) return null;
-
-    const update: Record<string, unknown> = { status };
-    if (input?.moderationNote) update.moderationNote = input.moderationNote;
-    if (input?.moderatedBy) update.moderatedBy = input.moderatedBy;
-    if (input?.moderatedAt) update.moderatedAt = input.moderatedAt;
-
-    return CampaignModel.findByIdAndUpdate(
-      campaignId,
-      { $set: update },
-      { new: true }
-    ).exec();
+  }): Promise<CampaignRecord | null> {
+    try {
+      return (await prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          status,
+          moderationNote: input?.moderationNote,
+          moderatedBy: input?.moderatedBy,
+          moderatedAt: input?.moderatedAt
+        }
+      })) as CampaignRecord;
+    } catch {
+      return null;
+    }
   }
 
   async updateCampaign(
     campaignId: string,
     ownerId: string,
-    update: Partial<CampaignDocument>
-  ): Promise<CampaignEntity | null> {
-    if (!isValidObjectId(campaignId)) return null;
-    return CampaignModel.findOneAndUpdate(
-      { _id: campaignId, ownerId },
-      { $set: update },
-      { new: true }
-    ).exec();
+    update: Partial<CampaignRecord>
+  ): Promise<CampaignRecord | null> {
+    const current = await prisma.campaign.findFirst({ where: { id: campaignId, ownerId } });
+    if (!current) return null;
+    return (await prisma.campaign.update({ where: { id: campaignId }, data: update as Prisma.CampaignUpdateInput })) as CampaignRecord;
   }
 
   /** After a paid CAMPAIGN invoice: activate draft campaigns; top up budget on active campaigns. */
@@ -157,25 +173,22 @@ export class CampaignRepository {
     campaignId: string,
     ownerId: string,
     paidAmount: number
-  ): Promise<CampaignEntity | null> {
-    if (!isValidObjectId(campaignId)) return null;
-    const existing = await CampaignModel.findOne({ _id: campaignId, ownerId }).exec();
+  ): Promise<CampaignRecord | null> {
+    const existing = await prisma.campaign.findFirst({ where: { id: campaignId, ownerId } });
     if (!existing) return null;
 
     if (existing.status === CAMPAIGN_STATUS.DRAFT) {
-      return CampaignModel.findOneAndUpdate(
-        { _id: campaignId, ownerId },
-        { $set: { status: CAMPAIGN_STATUS.ACTIVE } },
-        { new: true }
-      ).exec();
+      return (await prisma.campaign.update({
+        where: { id: campaignId },
+        data: { status: CAMPAIGN_STATUS.ACTIVE }
+      })) as CampaignRecord;
     }
 
     if (existing.status === CAMPAIGN_STATUS.ACTIVE && paidAmount > 0) {
-      return CampaignModel.findOneAndUpdate(
-        { _id: campaignId, ownerId },
-        { $inc: { budgetTotal: paidAmount } },
-        { new: true }
-      ).exec();
+      return (await prisma.campaign.update({
+        where: { id: campaignId },
+        data: { budgetTotal: { increment: paidAmount } }
+      })) as CampaignRecord;
     }
 
     return existing;

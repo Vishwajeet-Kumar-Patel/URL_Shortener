@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes";
-import { redirectSessionRepository } from "../../repositories/redirect-session.repository";
+import { redirectSessionRepository, type FunnelStepTiming } from "../../repositories/redirect-session.repository";
 
 type ServiceError = Error & { statusCode?: number };
 
@@ -64,7 +64,8 @@ export class FunnelValidationService {
       }
 
       case 1: {
-        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const stepTimings = (Array.isArray(session.stepTimings) ? session.stepTimings : []) as FunnelStepTiming[];
+        const timing = stepTimings.find((step) => step.step === currentStep);
         const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
         if (secondsElapsed < REQUIRED_WAIT) {
           return {
@@ -78,7 +79,8 @@ export class FunnelValidationService {
       }
 
       case 2: {
-        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const stepTimings = (Array.isArray(session.stepTimings) ? session.stepTimings : []) as FunnelStepTiming[];
+        const timing = stepTimings.find((step) => step.step === currentStep);
         const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
         if (secondsElapsed < 14.5) {
           return {
@@ -106,7 +108,8 @@ export class FunnelValidationService {
       }
 
       case 3: {
-        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const stepTimings = (Array.isArray(session.stepTimings) ? session.stepTimings : []) as FunnelStepTiming[];
+        const timing = stepTimings.find((step) => step.step === currentStep);
         const secondsElapsed = timing ? (now.getTime() - timing.enteredAt.getTime()) / 1000 : 0;
         if (secondsElapsed < 14.5) {
           return {
@@ -136,7 +139,8 @@ export class FunnelValidationService {
         // Prefer explicit entered-at timing for step 4, but fall back to
         // sponsor click time or session start to avoid transient races where
         // the timing record hasn't been written yet.
-        const timing = session.stepTimings.find((step) => step.step === currentStep);
+        const stepTimings = (Array.isArray(session.stepTimings) ? session.stepTimings : []) as FunnelStepTiming[];
+        const timing = stepTimings.find((step) => step.step === currentStep);
         const enteredAt = timing?.enteredAt ?? session.step4CompleteAt ?? session.sponsorClickedAt ?? session.startedAt ?? session.createdAt;
         const secondsElapsed = enteredAt ? (now.getTime() - new Date(enteredAt).getTime()) / 1000 : 0;
 

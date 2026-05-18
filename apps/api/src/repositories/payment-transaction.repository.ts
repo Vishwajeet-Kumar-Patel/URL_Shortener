@@ -1,8 +1,18 @@
-import { HydratedDocument, isValidObjectId } from "mongoose";
-import { PaymentTransactionModel, type PaymentTransactionDocument } from "../models/payment-transaction.model";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma";
 import type { PaymentProvider } from "../types/common";
 
-type PaymentTransactionEntity = HydratedDocument<PaymentTransactionDocument>;
+export type PaymentTransactionRecord = {
+  id: string;
+  invoiceId: string | null;
+  provider: PaymentProvider;
+  eventType: string;
+  payload: Record<string, unknown>;
+  signature: string | null;
+  receivedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export class PaymentTransactionRepository {
   async createTransaction(input: {
@@ -12,33 +22,37 @@ export class PaymentTransactionRepository {
     payload: Record<string, unknown>;
     signature?: string;
     receivedAt?: Date;
-  }): Promise<PaymentTransactionEntity> {
-    return PaymentTransactionModel.create({
-      invoiceId: input.invoiceId,
-      provider: input.provider,
-      eventType: input.eventType,
-      payload: input.payload,
-      signature: input.signature,
-      receivedAt: input.receivedAt ?? new Date()
-    });
+  }): Promise<PaymentTransactionRecord> {
+    return prisma.paymentTransaction.create({
+      data: {
+        invoiceId: input.invoiceId,
+        provider: input.provider,
+        eventType: input.eventType,
+        payload: input.payload as Prisma.InputJsonValue,
+        signature: input.signature,
+        receivedAt: input.receivedAt ?? new Date()
+      }
+    }) as Promise<PaymentTransactionRecord>;
   }
 
-  async listByInvoice(invoiceId: string): Promise<PaymentTransactionEntity[]> {
-    if (!isValidObjectId(invoiceId)) return [];
-    return PaymentTransactionModel.find({ invoiceId }).sort({ createdAt: -1 }).exec();
+  async listByInvoice(invoiceId: string): Promise<PaymentTransactionRecord[]> {
+    return (await prisma.paymentTransaction.findMany({
+      where: { invoiceId },
+      orderBy: { createdAt: "desc" }
+    })) as PaymentTransactionRecord[];
   }
 
-  async listAll(input: { page: number; limit: number; provider?: PaymentProvider }): Promise<{ data: PaymentTransactionEntity[]; total: number }> {
-    const filter: Record<string, unknown> = {};
+  async listAll(input: { page: number; limit: number; provider?: PaymentProvider }): Promise<{ data: PaymentTransactionRecord[]; total: number }> {
+    const filter: Prisma.PaymentTransactionWhereInput = {};
     if (input.provider) {
       filter.provider = input.provider;
     }
     const skip = (input.page - 1) * input.limit;
     const [data, total] = await Promise.all([
-      PaymentTransactionModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(input.limit).exec(),
-      PaymentTransactionModel.countDocuments(filter)
+      prisma.paymentTransaction.findMany({ where: filter, orderBy: { createdAt: "desc" }, skip, take: input.limit }),
+      prisma.paymentTransaction.count({ where: filter })
     ]);
-    return { data, total };
+    return { data: data as PaymentTransactionRecord[], total };
   }
 }
 

@@ -1,7 +1,6 @@
-import { HydratedDocument } from "mongoose";
-import { VisitorQualificationModel, type VisitorQualificationDocument } from "../models/visitor-qualification.model";
+import { prisma } from "../config/prisma";
 
-type VisitorQualificationEntity = HydratedDocument<VisitorQualificationDocument>;
+type VisitorQualificationEntity = Awaited<ReturnType<typeof prisma.visitorQualification.findFirst>>;
 
 export class VisitorQualificationRepository {
   async claimUniqueCompletion(input: {
@@ -10,37 +9,38 @@ export class VisitorQualificationRepository {
     shortCode: string;
     redirectSessionId: string;
     memberId?: string;
-  }): Promise<{ isDuplicate: boolean; record: VisitorQualificationEntity }> {
+  }): Promise<{ isDuplicate: boolean; record: NonNullable<VisitorQualificationEntity> }> {
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
-    const existing = await VisitorQualificationModel.findOne({
-      $or: [
-        { ipHash: input.ipHash, expiresAt: { $gt: new Date() } },
-        ...(input.fingerprintHash ? [{ fingerprintHash: input.fingerprintHash, expiresAt: { $gt: new Date() } }] : [])
-      ]
-    }).sort({ expiresAt: -1 }).exec();
+    const existing = await prisma.visitorQualification.findFirst({
+      where: {
+        OR: [
+          { ipHash: input.ipHash, expiresAt: { gt: new Date() } },
+          ...(input.fingerprintHash ? [{ fingerprintHash: input.fingerprintHash, expiresAt: { gt: new Date() } }] : [])
+        ]
+      },
+      orderBy: { expiresAt: "desc" }
+    });
 
     if (existing) {
-      const duplicate = await VisitorQualificationModel.findOneAndUpdate(
-        { redirectSessionId: input.redirectSessionId },
-        {
-          $setOnInsert: {
-            ipHash: input.ipHash,
-            fingerprintHash: input.fingerprintHash,
-            shortCode: input.shortCode,
-            redirectSessionId: input.redirectSessionId,
-            memberId: input.memberId,
-            firstCompletedAt: new Date(),
-            expiresAt,
-            isDuplicate: true
-          }
+      const duplicate = await prisma.visitorQualification.upsert({
+        where: { redirectSessionId: input.redirectSessionId },
+        create: {
+          ipHash: input.ipHash,
+          fingerprintHash: input.fingerprintHash,
+          shortCode: input.shortCode,
+          redirectSessionId: input.redirectSessionId,
+          memberId: input.memberId,
+          firstCompletedAt: new Date(),
+          expiresAt,
+          isDuplicate: true
         },
-        { upsert: true, new: true }
-      ).exec();
+        update: {}
+      });
 
-      return { isDuplicate: true, record: duplicate as VisitorQualificationEntity };
+      return { isDuplicate: true, record: duplicate };
     }
 
-    const record = await VisitorQualificationModel.create({
+    const record = await prisma.visitorQualification.create({ data: {
       ipHash: input.ipHash,
       fingerprintHash: input.fingerprintHash,
       shortCode: input.shortCode,
@@ -49,7 +49,7 @@ export class VisitorQualificationRepository {
       firstCompletedAt: new Date(),
       expiresAt,
       isDuplicate: false
-    });
+    }});
 
     return { isDuplicate: false, record };
   }

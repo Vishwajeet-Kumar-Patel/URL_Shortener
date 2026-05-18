@@ -1,7 +1,17 @@
-import { Types, HydratedDocument } from "mongoose";
-import { AnonymousSessionModel, type AnonymousSessionDocument } from "../models/anonymous-session.model";
+import { prisma } from "../config/prisma";
 
-type AnonymousSessionEntity = HydratedDocument<AnonymousSessionDocument>;
+export type AnonymousSessionRecord = {
+  id: string;
+  memberId: string | null;
+  referralCode: string | null;
+  sessionToken: string;
+  userAgent: string;
+  ipHash: string;
+  isValid: boolean;
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export class AnonymousSessionRepository {
   async createSession(input: {
@@ -11,77 +21,61 @@ export class AnonymousSessionRepository {
     referralCode?: string;
     memberId?: string;
     ttlMinutes?: number;
-  }): Promise<AnonymousSessionEntity | null> {
+  }): Promise<AnonymousSessionRecord | null> {
     const ttlMs = (input.ttlMinutes || 30) * 60 * 1000;
     const expiresAt = new Date(Date.now() + ttlMs);
 
     try {
-      const session = await AnonymousSessionModel.create({
-        sessionToken: input.sessionToken,
-        userAgent: input.userAgent,
-        ipHash: input.ipHash,
-        referralCode: input.referralCode,
-        memberId: input.memberId ? new Types.ObjectId(input.memberId) : undefined,
-        isValid: true,
-        expiresAt
-      });
-      return session;
+      return (await prisma.anonymousSession.create({
+        data: {
+          sessionToken: input.sessionToken,
+          userAgent: input.userAgent,
+          ipHash: input.ipHash,
+          referralCode: input.referralCode,
+          memberId: input.memberId,
+          isValid: true,
+          expiresAt
+        }
+      })) as AnonymousSessionRecord;
     } catch {
       return null;
     }
   }
 
-  async findByToken(sessionToken: string): Promise<AnonymousSessionEntity | null> {
-    return AnonymousSessionModel.findOne({ sessionToken, isValid: true }).exec();
+  async findByToken(sessionToken: string): Promise<AnonymousSessionRecord | null> {
+    return (await prisma.anonymousSession.findFirst({ where: { sessionToken, isValid: true } })) as AnonymousSessionRecord | null;
   }
 
   async invalidateSession(sessionToken: string): Promise<boolean> {
-    const result = await AnonymousSessionModel.updateOne(
-      { sessionToken },
-      { isValid: false }
-    ).exec();
-    return result.modifiedCount > 0;
+    const result = await prisma.anonymousSession.updateMany({ where: { sessionToken }, data: { isValid: false } });
+    return result.count > 0;
   }
 
   async findByMemberId(
     memberId: string,
     query: { page: number; limit: number }
-  ): Promise<{ data: AnonymousSessionEntity[]; total: number }> {
-    if (!this.isValidObjectId(memberId)) return { data: [], total: 0 };
-
+  ): Promise<{ data: AnonymousSessionRecord[]; total: number }> {
     const skip = (query.page - 1) * query.limit;
     const [data, total] = await Promise.all([
-      AnonymousSessionModel.find({ memberId: new Types.ObjectId(memberId) })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(query.limit)
-        .exec(),
-      AnonymousSessionModel.countDocuments({ memberId: new Types.ObjectId(memberId) })
+      prisma.anonymousSession.findMany({
+        where: { memberId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: query.limit
+      }),
+      prisma.anonymousSession.count({ where: { memberId } })
     ]);
 
-    return { data, total };
+    return { data: data as AnonymousSessionRecord[], total };
   }
 
   async countByMemberIdSince(memberId: string, since: Date): Promise<number> {
-    if (!this.isValidObjectId(memberId)) return 0;
-    return AnonymousSessionModel.countDocuments({
-      memberId: new Types.ObjectId(memberId),
-      createdAt: { $gte: since }
-    }).exec();
+    return prisma.anonymousSession.count({ where: { memberId, createdAt: { gte: since } } });
   }
 
   async countUniqueByIpHashSince(ipHash: string, since: Date): Promise<number> {
-    const sessions = await AnonymousSessionModel.find({
-      ipHash,
-      createdAt: { $gte: since }
-    })
-      .select("sessionToken")
-      .exec();
+    const sessions = await prisma.anonymousSession.findMany({ where: { ipHash, createdAt: { gte: since } }, select: { ipHash: true } });
     return new Set(sessions.map((s) => s.ipHash)).size;
-  }
-
-  private isValidObjectId(id: string): boolean {
-    return Types.ObjectId.isValid(id);
   }
 }
 

@@ -128,11 +128,11 @@ export class RedirectController {
       return;
     }
 
-    const sessionToken = createRedirectSessionToken(String(session._id));
+    const sessionToken = createRedirectSessionToken(String(session.id));
     res.status(StatusCodes.OK).json({
       success: true,
       data: {
-        sessionId: String(session._id),
+        sessionId: String(session.id),
         sessionToken,
         nextRoute: `/visit/${encodeURIComponent(inspected.shortCode)}?rs=${encodeURIComponent(sessionToken)}`,
         shortCode: inspected.shortCode
@@ -152,9 +152,9 @@ export class RedirectController {
       res.status(StatusCodes.OK).json({
         success: true,
         data: {
-          sessionId: String(session._id),
+          sessionId: String(session.id),
           currentState: session.currentState,
-          nextRoute: `/monetize/blog/${encodeURIComponent(String(session._id))}?phase=1`
+          nextRoute: `/monetize/blog/${encodeURIComponent(String(session.id))}?phase=1`
         }
       });
     } catch (error: any) {
@@ -176,7 +176,7 @@ export class RedirectController {
       }
 
       const session = await publicFunnelService.startPhase1(sessionId);
-      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState, countdownSeconds: 10 } });
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session.id), currentState: session.currentState, countdownSeconds: 10 } });
     } catch (error: any) {
       if (error && typeof error.statusCode === "number") {
         res.status(error.statusCode).json({ success: false, message: error.message });
@@ -196,7 +196,7 @@ export class RedirectController {
       }
 
       const session = await publicFunnelService.completePhase1(sessionId);
-      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState } });
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session.id), currentState: session.currentState } });
     } catch (error: any) {
       if (error && typeof error.statusCode === "number") {
         res.status(error.statusCode).json({ success: false, message: error.message });
@@ -216,7 +216,7 @@ export class RedirectController {
       }
 
       const session = await publicFunnelService.startPhase2(sessionId);
-      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState, countdownSeconds: 10 } });
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session.id), currentState: session.currentState, countdownSeconds: 10 } });
     } catch (error: any) {
       if (error && typeof error.statusCode === "number") {
         res.status(error.statusCode).json({ success: false, message: error.message });
@@ -236,7 +236,7 @@ export class RedirectController {
       }
 
       const session = await publicFunnelService.completePhase2(sessionId);
-      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState } });
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session.id), currentState: session.currentState } });
     } catch (error: any) {
       if (error && typeof error.statusCode === "number") {
         res.status(error.statusCode).json({ success: false, message: error.message });
@@ -259,7 +259,7 @@ export class RedirectController {
       res.status(StatusCodes.OK).json({
         success: true,
         data: {
-          sessionId: String(result.session._id),
+          sessionId: String(result.session.id),
           currentState: result.session.currentState,
           sponsorUrl: result.sponsorUrl
         }
@@ -283,7 +283,7 @@ export class RedirectController {
       }
 
       const session = await publicFunnelService.verifySponsor(sessionId);
-      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session._id), currentState: session.currentState, countdownSeconds: 10 } });
+      res.status(StatusCodes.OK).json({ success: true, data: { sessionId: String(session.id), currentState: session.currentState, countdownSeconds: 10 } });
     } catch (error: any) {
       if (error && typeof error.statusCode === "number") {
         res.status(error.statusCode).json({ success: false, message: error.message });

@@ -1,8 +1,6 @@
 import { createHmac } from "crypto";
 import { StatusCodes } from "http-status-codes";
-import type { HydratedDocument } from "mongoose";
 import { env } from "../../config/env";
-import type { InvoiceDocument } from "../../models/invoice.model";
 import { planRepository } from "../../repositories/plan.repository";
 import { invoiceRepository } from "../../repositories/invoice.repository";
 import { paymentTransactionRepository } from "../../repositories/payment-transaction.repository";
@@ -36,7 +34,7 @@ const addMonths = (date: Date, months: number): Date => {
   return next;
 };
 
-type PaidInvoice = HydratedDocument<InvoiceDocument>;
+type PaidInvoice = NonNullable<Awaited<ReturnType<typeof invoiceRepository.findById>>>;
 
 export class PaymentService {
   async createRazorpayOrder(userId: string, input: CreateOrderInput): Promise<{ invoiceId: string; order: RazorpayOrderResponse }> {
@@ -88,7 +86,7 @@ export class PaymentService {
       referenceId
     });
 
-    const invoiceId = String(invoice._id);
+    const invoiceId = invoice.id;
 
     if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
       throw buildServiceError(
@@ -147,7 +145,7 @@ export class PaymentService {
       throw buildServiceError("Invoice not found", StatusCodes.NOT_FOUND);
     }
 
-    if (String(invoice.userId) !== userId) {
+    if (invoice.userId !== userId) {
       throw buildServiceError("Payment does not belong to this account", StatusCodes.FORBIDDEN);
     }
 
@@ -160,7 +158,7 @@ export class PaymentService {
     }
 
     await paymentTransactionRepository.createTransaction({
-      invoiceId: String(invoice._id),
+      invoiceId: invoice.id,
       provider: PAYMENT_PROVIDER.RAZORPAY,
       eventType: "checkout.verify",
       payload: {
@@ -170,7 +168,7 @@ export class PaymentService {
       signature: input.razorpay_signature
     });
 
-    const paid = await invoiceRepository.markPaid(String(invoice._id), {
+    const paid = await invoiceRepository.markPaid(invoice.id, {
       providerPaymentId: input.razorpay_payment_id,
       providerSignature: input.razorpay_signature
     });
@@ -208,12 +206,7 @@ export class PaymentService {
     }
 
     if (paid.type === INVOICE_TYPE.WALLET_TOPUP) {
-      await walletService.credit(
-        String(paid.userId),
-        paid.amount,
-        WALLET_TX_SOURCE.TOPUP,
-        String(paid._id)
-      );
+      await walletService.credit(String(paid.userId), paid.amount, WALLET_TX_SOURCE.TOPUP, String(paid.id));
     }
 
     if (paid.type === INVOICE_TYPE.CAMPAIGN && paid.referenceId) {
@@ -229,7 +222,7 @@ export class PaymentService {
       const earning = await referralRepository.addEarning({
         referrerId: String(referrer.ownerId),
         referredUserId: String(paid.userId),
-        invoiceId: String(paid._id),
+        invoiceId: String(paid.id),
         grossAmount: paid.amount,
         ratePercent: REFERRAL_RATE_PERCENT
       });
@@ -238,7 +231,7 @@ export class PaymentService {
           String(referrer.ownerId),
           earning.amount,
           WALLET_TX_SOURCE.ADJUSTMENT,
-          String(paid._id),
+          String(paid.id),
           `Referral commission (${REFERRAL_RATE_PERCENT}% from referred user payment)`
         );
       }
