@@ -1,118 +1,63 @@
-# =========================================================
-# Stage 1 — Dependencies
-# =========================================================
-FROM node:20-alpine AS deps
-
-WORKDIR /app
-
-# ---------------------------------------------------------
-# Copy Workspace Manifests
-# ---------------------------------------------------------
-COPY package*.json ./
-COPY tsconfig.base.json ./
-
-COPY apps/web/package*.json ./apps/web/
-
-# ---------------------------------------------------------
-# Install Dependencies
-# ---------------------------------------------------------
-RUN npm install --no-audit --no-fund
-
-# =========================================================
-# Stage 2 — Builder
-# =========================================================
+# Stage 1: Builder
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# ---------------------------------------------------------
-# Build Arguments
-# ---------------------------------------------------------
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1
+# Build-time arguments for Next.js
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ARG NODE_ENV=production
 
-# ---------------------------------------------------------
-# Environment Variables
-# ---------------------------------------------------------
-ENV NODE_ENV=production
-ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
-ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+# Convert ARGs to ENV so they're available in RUN commands
+ENV NODE_ENV=${NODE_ENV} \
+    NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL} \
+    NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
-# ---------------------------------------------------------
-# Copy Dependencies
-# ---------------------------------------------------------
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package*.json ./
-COPY --from=deps /app/apps/web/package*.json ./apps/web/
-
-# ---------------------------------------------------------
-# Copy Source Code
-# ---------------------------------------------------------
+# Copy root package manifests
+COPY package*.json ./
+COPY apps/web/package.json ./apps/web/
+COPY apps/web/tsconfig.json ./apps/web/
+COPY apps/web/next.config.ts ./apps/web/
+COPY apps/web/tailwind.config.ts ./apps/web/
+COPY apps/web/postcss.config.js ./apps/web/
 COPY tsconfig.base.json ./
-COPY apps/web ./apps/web
 
-# ---------------------------------------------------------
-# Ensure Public Directory Exists
-# ---------------------------------------------------------
+# Install all dependencies including dev
+RUN npm install --prefer-offline --no-audit --no-fund
+
+# Copy source code
+COPY apps/web/src ./apps/web/src
+
+# Ensure public dir exists (may be empty)
 RUN mkdir -p ./apps/web/public
 
-# ---------------------------------------------------------
-# Build Next.js App
-# ---------------------------------------------------------
-RUN npm run build --workspace=@link-shortener/web
+# Build the application
+RUN npm run build --workspace @link-shortener/web
 
-# =========================================================
-# Stage 3 — Runtime
-# =========================================================
-FROM node:20-alpine AS runner
+# Stage 2: Runtime
+FROM node:20-alpine
 
 WORKDIR /app
 
-# ---------------------------------------------------------
-# Runtime Environment
-# ---------------------------------------------------------
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 
-# ---------------------------------------------------------
-# Create Non-Root User
-# ---------------------------------------------------------
-RUN addgroup -S nodejs -g 1001 && \
-    adduser -S nextjs -u 1001
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# ---------------------------------------------------------
-# Copy Standalone Output
-# ---------------------------------------------------------
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+# Standalone output bundles everything — no yarn install needed.
+# outputFileTracingRoot = monorepo root, so standalone structure mirrors
+# the monorepo: server.js lives at apps/web/server.js inside the bundle.
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/public ./apps/web/public
 
-# ---------------------------------------------------------
-# Copy Static Assets
-# ---------------------------------------------------------
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+USER nodejs
 
-# ---------------------------------------------------------
-# Copy Public Assets
-# ---------------------------------------------------------
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
-
-# ---------------------------------------------------------
-# Use Non-Root User
-# ---------------------------------------------------------
-USER nextjs
-
-# ---------------------------------------------------------
-# Expose Port
-# ---------------------------------------------------------
 EXPOSE 3000
 
-# ---------------------------------------------------------
-# Healthcheck
-# ---------------------------------------------------------
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD wget -qO- http://localhost:3000 || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# ---------------------------------------------------------
-# Start Next.js
-# ---------------------------------------------------------
 CMD ["node", "apps/web/server.js"]

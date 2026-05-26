@@ -122,24 +122,24 @@ export default function AdminSettingsPage() {
     }
   };
 
-  if (loading) return <p className="text-slate-400">Loading...</p>;
+  if (loading) return <p className="text-slate-500">Loading...</p>;
   if (error || !settings) return <p className="text-red-400">{error ?? "Unable to load settings."}</p>;
 
   return (
     <section className="space-y-6 sm:space-y-8">
       <div>
         <h1 className="text-xl font-semibold text-white sm:text-2xl">Platform settings</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-slate-500">
           Last updated {new Date(settings.updatedAt).toLocaleString()}
         </p>
       </div>
       {message ? <p className="text-sm text-amber-300">{message}</p> : null}
 
-      <form className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5" onSubmit={saveGeneral}>
+      <form className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5" onSubmit={saveGeneral}>
         <h2 className="text-lg font-semibold text-white">General</h2>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
           <input
-            className="h-4 w-4 rounded border-slate-600"
+            className="h-4 w-4 rounded border-slate-300"
             defaultChecked={settings.maintenanceMode}
             name="maintenanceMode"
             type="checkbox"
@@ -173,7 +173,7 @@ export default function AdminSettingsPage() {
         </button>
       </form>
 
-      <form className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5" onSubmit={saveSmtp}>
+      <form className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5" onSubmit={saveSmtp}>
         <h2 className="text-lg font-semibold text-white">SMTP overrides</h2>
         <p className="text-xs text-slate-500">
           Optional. Leave password blank to keep the current secret. At least one field is required per save.
@@ -197,8 +197,8 @@ export default function AdminSettingsPage() {
               type="number"
             />
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300 sm:col-span-2">
-            <input className="h-4 w-4 rounded border-slate-600" defaultChecked={Boolean(settings.smtp.secure)} name="secure" type="checkbox" />
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 sm:col-span-2">
+            <input className="h-4 w-4 rounded border-slate-300" defaultChecked={Boolean(settings.smtp.secure)} name="secure" type="checkbox" />
             TLS / secure
           </label>
           <div className="sm:col-span-2">

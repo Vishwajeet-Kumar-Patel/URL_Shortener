@@ -72,39 +72,39 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-700">
       <SiteHeader />
       <main id="home" className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:pt-10 md:px-8 md:pt-16">
         <section className="grid items-start gap-8 sm:gap-10 md:grid-cols-2 md:items-center">
           <div>
-            <p className="mb-3 inline-block rounded-full bg-indigo-950/60 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-300">
+            <p className="mb-3 inline-block rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-600">
               Trusted by teams and creators
             </p>
             <h1 className="text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
               Shorten, monetize, and scale your links globally.
             </h1>
-            <p className="mt-4 max-w-xl text-slate-300">
+            <p className="mt-4 max-w-xl text-slate-600">
               A bold SaaS platform inspired by modern link products with analytics, admin controls,
               and a unique monetization system that pays you for quality traffic.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500" href="/register">
+              <Link className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500" href="/register">
                 Start for free
               </Link>
-              <Link className="rounded-xl border border-slate-600 px-5 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-900" href="/login">
+              <Link className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-white" href="/login">
                 Go to dashboard
               </Link>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5 shadow-2xl sm:p-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
             <h2 className="text-lg font-semibold text-white">Create a short link</h2>
-            <p className="mb-4 mt-1 text-sm text-slate-300">
+            <p className="mb-4 mt-1 text-sm text-slate-600">
               Member-only link generation keeps attribution, earnings, and safety tracking tied to a verified account.
             </p>
             <form onSubmit={handleGenerateLink} className="space-y-3">
               <div>
-                <label htmlFor="url" className="block text-sm font-medium text-slate-200 mb-2">
+                <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-2">
                   Your URL
                 </label>
                 <input
@@ -114,11 +114,11 @@ export default function HomePage() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   suppressHydrationWarning
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label htmlFor="referral" className="block text-sm font-medium text-slate-200 mb-2">
+                <label htmlFor="referral" className="block text-sm font-medium text-slate-700 mb-2">
                   Referral Code (optional)
                 </label>
                 <input
@@ -128,28 +128,28 @@ export default function HomePage() {
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
                   suppressHydrationWarning
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
               <button
                 type="submit"
                 suppressHydrationWarning
-                className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
               >
                 Generate link
               </button>
-              <p className="text-xs text-slate-400 text-center">
+              <p className="text-xs text-slate-500 text-center">
                 Create an account to start shortening links
               </p>
             </form>
           </div>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-slate-800/80 bg-slate-900/40 px-4 py-6 md:mt-12">
+        <section className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 md:mt-12">
           <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
             Built for production teams
           </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm text-slate-400">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm text-slate-500">
             <span>JWT + refresh rotation</span>
             <span>Role-based admin</span>
             <span>Click analytics</span>
@@ -157,7 +157,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mt-12 overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 md:mt-16">
+        <section className="mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white md:mt-16">
           <img
             alt="People collaborating on growth analytics dashboard"
             className="h-56 w-full object-cover md:h-80"
@@ -168,7 +168,7 @@ export default function HomePage() {
 
         <section className="mt-14 rounded-2xl border border-emerald-900/40 bg-emerald-950/20 p-6 text-center md:mt-20">
           <h3 className="text-2xl font-semibold text-white">Earn with every link you share</h3>
-          <p className="mx-auto mt-2 max-w-3xl text-slate-300">
+          <p className="mx-auto mt-2 max-w-3xl text-slate-600">
             Get a referral code and share it with creators. Earn CPM for every qualified click their links generate.
           </p>
           <Link 
@@ -183,9 +183,9 @@ export default function HomePage() {
           <h3 className="text-2xl font-semibold text-white md:text-3xl">Powerful features for modern campaigns</h3>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featureCards.map((feature) => (
-              <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm" key={feature.title}>
+              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" key={feature.title}>
                 <h4 className="font-semibold text-white">{feature.title}</h4>
-                <p className="mt-2 text-sm text-slate-300">{feature.description}</p>
+                <p className="mt-2 text-sm text-slate-600">{feature.description}</p>
               </article>
             ))}
           </div>
@@ -197,9 +197,9 @@ export default function HomePage() {
             "Share the short link across channels instantly.",
             "Track engagement and manage safety from dashboard."
           ].map((step, index) => (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5" key={step}>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5" key={step}>
               <p className="text-sm font-semibold text-indigo-600">Step {index + 1}</p>
-              <p className="mt-2 text-sm text-slate-200">{step}</p>
+              <p className="mt-2 text-sm text-slate-700">{step}</p>
             </div>
           ))}
         </section>
@@ -208,9 +208,9 @@ export default function HomePage() {
           <h3 className="text-2xl font-semibold text-white md:text-3xl">Frequently asked questions</h3>
           <div className="mt-5 space-y-3">
             {faqItems.map((item) => (
-              <details className="rounded-xl border border-slate-800 bg-slate-900 p-4" key={item.q}>
+              <details className="rounded-xl border border-slate-200 bg-white p-4" key={item.q}>
                 <summary className="cursor-pointer font-medium">{item.q}</summary>
-                <p className="mt-2 text-sm text-slate-300">{item.a}</p>
+                <p className="mt-2 text-sm text-slate-600">{item.a}</p>
               </details>
             ))}
           </div>

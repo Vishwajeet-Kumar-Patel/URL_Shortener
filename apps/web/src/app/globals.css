@@ -7,18 +7,142 @@
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-slate-50 text-slate-700 antialiased;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-slate-900;
+  }
 }
 
 input,
-select {
-  @apply w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-slate-100 placeholder:text-slate-400;
+select,
+textarea {
+  @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 placeholder:text-slate-500 shadow-sm transition duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200;
 }
 
 button {
-  @apply rounded-xl px-4 py-2 font-medium transition;
+  @apply rounded-xl px-4 py-2 font-medium transition duration-200;
 }
 
 a {
   @apply transition;
+}
+
+@layer utilities {
+  .bg-surface {
+    @apply bg-white;
+  }
+
+  .bg-surface-muted {
+    @apply bg-slate-50;
+  }
+
+  .bg-surface-soft {
+    @apply bg-slate-100;
+  }
+
+  .border-soft {
+    @apply border-slate-200;
+  }
+
+  .text-primary {
+    @apply text-slate-900;
+  }
+
+  .text-secondary {
+    @apply text-slate-700;
+  }
+
+  .text-muted {
+    @apply text-slate-500;
+  }
+
+  .bg-accent {
+    @apply bg-yellow-400;
+  }
+
+  .interactive-lift {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-panelHover;
+  }
+
+  .fade-in {
+    animation: fade-in-up 260ms ease-out both;
+  }
+
+  .panel {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-panel;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-blue-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-4 py-2 font-semibold text-blue-600 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-xl bg-yellow-400 px-4 py-2 font-semibold text-slate-900 shadow-sm transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-200;
+  }
+
+  /* Keep legacy text utilities readable after moving from dark to light surfaces. */
+  h1.text-white,
+  h2.text-white,
+  h3.text-white,
+  h4.text-white,
+  h5.text-white,
+  h6.text-white,
+  p.text-white,
+  span.text-white,
+  li.text-white,
+  td.text-white,
+  th.text-white,
+  div.text-white {
+    color: #0f172a;
+  }
+
+  a.text-white[class*="bg-blue-"],
+  a.text-white[class*="bg-emerald-"],
+  a.text-white[class*="bg-green-"],
+  a.text-white[class*="bg-red-"],
+  a.text-white[class*="bg-rose-"],
+  a.text-white[class*="bg-amber-"],
+  a.text-white[class*="bg-orange-"],
+  a.text-white[class*="bg-sky-"],
+  button.text-white[class*="bg-blue-"],
+  button.text-white[class*="bg-emerald-"],
+  button.text-white[class*="bg-green-"],
+  button.text-white[class*="bg-red-"],
+  button.text-white[class*="bg-rose-"],
+  button.text-white[class*="bg-amber-"],
+  button.text-white[class*="bg-orange-"],
+  button.text-white[class*="bg-sky-"],
+  [role="button"].text-white[class*="bg-blue-"],
+  [role="button"].text-white[class*="bg-emerald-"],
+  [role="button"].text-white[class*="bg-green-"],
+  [role="button"].text-white[class*="bg-red-"],
+  [role="button"].text-white[class*="bg-rose-"],
+  [role="button"].text-white[class*="bg-amber-"],
+  [role="button"].text-white[class*="bg-orange-"],
+  [role="button"].text-white[class*="bg-sky-"] {
+    color: #ffffff;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

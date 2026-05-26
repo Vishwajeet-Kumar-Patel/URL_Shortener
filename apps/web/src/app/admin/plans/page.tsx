@@ -105,12 +105,12 @@ export default function AdminPlansPage() {
     <section className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-white">Plans</h1>
-        <p className="mt-1 text-sm text-slate-400">Manage subscription tiers and entitlements.</p>
+        <p className="mt-1 text-sm text-slate-500">Manage subscription tiers and entitlements.</p>
       </div>
       {message ? <p className="text-sm text-amber-300">{message}</p> : null}
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
         <h2 className="text-lg font-semibold text-white">Create plan</h2>
         <form className="mt-4 grid gap-4 text-sm sm:grid-cols-2" onSubmit={onCreate}>
           <div>
@@ -147,8 +147,8 @@ export default function AdminPlansPage() {
             </label>
             <input className={formInputClass} id="plan-description" name="description" />
           </div>
-          <label className="flex min-h-[2.75rem] cursor-pointer items-center gap-2 text-sm text-slate-300 sm:col-span-2">
-            <input className="h-4 w-4 rounded border-slate-600" name="isDefault" type="checkbox" />
+          <label className="flex min-h-[2.75rem] cursor-pointer items-center gap-2 text-sm text-slate-600 sm:col-span-2">
+            <input className="h-4 w-4 rounded border-slate-300" name="isDefault" type="checkbox" />
             Default plan for new users
           </label>
           <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
@@ -164,16 +164,16 @@ export default function AdminPlansPage() {
               </label>
               <input className={formInputClass} defaultValue={0} id="plan-payout-limit" min={0} name="payoutLimit" type="number" />
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-              <input className="h-4 w-4 rounded border-slate-600" defaultChecked name="analyticsAccess" type="checkbox" />
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+              <input className="h-4 w-4 rounded border-slate-300" defaultChecked name="analyticsAccess" type="checkbox" />
               Analytics access
             </label>
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-              <input className="h-4 w-4 rounded border-slate-600" name="customAlias" type="checkbox" />
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+              <input className="h-4 w-4 rounded border-slate-300" name="customAlias" type="checkbox" />
               Custom alias
             </label>
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300 sm:col-span-2">
-              <input className="h-4 w-4 rounded border-slate-600" name="campaignAccess" type="checkbox" />
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 sm:col-span-2">
+              <input className="h-4 w-4 rounded border-slate-300" name="campaignAccess" type="checkbox" />
               Campaign access
             </label>
           </div>
@@ -183,12 +183,12 @@ export default function AdminPlansPage() {
         </form>
       </div>
 
-      {loading ? <p className="text-slate-400">Loading...</p> : null}
-      {!loading && items.length === 0 ? <p className="text-slate-400">No plans yet.</p> : null}
+      {loading ? <p className="text-slate-500">Loading...</p> : null}
+      {!loading && items.length === 0 ? <p className="text-slate-500">No plans yet.</p> : null}
       {!loading && items.length > 0 ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-800/80">
+            <thead className="bg-slate-50">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Interval</th>
@@ -201,18 +201,18 @@ export default function AdminPlansPage() {
             </thead>
             <tbody>
               {items.map((p) => (
-                <tr className="border-t border-slate-800" key={p.id}>
+                <tr className="border-t border-slate-200" key={p.id}>
                   <td className="px-3 py-2 font-medium text-white">{p.name}</td>
-                  <td className="px-3 py-2 text-slate-300">{p.interval}</td>
-                  <td className="px-3 py-2 text-slate-300">
+                  <td className="px-3 py-2 text-slate-600">{p.interval}</td>
+                  <td className="px-3 py-2 text-slate-600">
                     {p.currency} {p.price}
                   </td>
-                  <td className="px-3 py-2 text-slate-300">{p.isActive ? "Yes" : "No"}</td>
-                  <td className="px-3 py-2 text-slate-300">{p.isDefault ? "Yes" : "No"}</td>
-                  <td className="px-3 py-2 text-slate-300">{p.limits.maxLinks}</td>
+                  <td className="px-3 py-2 text-slate-600">{p.isActive ? "Yes" : "No"}</td>
+                  <td className="px-3 py-2 text-slate-600">{p.isDefault ? "Yes" : "No"}</td>
+                  <td className="px-3 py-2 text-slate-600">{p.limits.maxLinks}</td>
                   <td className="px-3 py-2">
                     <button
-                      className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                      className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
                       onClick={() => void toggleActive(p)}
                       type="button"
                     >

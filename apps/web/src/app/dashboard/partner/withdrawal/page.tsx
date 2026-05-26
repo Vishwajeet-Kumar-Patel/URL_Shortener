@@ -111,7 +111,7 @@ export default function WithdrawalPage() {
   if (loading) {
     return (
       <AdminAppShell>
-        <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="flex items-center justify-center min-h-screen bg-slate-50">
           <div className="animate-spin rounded-full border-4 border-indigo-600 border-t-transparent h-8 w-8"></div>
         </div>
       </AdminAppShell>
@@ -120,15 +120,15 @@ export default function WithdrawalPage() {
 
   return (
     <AdminAppShell>
-      <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="min-h-screen bg-slate-50 text-slate-700">
         <div className="mx-auto max-w-4xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/dashboard/partner/referral-link" className="text-indigo-400 hover:text-indigo-300 mb-4 inline-block">
+          <Link href="/dashboard/partner/referral-link" className="text-blue-600 hover:text-blue-600 mb-4 inline-block">
             ← Back to Referral Code
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">Withdrawal</h1>
-          <p className="text-slate-300">Request a payout of your earnings</p>
+          <p className="text-slate-600">Request a payout of your earnings</p>
         </div>
 
         {/* Balance Cards */}
@@ -146,7 +146,7 @@ export default function WithdrawalPage() {
         </div>
 
         {/* Withdrawal Form */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 mb-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 mb-8">
           <h2 className="text-lg font-semibold text-white mb-6">Request Withdrawal</h2>
 
           <form onSubmit={handleSubmitWithdrawal} className="space-y-6">
@@ -161,9 +161,9 @@ export default function WithdrawalPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
-                className="w-full rounded-lg bg-slate-800 border border-slate-700 px-4 py-3 text-white placeholder-slate-500 focus:border-indigo-600 focus:outline-none"
+                className="w-full rounded-lg bg-slate-100 border border-slate-300 px-4 py-3 text-white placeholder-slate-500 focus:border-indigo-600 focus:outline-none"
               />
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-slate-500">
                 Maximum: ₹{balance?.availableBalance?.toFixed(2) || "0.00"}
               </p>
             </div>
@@ -172,10 +172,10 @@ export default function WithdrawalPage() {
               <label className="block text-sm font-semibold text-white mb-2">
                 Bank Account
               </label>
-              <select className="w-full rounded-lg bg-slate-800 border border-slate-700 px-4 py-3 text-white focus:border-indigo-600 focus:outline-none">
+              <select className="w-full rounded-lg bg-slate-100 border border-slate-300 px-4 py-3 text-white focus:border-indigo-600 focus:outline-none">
                 <option>No bank account added</option>
               </select>
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-slate-500">
                 Add a bank account in your profile settings
               </p>
             </div>
@@ -201,18 +201,18 @@ export default function WithdrawalPage() {
         </div>
 
         {/* Withdrawal History */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="text-lg font-semibold text-white mb-6">Withdrawal History</h2>
 
           {requests.length === 0 ? (
-            <p className="text-slate-400 text-center py-8">No withdrawal requests yet</p>
+            <p className="text-slate-500 text-center py-8">No withdrawal requests yet</p>
           ) : (
             <div className="space-y-4">
               {requests.map((request) => (
-                <div key={request.id} className="rounded-lg border border-slate-800 p-4 flex items-center justify-between">
+                <div key={request.id} className="rounded-lg border border-slate-200 p-4 flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-white">₹{request.amount.toFixed(2)}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-500">
                       {new Date(request.requestedAt).toLocaleDateString()}
                     </p>
                   </div>

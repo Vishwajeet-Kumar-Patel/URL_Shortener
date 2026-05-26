@@ -70,10 +70,10 @@ export default function AdminCpmRatesPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-white">CPM Rates</h1>
-        <p className="mt-2 text-sm text-slate-400">Configure country-wise payouts used by monetization and reporting.</p>
+        <p className="mt-2 text-sm text-slate-500">Configure country-wise payouts used by monetization and reporting.</p>
       </div>
 
-      <form className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 md:grid-cols-5" onSubmit={onSubmit}>
+      <form className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-5" onSubmit={onSubmit}>
         <input className={formInputClass} onChange={(e) => setCountryCode(e.target.value)} placeholder="Country (IN)" value={countryCode} />
         <input className={formInputClass} onChange={(e) => setCpm(e.target.value)} placeholder="CPM" type="number" value={cpm} />
         <input className={formInputClass} onChange={(e) => setCurrency(e.target.value)} placeholder="Currency" value={currency} />
@@ -82,12 +82,12 @@ export default function AdminCpmRatesPage() {
       </form>
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
-      {loading ? <p className="text-slate-400">Loading...</p> : null}
+      {loading ? <p className="text-slate-500">Loading...</p> : null}
 
       {!loading ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-800/70">
+            <thead className="bg-slate-50">
               <tr>
                 <th className="px-3 py-2">Country</th>
                 <th className="px-3 py-2">CPM</th>
@@ -98,12 +98,12 @@ export default function AdminCpmRatesPage() {
             </thead>
             <tbody>
               {items.map((row) => (
-                <tr className="border-t border-slate-800" key={row.id}>
+                <tr className="border-t border-slate-200" key={row.id}>
                   <td className="px-3 py-2 text-white">{row.countryCode}</td>
                   <td className="px-3 py-2">{row.cpm}</td>
                   <td className="px-3 py-2">{row.currency}</td>
                   <td className="px-3 py-2">{row.isActive ? "ACTIVE" : "INACTIVE"}</td>
-                  <td className="px-3 py-2 text-slate-400">{new Date(row.updatedAt).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-slate-500">{new Date(row.updatedAt).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>

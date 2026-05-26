@@ -30,7 +30,7 @@ export default function AdminClickLogsPage() {
     <section className="space-y-5">
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold text-white">Click Logs</h1>
-        <p className="text-sm text-slate-400">Qualified traffic leaderboard over the last 30 days.</p>
+        <p className="text-sm text-slate-500">Qualified traffic leaderboard over the last 30 days.</p>
       </header>
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-3">
@@ -38,12 +38,12 @@ export default function AdminClickLogsPage() {
         <Box label="Total Qualified Clicks" value={rows.reduce((a, b) => a + b.totalClicks, 0)} />
         <Box label="Total Unique" value={rows.reduce((a, b) => a + b.uniqueClicks, 0)} />
       </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-800/70"><tr><th className="px-3 py-2 text-left">Short</th><th className="px-3 py-2 text-left">Original URL</th><th className="px-3 py-2 text-left">Clicks</th><th className="px-3 py-2 text-left">Unique</th></tr></thead>
+          <thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">Short</th><th className="px-3 py-2 text-left">Original URL</th><th className="px-3 py-2 text-left">Clicks</th><th className="px-3 py-2 text-left">Unique</th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr className="border-t border-slate-800" key={r.urlId}><td className="px-3 py-2 text-white">{r.shortCode}</td><td className="max-w-xs truncate px-3 py-2 text-slate-300" title={r.originalUrl}>{r.originalUrl ?? "—"}</td><td className="px-3 py-2">{r.totalClicks}</td><td className="px-3 py-2 text-indigo-300">{r.uniqueClicks}</td></tr>
+              <tr className="border-t border-slate-200" key={r.urlId}><td className="px-3 py-2 text-white">{r.shortCode}</td><td className="max-w-xs truncate px-3 py-2 text-slate-600" title={r.originalUrl}>{r.originalUrl ?? "—"}</td><td className="px-3 py-2">{r.totalClicks}</td><td className="px-3 py-2 text-blue-600">{r.uniqueClicks}</td></tr>
             ))}
           </tbody>
         </table>
@@ -53,5 +53,5 @@ export default function AdminClickLogsPage() {
 }
 
 function Box({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4"><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold text-white">{value}</p></div>;
+  return <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold text-white">{value}</p></div>;
 }

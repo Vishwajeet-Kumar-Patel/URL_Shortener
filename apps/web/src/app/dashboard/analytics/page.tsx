@@ -65,10 +65,10 @@ export default function DashboardAnalyticsPage() {
     <section className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-white">Analytics</h1>
-        <p className="mt-1 text-sm text-slate-400">Last 30 days for your workspace.</p>
+        <p className="mt-1 text-sm text-slate-500">Last 30 days for your workspace.</p>
       </div>
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
-      {loading ? <p className="text-slate-400">Loading analytics...</p> : null}
+      {loading ? <p className="text-slate-500">Loading analytics...</p> : null}
 
       {overview && !loading ? (
         <>
@@ -79,25 +79,25 @@ export default function DashboardAnalyticsPage() {
               ["Active URLs", overview.totals.active],
               ["Paused URLs", overview.totals.paused]
             ].map(([label, value]) => (
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4" key={String(label)}>
+              <div className="rounded-xl border border-slate-200 bg-white p-4" key={String(label)}>
                 <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
                 <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
               </div>
             ))}
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-semibold text-white">Click trend</h2>
             {clicksSeries.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-400">No click data in this window.</p>
+              <p className="mt-3 text-sm text-slate-500">No click data in this window.</p>
             ) : (
-              <div className="mt-4 flex h-48 items-end gap-2 border-b border-slate-800 pb-1">
+              <div className="mt-4 flex h-48 items-end gap-2 border-b border-slate-200 pb-1">
                 {clicksSeries.slice(-14).map((day) => {
                   const pct = Math.round((day.count / maxClicks) * 100);
                   return (
                     <div className="flex h-full flex-1 flex-col items-center justify-end gap-1" key={day.date}>
                       <div
-                        className="w-full rounded-t bg-indigo-500/90"
+                        className="w-full rounded-t bg-blue-500/90"
                         style={{ height: `${day.count ? Math.max(pct, 6) : 0}%` }}
                         title={`${day.date}: ${day.count}`}
                       />
@@ -111,14 +111,14 @@ export default function DashboardAnalyticsPage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-semibold text-white">Top links</h2>
             {topLinks.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-400">No links with clicks in this window.</p>
+              <p className="mt-3 text-sm text-slate-500">No links with clicks in this window.</p>
             ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
-                  <thead className="bg-slate-800/80">
+                  <thead className="bg-slate-50">
                     <tr>
                       <th className="px-3 py-2">Short code</th>
                       <th className="px-3 py-2">Clicks</th>
@@ -128,11 +128,11 @@ export default function DashboardAnalyticsPage() {
                   </thead>
                   <tbody>
                     {topLinks.map((row) => (
-                      <tr className="border-t border-slate-800" key={row.urlId}>
-                        <td className="px-3 py-2 font-mono text-indigo-200">{row.shortCode}</td>
-                        <td className="px-3 py-2 text-slate-200">{row.totalClicks}</td>
-                        <td className="px-3 py-2 text-slate-200">{row.uniqueClicks}</td>
-                        <td className="max-w-xs truncate px-3 py-2 text-slate-400">{row.originalUrl ?? "—"}</td>
+                      <tr className="border-t border-slate-200" key={row.urlId}>
+                        <td className="px-3 py-2 font-mono text-blue-500">{row.shortCode}</td>
+                        <td className="px-3 py-2 text-slate-700">{row.totalClicks}</td>
+                        <td className="px-3 py-2 text-slate-700">{row.uniqueClicks}</td>
+                        <td className="max-w-xs truncate px-3 py-2 text-slate-500">{row.originalUrl ?? "—"}</td>
                       </tr>
                     ))}
                   </tbody>

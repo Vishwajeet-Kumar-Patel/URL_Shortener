@@ -64,7 +64,7 @@ export default function ReferralLinkPage() {
   if (loading) {
     return (
       <AdminAppShell>
-        <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="flex items-center justify-center min-h-screen bg-slate-50">
           <div className="animate-spin rounded-full border-4 border-indigo-600 border-t-transparent h-8 w-8"></div>
         </div>
       </AdminAppShell>
@@ -73,12 +73,12 @@ export default function ReferralLinkPage() {
 
   return (
     <AdminAppShell>
-      <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="min-h-screen bg-slate-50 text-slate-700">
         <div className="mx-auto max-w-4xl px-4 py-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Your Referral Code</h1>
-            <p className="text-slate-300">Share your code and earn CPM for every qualified click</p>
+            <p className="text-slate-600">Share your code and earn CPM for every qualified click</p>
           </div>
 
           {error ? (
@@ -88,23 +88,23 @@ export default function ReferralLinkPage() {
           ) : null}
 
           {/* Referral Code Card */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 mb-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 mb-8">
             <h2 className="text-lg font-semibold text-white mb-4">Referral Code</h2>
 
-            <div className="rounded-lg bg-slate-800 p-6 mb-6">
-              <p className="text-sm text-slate-400 mb-2">Your Unique Referral Code</p>
+            <div className="rounded-lg bg-slate-100 p-6 mb-6">
+              <p className="text-sm text-slate-500 mb-2">Your Unique Referral Code</p>
               <div className="flex items-center gap-3">
                 <input
                   type="text"
                   value={stats?.referralCode || ""}
                   readOnly
-                  className="flex-1 rounded-lg bg-slate-700 px-4 py-3 font-mono text-lg text-white border border-slate-600"
+                  className="flex-1 rounded-lg bg-slate-700 px-4 py-3 font-mono text-lg text-white border border-slate-300"
                 />
                 <button
                   onClick={handleCopyCode}
                   className={`px-4 py-3 rounded-lg font-semibold transition-all ${copied
                       ? "bg-emerald-600 text-white"
-                      : "bg-indigo-600 text-white hover:bg-indigo-500"
+                      : "bg-blue-600 text-white hover:bg-blue-500"
                     }`}
                 >
                   {copied ? "Copied!" : "Copy"}
@@ -113,14 +113,14 @@ export default function ReferralLinkPage() {
             </div>
 
             {/* Share URL */}
-            <div className="rounded-lg bg-slate-800 p-6 mb-6">
-              <p className="text-sm text-slate-400 mb-2">Referral URL</p>
+            <div className="rounded-lg bg-slate-100 p-6 mb-6">
+              <p className="text-sm text-slate-500 mb-2">Referral URL</p>
               <div className="flex items-center gap-3">
                 <input
                   type="text"
                   value={referralUrl}
                   readOnly
-                  className="flex-1 rounded-lg bg-slate-700 px-4 py-3 text-sm text-white border border-slate-600 overflow-hidden text-ellipsis"
+                  className="flex-1 rounded-lg bg-slate-700 px-4 py-3 text-sm text-white border border-slate-300 overflow-hidden text-ellipsis"
                 />
                 <button
                   onClick={() => {
@@ -128,7 +128,7 @@ export default function ReferralLinkPage() {
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
-                  className="px-4 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition-all whitespace-nowrap"
+                  className="px-4 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-500 transition-all whitespace-nowrap"
                 >
                   {copied ? "Copied!" : "Copy URL"}
                 </button>
@@ -154,16 +154,16 @@ export default function ReferralLinkPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400 mb-2">Total Users Brought</p>
+            <div className="rounded-lg border border-slate-200 bg-white p-6">
+              <p className="text-sm text-slate-500 mb-2">Total Users Brought</p>
               <p className="text-3xl font-bold text-white">{stats?.totalUsersBrought || 0}</p>
             </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400 mb-2">Links Generated by Referrals</p>
+            <div className="rounded-lg border border-slate-200 bg-white p-6">
+              <p className="text-sm text-slate-500 mb-2">Links Generated by Referrals</p>
               <p className="text-3xl font-bold text-white">{stats?.totalLinksGenerated || 0}</p>
             </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-              <p className="text-sm text-slate-400 mb-2">This Month Users</p>
+            <div className="rounded-lg border border-slate-200 bg-white p-6">
+              <p className="text-sm text-slate-500 mb-2">This Month Users</p>
               <p className="text-3xl font-bold text-emerald-400">{stats?.thisMonthUsers || 0}</p>
             </div>
           </div>
@@ -172,27 +172,27 @@ export default function ReferralLinkPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Link
               href="/dashboard/partner/anonymous-links"
-              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-center hover:bg-slate-100 transition-all"
             >
-              <p className="text-sm text-slate-400">📊 Anonymous Links</p>
+              <p className="text-sm text-slate-500">📊 Anonymous Links</p>
             </Link>
             <Link
               href="/dashboard/partner/earnings"
-              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-center hover:bg-slate-100 transition-all"
             >
-              <p className="text-sm text-slate-400">💰 Earnings</p>
+              <p className="text-sm text-slate-500">💰 Earnings</p>
             </Link>
             <Link
               href="/dashboard/partner/withdrawal"
-              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-center hover:bg-slate-100 transition-all"
             >
-              <p className="text-sm text-slate-400">💳 Withdrawal</p>
+              <p className="text-sm text-slate-500">💳 Withdrawal</p>
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-lg border border-slate-800 bg-slate-900 p-4 text-center hover:bg-slate-800 transition-all"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-center hover:bg-slate-100 transition-all"
             >
-              <p className="text-sm text-slate-400">← Back</p>
+              <p className="text-sm text-slate-500">← Back</p>
             </Link>
           </div>
         </div>

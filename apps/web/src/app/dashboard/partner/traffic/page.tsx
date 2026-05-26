@@ -49,18 +49,18 @@ export default function TrafficUsersViewPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-[#09111f] via-[#07101c] to-[#120d27] p-6 shadow-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-400/70">Partner Analytics</p>
+      <section className="rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white via-blue-50 to-yellow-50 p-6 shadow-2xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600/70">Partner Analytics</p>
         <h1 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">Traffic Partners</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
           Monitor performance of anonymous users referred through your link.
         </p>
       </section>
 
-      <section className="rounded-[1.5rem] border border-white/10 bg-[#08101e] overflow-hidden shadow-xl">
+      <section className="rounded-[1.5rem] border border-slate-200 bg-white overflow-hidden shadow-xl">
         <div className="p-6 border-b border-white/5 bg-white/[0.02]">
           <h2 className="text-xl font-semibold text-white">Referred Traffic Sessions</h2>
-          <p className="mt-1 text-sm text-slate-400">Detailed breakdown of each anonymous generator.</p>
+          <p className="mt-1 text-sm text-slate-500">Detailed breakdown of each anonymous generator.</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -95,11 +95,11 @@ export default function TrafficUsersViewPage() {
                 data?.items.map((item) => (
                   <tr key={item.sessionId} className="group hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4">
-                      <span className="font-mono text-xs font-medium text-slate-300 group-hover:text-indigo-400 transition-colors">
+                      <span className="font-mono text-xs font-medium text-slate-600 group-hover:text-blue-600 transition-colors">
                         {item.sessionId}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-400">
+                    <td className="px-6 py-4 text-sm text-slate-500">
                       {new Date(item.createdAt).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",
@@ -107,11 +107,11 @@ export default function TrafficUsersViewPage() {
                       })}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-bold text-indigo-400 ring-1 ring-indigo-500/20">
+                      <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-bold text-blue-600 ring-1 ring-indigo-500/20">
                         {item.linksGenerated} links
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-300">
+                    <td className="px-6 py-4 text-sm font-medium text-slate-600">
                       {item.totalClicks.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -135,14 +135,14 @@ export default function TrafficUsersViewPage() {
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white hover:bg-white/10 disabled:opacity-30 transition-all"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-white hover:bg-white/10 disabled:opacity-30 transition-all"
               >
                 Previous
               </button>
               <button
                 disabled={page === data.pagination.totalPages}
                 onClick={() => setPage(page + 1)}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white hover:bg-white/10 disabled:opacity-30 transition-all"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-white hover:bg-white/10 disabled:opacity-30 transition-all"
               >
                 Next
               </button>

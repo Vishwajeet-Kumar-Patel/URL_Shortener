@@ -39,7 +39,7 @@ export default function AdvertiserCampaignCreatePage() {
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-semibold text-white">Create Campaign</h1>
-      <form className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/70 p-5" onSubmit={onSubmit}>
+      <form className="space-y-4 rounded-xl border border-slate-200 bg-white p-5" onSubmit={onSubmit}>
         <div><label className={formLabelClass}>Name</label><input className={formInputClass} name="name" required /></div>
         <div><label className={formLabelClass}>Type</label><select className={formSelectClass} name="type"><option value="INTERSTITIAL">INTERSTITIAL</option><option value="BANNER">BANNER</option><option value="POPUP">POPUP</option><option value="DIRECT">DIRECT</option></select></div>
         <div><label className={formLabelClass}>Target device</label><select className={formSelectClass} name="targetDevice"><option value="ALL">ALL</option><option value="MOBILE">MOBILE</option><option value="DESKTOP">DESKTOP</option></select></div>

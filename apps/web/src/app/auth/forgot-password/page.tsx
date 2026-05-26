@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
     <main className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4 py-10 sm:px-6">
       <div className={`w-full text-left ${formCardClass}`}>
         <h1 className="text-2xl font-semibold text-white">Forgot password</h1>
-        <p className="mt-2 text-sm text-slate-300">We will email you a reset link if your account exists.</p>
+        <p className="mt-2 text-sm text-slate-600">We will email you a reset link if your account exists.</p>
 
         <form className={`mt-6 ${formFieldGroupClass}`} onSubmit={handleSubmit} suppressHydrationWarning>
           <div>
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
         ) : null}
 
         <div className="mt-4 text-sm">
-          <Link className="text-indigo-300 hover:text-indigo-200" href="/login">
+          <Link className="text-blue-600 hover:text-blue-500" href="/login">
             Back to login
           </Link>
         </div>

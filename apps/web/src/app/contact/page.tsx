@@ -48,11 +48,11 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-700">
       <SiteHeader />
       <main className="mx-auto max-w-4xl px-4 py-8 sm:py-10 md:px-8">
         <h1 className="text-3xl font-bold text-white sm:text-4xl">Contact us</h1>
-        <p className="mt-3 max-w-2xl text-sm text-slate-300 sm:text-base">
+        <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
           We usually respond within one business day.
         </p>
         {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}

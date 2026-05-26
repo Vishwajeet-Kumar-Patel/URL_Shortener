@@ -24,15 +24,15 @@ export default function AdvertiserCampaignsPage() {
     <section className="space-y-5">
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold text-white">Campaigns</h1>
-        <p className="text-sm text-slate-400">All campaigns with budget utilization and status for operational control.</p>
+        <p className="text-sm text-slate-500">All campaigns with budget utilization and status for operational control.</p>
       </header>
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-800/70"><tr><th className="px-3 py-2 text-left">Name</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-left">Budget</th><th className="px-3 py-2 text-left">Spent</th><th className="px-3 py-2 text-left">Utilization</th></tr></thead>
+          <thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">Name</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-left">Budget</th><th className="px-3 py-2 text-left">Spent</th><th className="px-3 py-2 text-left">Utilization</th></tr></thead>
           <tbody>
             {items.map((c) => {
               const util = c.budgetTotal > 0 ? Math.round((c.budgetSpent / c.budgetTotal) * 100) : 0;
-              return <tr className="border-t border-slate-800" key={c.id}><td className="px-3 py-2 text-white">{c.name}</td><td className="px-3 py-2">{c.status}</td><td className="px-3 py-2">{c.budgetTotal}</td><td className="px-3 py-2">{c.budgetSpent}</td><td className="px-3 py-2 text-indigo-300">{util}%</td></tr>;
+              return <tr className="border-t border-slate-200" key={c.id}><td className="px-3 py-2 text-white">{c.name}</td><td className="px-3 py-2">{c.status}</td><td className="px-3 py-2">{c.budgetTotal}</td><td className="px-3 py-2">{c.budgetSpent}</td><td className="px-3 py-2 text-blue-600">{util}%</td></tr>;
             })}
           </tbody>
         </table>

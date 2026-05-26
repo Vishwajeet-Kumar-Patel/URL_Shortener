@@ -36,17 +36,17 @@ function MenuIcon({ open }: { open: boolean }) {
   return (
     <span className="relative block h-5 w-6">
       <span
-        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-100 transition-all ${
+        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-700 transition-all ${
           open ? "top-2 rotate-45" : "top-1"
         }`}
       />
       <span
-        className={`absolute left-0 top-2 block h-0.5 w-full rounded bg-slate-100 transition-opacity ${
+        className={`absolute left-0 top-2 block h-0.5 w-full rounded bg-slate-700 transition-opacity ${
           open ? "opacity-0" : "opacity-100"
         }`}
       />
       <span
-        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-100 transition-all ${
+        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-700 transition-all ${
           open ? "top-2 -rotate-45" : "top-3"
         }`}
       />
@@ -88,14 +88,14 @@ export function MemberAppShell({ children }: { children: React.ReactNode }) {
             key={label}
             className={`group rounded-2xl px-3 py-2 text-sm transition-colors ${
               active
-                ? "bg-slate-800 text-white shadow-inner shadow-black/20"
-                : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                ? "bg-blue-50 text-blue-700 shadow-sm"
+                : "text-slate-600 hover:bg-yellow-100/70 hover:text-slate-900"
             }`}
             href={href}
             onClick={() => setNavOpen(false)}
           >
             <span className="block font-medium">{label}</span>
-            {note ? <span className="block text-[11px] text-slate-500 group-hover:text-slate-400">{note}</span> : null}
+            {note ? <span className="block text-[11px] text-slate-500 group-hover:text-slate-600">{note}</span> : null}
           </Link>
         );
       })}
@@ -104,15 +104,15 @@ export function MemberAppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ProtectedLayout roles={["MEMBER", "ADVERTISER"]}>
-      <div className="flex min-h-screen flex-col bg-[#050816] text-slate-100 md:flex-row">
-        <header className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-white/10 bg-[#050816]/95 px-4 backdrop-blur md:hidden">
-          <Link className="text-lg font-bold tracking-tight text-white" href="/dashboard">
+      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-700 md:flex-row">
+        <header className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:hidden">
+          <Link className="text-lg font-bold tracking-tight text-slate-900" href="/dashboard">
             PurpleMerit Links
           </Link>
           <button
             aria-expanded={navOpen}
             aria-label={navOpen ? "Close menu" : "Open menu"}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             onClick={() => setNavOpen((current) => !current)}
             type="button"
           >
@@ -123,36 +123,36 @@ export function MemberAppShell({ children }: { children: React.ReactNode }) {
         {navOpen ? (
           <button
             aria-label="Close menu"
-            className="fixed inset-0 z-30 bg-black/60 md:hidden"
+            className="fixed inset-0 z-30 bg-slate-50 md:hidden"
             onClick={closeNav}
             type="button"
           />
         ) : null}
 
         <aside
-          className={`fixed bottom-0 left-0 top-0 z-40 flex w-72 flex-col border-r border-white/10 bg-[#040714] pt-16 transition-transform duration-200 ease-out md:static md:z-0 md:h-screen md:translate-x-0 md:pt-0 md:shrink-0 ${
+          className={`fixed bottom-0 left-0 top-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white pt-16 transition-transform duration-200 ease-out md:static md:z-0 md:h-screen md:translate-x-0 md:pt-0 md:shrink-0 ${
             navOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
         >
-          <div className="border-b border-white/10 px-5 py-5">
-            <Link className="block text-2xl font-black tracking-tight text-white" href="/dashboard">
+          <div className="border-b border-slate-200 px-5 py-5">
+            <Link className="block text-2xl font-black tracking-tight text-slate-900" href="/dashboard">
               PurpleMerit Links
             </Link>
             <p className="mt-1 text-xs uppercase tracking-[0.28em] text-slate-500">Member</p>
           </div>
 
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
-            <div className="rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/10 to-indigo-500/10 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Workspace</p>
-              <p className="mt-2 text-sm text-slate-200">Shorten, track, earn, and withdraw from one dashboard.</p>
+            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-yellow-50 p-4 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.24em] text-blue-600">Workspace</p>
+              <p className="mt-2 text-sm text-slate-600">Shorten, track, earn, and withdraw from one dashboard.</p>
             </div>
             <div className="space-y-1">
               <p className="px-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Menu</p>
               <NavLinks mobile />
             </div>
-            <div className="mt-auto space-y-3 border-t border-white/10 pt-4">
+            <div className="mt-auto space-y-3 border-t border-slate-200 pt-4">
               <button
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm font-medium text-slate-100 transition hover:bg-white/10"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-yellow-50"
                 onClick={handleLogout}
                 type="button"
               >

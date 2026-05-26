@@ -50,16 +50,16 @@ export default function MassShrinkerPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-[#09111f] via-[#07101c] to-[#120d27] p-6 shadow-2xl">
+      <section className="rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white via-blue-50 to-yellow-50 p-6 shadow-2xl">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/70">Tools & Automation</p>
         <h1 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">Mass Shrinker</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
           Shorten hundreds of URLs at once. Paste your long links below, one per line.
         </p>
       </section>
 
       <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-[1.5rem] border border-white/10 bg-[#08101e] p-6">
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6">
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <label className={formLabelClass} htmlFor="urls">
@@ -67,7 +67,7 @@ export default function MassShrinkerPage() {
               </label>
               <textarea
                 id="urls"
-                className="mt-2 w-full min-h-[300px] rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/50"
+                className="mt-2 w-full min-h-[300px] rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 placeholder:text-slate-600 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/50"
                 placeholder="https://example.com/page1&#10;https://example.com/page2&#10;https://example.com/page3"
                 value={urls}
                 onChange={(e) => setUrls(e.target.value)}
@@ -85,9 +85,9 @@ export default function MassShrinkerPage() {
           {error && <p className="mt-4 text-sm text-rose-500">{error}</p>}
         </div>
 
-        <div className="rounded-[1.5rem] border border-white/10 bg-[#08101e] p-6">
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6">
           <h2 className="text-xl font-semibold text-white">Results</h2>
-          <p className="mt-1 text-sm text-slate-400">Your shortened links will appear here.</p>
+          <p className="mt-1 text-sm text-slate-500">Your shortened links will appear here.</p>
           
           <div className="mt-6 space-y-3">
             {!results && !submitting && (
@@ -100,7 +100,7 @@ export default function MassShrinkerPage() {
             )}
 
             {submitting && (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+              <div className="flex flex-col items-center justify-center py-12 text-slate-500">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
                 <p className="mt-4">Shortening your links...</p>
               </div>
@@ -122,8 +122,8 @@ export default function MassShrinkerPage() {
                 </div>
                 <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                   {results.map((res, i) => (
-                    <div key={i} className="rounded-xl border border-white/5 bg-white/5 p-3 text-sm">
-                      <p className="truncate text-slate-400 text-xs">{res.originalUrl}</p>
+                    <div key={i} className="rounded-xl border border-white/5 bg-slate-50 p-3 text-sm">
+                      <p className="truncate text-slate-500 text-xs">{res.originalUrl}</p>
                       <p className="mt-1 font-mono text-cyan-300">{res.shortUrl}</p>
                     </div>
                   ))}

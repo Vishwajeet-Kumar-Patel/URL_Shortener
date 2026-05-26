@@ -99,33 +99,33 @@ export default function DashboardWalletPage() {
     <section className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-white">Wallet</h1>
-        <p className="mt-1 text-sm text-slate-400">Balances, ledger activity, and payout requests.</p>
+        <p className="mt-1 text-sm text-slate-500">Balances, ledger activity, and payout requests.</p>
       </div>
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
       {message ? <p className="text-sm text-amber-300">{message}</p> : null}
-      {loading ? <p className="text-slate-400">Loading...</p> : null}
+      {loading ? <p className="text-slate-500">Loading...</p> : null}
 
       {summary && !loading ? (
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Available Balance</p>
             <p className="mt-2 text-2xl font-semibold text-emerald-400">₹{summary.balance.toFixed(2)}</p>
-            <p className="mt-1 text-xs text-slate-400">Ready for withdrawal</p>
+            <p className="mt-1 text-xs text-slate-500">Ready for withdrawal</p>
           </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Pending Withdrawals</p>
             <p className="mt-2 text-2xl font-semibold text-amber-400">₹{summary.pendingAmount.toFixed(2)}</p>
-            <p className="mt-1 text-xs text-slate-400">Under admin review</p>
+            <p className="mt-1 text-xs text-slate-500">Under admin review</p>
           </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Total Earnings</p>
             <p className="mt-2 text-2xl font-semibold text-cyan-400">₹{(summary.balance + summary.pendingAmount).toFixed(2)}</p>
-            <p className="mt-1 text-xs text-slate-400">Available + pending</p>
+            <p className="mt-1 text-xs text-slate-500">Available + pending</p>
           </div>
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
         <h2 className="text-lg font-semibold text-white">Request withdrawal</h2>
         <form className="mt-4 grid gap-4 text-sm sm:grid-cols-2" onSubmit={onWithdraw}>
           <div>
@@ -158,16 +158,16 @@ export default function DashboardWalletPage() {
         </form>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-semibold text-white">Your withdrawals</h2>
         {withdrawals.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-400">No requests yet.</p>
+          <p className="mt-3 text-sm text-slate-500">No requests yet.</p>
         ) : (
-          <ul className="mt-3 space-y-2 text-sm text-slate-300">
+          <ul className="mt-3 space-y-2 text-sm text-slate-600">
             {withdrawals.map((w) => (
-              <li className="flex flex-wrap justify-between gap-2 border-b border-slate-800 pb-2" key={w.id}>
+              <li className="flex flex-wrap justify-between gap-2 border-b border-slate-200 pb-2" key={w.id}>
                 <span>INR {w.amount}</span>
-                <span className="text-slate-400">{w.status}</span>
+                <span className="text-slate-500">{w.status}</span>
                 <span className="text-xs text-slate-500">{new Date(w.createdAt).toLocaleString()}</span>
               </li>
             ))}
@@ -175,14 +175,14 @@ export default function DashboardWalletPage() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-semibold text-white">Ledger</h2>
         {ledger.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-400">No ledger entries yet.</p>
+          <p className="mt-3 text-sm text-slate-500">No ledger entries yet.</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-800/80">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-3 py-2">Type</th>
                   <th className="px-3 py-2">Source</th>
@@ -193,11 +193,11 @@ export default function DashboardWalletPage() {
               </thead>
               <tbody>
                 {ledger.map((row) => (
-                  <tr className="border-t border-slate-800" key={row.id}>
-                    <td className="px-3 py-2 text-slate-200">{row.type}</td>
-                    <td className="px-3 py-2 text-slate-400">{row.source}</td>
-                    <td className="px-3 py-2 text-slate-200">{row.amount}</td>
-                    <td className="px-3 py-2 text-slate-200">{row.balanceAfter}</td>
+                  <tr className="border-t border-slate-200" key={row.id}>
+                    <td className="px-3 py-2 text-slate-700">{row.type}</td>
+                    <td className="px-3 py-2 text-slate-500">{row.source}</td>
+                    <td className="px-3 py-2 text-slate-700">{row.amount}</td>
+                    <td className="px-3 py-2 text-slate-700">{row.balanceAfter}</td>
                     <td className="px-3 py-2 text-slate-500">{new Date(row.createdAt).toLocaleString()}</td>
                   </tr>
                 ))}

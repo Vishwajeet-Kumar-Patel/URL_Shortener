@@ -176,30 +176,30 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-700">
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10 md:px-8">
         <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl">Simple pricing for every stage</h1>
-        <p className="mt-3 max-w-2xl text-sm text-slate-300 sm:text-base">
+        <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
           Start free and scale as your traffic grows. Paid plans use Razorpay Checkout; the app confirms payment with
           your key secret (no webhook).
         </p>
         {subscription ? (
-          <div className="mt-6 rounded-2xl border border-indigo-900/60 bg-indigo-950/30 p-4 text-sm text-indigo-200">
+          <div className="mt-6 rounded-2xl border border-indigo-900/60 bg-blue-50 p-4 text-sm text-blue-500">
             <p className="font-semibold">Current plan: {subscription.planName}</p>
-            <p className="mt-1 text-indigo-300">Status: {subscription.status}</p>
+            <p className="mt-1 text-blue-600">Status: {subscription.status}</p>
           </div>
         ) : null}
         {message ? <p className="mt-4 text-sm text-amber-300">{message}</p> : null}
         {error ? <p className="mt-4 text-sm text-rose-400">{error}</p> : null}
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 text-slate-400">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-500">
               Loading plans...
             </div>
           ) : null}
           {!loading && sortedPlans.length === 0 ? (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 text-slate-400">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-500">
               No plans configured yet.
             </div>
           ) : null}
@@ -207,19 +207,19 @@ export default function PricingPage() {
             const isCurrent = plan.id === currentPlanId;
             return (
               <article
-                className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6"
+                className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
                 key={plan.id}
               >
                 <h2 className="text-lg font-semibold sm:text-xl">{plan.name}</h2>
-                <p className="mt-1 text-2xl font-bold text-indigo-400 sm:text-3xl">{formatPrice(plan)}</p>
-                <p className="mt-2 flex-1 text-sm text-slate-300 sm:text-base">{plan.description ?? ""}</p>
-                <ul className="mt-4 space-y-1 text-xs text-slate-400 sm:text-sm">
+                <p className="mt-1 text-2xl font-bold text-blue-600 sm:text-3xl">{formatPrice(plan)}</p>
+                <p className="mt-2 flex-1 text-sm text-slate-600 sm:text-base">{plan.description ?? ""}</p>
+                <ul className="mt-4 space-y-1 text-xs text-slate-500 sm:text-sm">
                   <li>Max links: {plan.limits.maxLinks}</li>
                   <li>Custom alias: {plan.limits.customAlias ? "Yes" : "No"}</li>
                   <li>Campaigns: {plan.limits.campaignAccess ? "Yes" : "No"}</li>
                 </ul>
                 <button
-                  className="mt-5 w-full min-h-[2.75rem] rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+                  className="mt-5 w-full min-h-[2.75rem] rounded-lg bg-blue-600 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
                   disabled={processingId === plan.id || isCurrent}
                   onClick={() => void handleCheckout(plan)}
                   type="button"
@@ -230,9 +230,9 @@ export default function PricingPage() {
             );
           })}
         </div>
-        <div className="mt-6 text-sm text-slate-400">
+        <div className="mt-6 text-sm text-slate-500">
           Already subscribed? Manage invoices in your{" "}
-          <Link className="text-indigo-300 hover:text-indigo-200" href="/dashboard/billing">
+          <Link className="text-blue-600 hover:text-blue-500" href="/dashboard/billing">
             billing dashboard
           </Link>.
         </div>

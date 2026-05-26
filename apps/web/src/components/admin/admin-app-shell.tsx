@@ -29,17 +29,17 @@ function MenuIcon({ open }: { open: boolean }) {
   return (
     <span className="relative block h-5 w-6">
       <span
-        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-200 transition-all ${
+        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-700 transition-all ${
           open ? "top-2 rotate-45" : "top-1"
         }`}
       />
       <span
-        className={`absolute left-0 top-2 block h-0.5 w-full rounded bg-slate-200 transition-opacity ${
+        className={`absolute left-0 top-2 block h-0.5 w-full rounded bg-slate-700 transition-opacity ${
           open ? "opacity-0" : "opacity-100"
         }`}
       />
       <span
-        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-200 transition-all ${
+        className={`absolute left-0 block h-0.5 w-full rounded bg-slate-700 transition-all ${
           open ? "top-2 -rotate-45" : "top-3"
         }`}
       />
@@ -75,7 +75,7 @@ export function AdminAppShell({ children }: { children: React.ReactNode }) {
           <Link
             key={href}
             className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              active ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-900 hover:text-white"
+              active ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-yellow-100/80 hover:text-slate-900"
             }`}
             href={href}
             onClick={() => setNavOpen(false)}
@@ -88,15 +88,15 @@ export function AdminAppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 md:flex-row">
-      <header className="fixed left-0 right-0 top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950 px-4 md:hidden">
-        <Link className="text-base font-bold tracking-tight text-white" href="/">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-700 md:flex-row">
+      <header className="fixed left-0 right-0 top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
+        <Link className="text-base font-bold tracking-tight text-slate-900" href="/">
           PurpleMerit Links
         </Link>
         <button
           aria-expanded={navOpen}
           aria-label={navOpen ? "Close menu" : "Open menu"}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 text-slate-200 hover:bg-slate-900"
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
           onClick={() => setNavOpen((o) => !o)}
           type="button"
         >
@@ -107,19 +107,19 @@ export function AdminAppShell({ children }: { children: React.ReactNode }) {
       {navOpen ? (
         <button
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-50 md:hidden"
           onClick={closeNav}
           type="button"
         />
       ) : null}
 
       <aside
-        className={`fixed bottom-0 left-0 top-0 z-50 flex w-64 flex-col border-r border-slate-800 bg-slate-950 pt-14 transition-transform duration-200 ease-out md:static md:z-0 md:h-screen md:translate-x-0 md:pt-0 md:shrink-0 ${
+        className={`fixed bottom-0 left-0 top-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white pt-14 transition-transform duration-200 ease-out md:static md:z-0 md:h-screen md:translate-x-0 md:pt-0 md:shrink-0 ${
           navOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="hidden border-b border-slate-800 px-4 py-4 md:block">
-          <Link className="text-lg font-bold tracking-tight text-white" href="/">
+        <div className="hidden border-b border-slate-200 px-4 py-4 md:block">
+          <Link className="text-lg font-bold tracking-tight text-slate-900" href="/">
             PurpleMerit Links
           </Link>
           <p className="mt-0.5 text-xs text-slate-500">Admin</p>
@@ -131,7 +131,7 @@ export function AdminAppShell({ children }: { children: React.ReactNode }) {
           <NavLinks mobile />
           <div className="flex-1" />
           <button
-            className="rounded-lg border border-slate-700 px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-900"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-left text-sm text-slate-700 hover:bg-yellow-50"
             onClick={handleLogout}
             type="button"
           >

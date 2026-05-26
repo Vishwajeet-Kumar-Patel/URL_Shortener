@@ -82,25 +82,25 @@ export default function DashboardReferralsPage() {
       ) : null}
 
       {loading ? (
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-slate-500">Loading...</p>
       ) : !summary ? (
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-slate-500">Loading...</p>
       ) : (
         <>
-          <div className="rounded-2xl border border-white/10 bg-[#08101e] p-4">
-            <p className="text-sm text-slate-400">Your referral code</p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm text-slate-500">Your referral code</p>
             <p className="mt-1 text-xl font-semibold text-white">{summary.code}</p>
             {summary.referralLink ? (
               <p className="mt-2 break-all text-sm text-cyan-300">{summary.referralLink}</p>
             ) : null}
-            <p className="mt-3 text-sm text-slate-300">
+            <p className="mt-3 text-sm text-slate-600">
               Referred: {summary.totalReferred} | Earnings: {summary.totalEarnings}
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#08101e]">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
             <table className="min-w-full text-sm">
-              <thead className="bg-white/5">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-3 py-2 text-left">User</th>
                   <th className="px-3 py-2 text-left">Gross</th>
@@ -111,16 +111,16 @@ export default function DashboardReferralsPage() {
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-6 text-slate-400" colSpan={4}>
+                    <td className="px-3 py-6 text-slate-500" colSpan={4}>
                       No referral earnings yet.
                     </td>
                   </tr>
                 ) : (
                   items.map((row) => (
-                    <tr className="border-t border-white/10" key={row.id}>
-                      <td className="px-3 py-2 text-slate-300">{row.referredUserId}</td>
-                      <td className="px-3 py-2 text-slate-300">{row.grossAmount}</td>
-                      <td className="px-3 py-2 text-slate-300">{row.ratePercent}%</td>
+                    <tr className="border-t border-slate-200" key={row.id}>
+                      <td className="px-3 py-2 text-slate-600">{row.referredUserId}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.grossAmount}</td>
+                      <td className="px-3 py-2 text-slate-600">{row.ratePercent}%</td>
                       <td className="px-3 py-2 text-emerald-300">{row.amount}</td>
                     </tr>
                   ))

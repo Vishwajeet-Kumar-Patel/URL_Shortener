@@ -116,7 +116,7 @@ export default function DashboardCampaignsPage() {
   };
 
   if (!isHydrated || !user) {
-    return <p className="text-slate-400">Loading...</p>;
+    return <p className="text-slate-500">Loading...</p>;
   }
 
   if (user.role !== "ADVERTISER") {
@@ -127,12 +127,12 @@ export default function DashboardCampaignsPage() {
     <section className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-white">Campaigns</h1>
-        <p className="mt-1 text-sm text-slate-400">Create and fund advertising campaigns.</p>
+        <p className="mt-1 text-sm text-slate-500">Create and fund advertising campaigns.</p>
       </div>
       {message ? <p className="text-sm text-amber-300">{message}</p> : null}
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
         <h2 className="text-lg font-semibold text-white">New campaign</h2>
         <form className="mt-4 grid gap-4 text-sm sm:grid-cols-2" onSubmit={onCreate}>
           <div>
@@ -170,29 +170,29 @@ export default function DashboardCampaignsPage() {
         </form>
       </div>
 
-      {loading ? <p className="text-slate-400">Loading campaigns...</p> : null}
-      {!loading && items.length === 0 ? <p className="text-slate-400">No campaigns yet.</p> : null}
+      {loading ? <p className="text-slate-500">Loading campaigns...</p> : null}
+      {!loading && items.length === 0 ? <p className="text-slate-500">No campaigns yet.</p> : null}
       {!loading && items.length > 0 ? (
         <div className="space-y-3">
           {items.map((c) => (
-            <article className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm" key={c.id}>
+            <article className="rounded-xl border border-slate-200 bg-white p-4 text-sm" key={c.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-white">{c.name}</p>
-                  <p className="mt-1 text-slate-400">
+                  <p className="mt-1 text-slate-500">
                     {c.type} · {c.status}
                   </p>
-                  <p className="mt-1 text-slate-400">
+                  <p className="mt-1 text-slate-500">
                     Budget INR {c.budgetTotal} · Spent {c.budgetSpent}
                   </p>
                   {c.landingUrl ? (
-                    <p className="mt-1 max-w-xl truncate text-xs text-indigo-300">{c.landingUrl}</p>
+                    <p className="mt-1 max-w-xl truncate text-xs text-blue-600">{c.landingUrl}</p>
                   ) : null}
                 </div>
                 <div className="flex gap-2">
                   {c.status === "ACTIVE" ? (
                     <button
-                      className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-200"
+                      className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
                       onClick={() => void pause(c.id)}
                       type="button"
                     >
@@ -201,7 +201,7 @@ export default function DashboardCampaignsPage() {
                   ) : null}
                   {c.status === "PAUSED" ? (
                     <button
-                      className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-200"
+                      className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
                       onClick={() => void resume(c.id)}
                       type="button"
                     >

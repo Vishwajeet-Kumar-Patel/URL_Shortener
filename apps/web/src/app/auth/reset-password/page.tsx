@@ -63,7 +63,7 @@ function ResetPasswordContent() {
     <main className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4 py-10 sm:px-6">
       <div className={`w-full text-left ${formCardClass}`}>
         <h1 className="text-2xl font-semibold text-white">Reset password</h1>
-        <p className="mt-2 text-sm text-slate-300">Enter a new password for your account.</p>
+        <p className="mt-2 text-sm text-slate-600">Enter a new password for your account.</p>
 
         <form className={`mt-6 ${formFieldGroupClass}`} onSubmit={handleSubmit}>
           <div>
@@ -108,7 +108,7 @@ function ResetPasswordContent() {
         ) : null}
 
         <div className="mt-4 text-sm">
-          <Link className="text-indigo-300 hover:text-indigo-200" href="/login">
+          <Link className="text-blue-600 hover:text-blue-500" href="/login">
             Back to login
           </Link>
         </div>
@@ -119,7 +119,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4"><p className="text-slate-400">Loading...</p></div>}>
+    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4"><p className="text-slate-500">Loading...</p></div>}>
       <ResetPasswordContent />
     </Suspense>
   );

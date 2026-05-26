@@ -58,7 +58,7 @@ function GoogleCallbackContent() {
 
 export default function GoogleCallbackPage() {
   return (
-    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center p-6"><p className="text-slate-400">Loading...</p></div>}>
+    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center p-6"><p className="text-slate-500">Loading...</p></div>}>
       <GoogleCallbackContent />
     </Suspense>
   );

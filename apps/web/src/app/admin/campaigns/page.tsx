@@ -23,12 +23,12 @@ export default function AdminCampaignsPage() {
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-semibold text-white">Campaigns</h1>
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-800/70"><tr><th className="px-3 py-2 text-left">Campaign</th><th className="px-3 py-2 text-left">Owner</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-left">Budget</th><th className="px-3 py-2 text-left">Spent</th></tr></thead>
+          <thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">Campaign</th><th className="px-3 py-2 text-left">Owner</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-left">Budget</th><th className="px-3 py-2 text-left">Spent</th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr className="border-t border-slate-800" key={r.id}><td className="px-3 py-2 text-white">{r.name}</td><td className="px-3 py-2 text-slate-400">{r.ownerId}</td><td className="px-3 py-2">{r.status}</td><td className="px-3 py-2">{r.budgetTotal}</td><td className="px-3 py-2">{r.budgetSpent}</td></tr>
+              <tr className="border-t border-slate-200" key={r.id}><td className="px-3 py-2 text-white">{r.name}</td><td className="px-3 py-2 text-slate-500">{r.ownerId}</td><td className="px-3 py-2">{r.status}</td><td className="px-3 py-2">{r.budgetTotal}</td><td className="px-3 py-2">{r.budgetSpent}</td></tr>
             ))}
           </tbody>
         </table>

@@ -12,11 +12,11 @@ const features = [
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-700">
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-10 md:px-8">
         <h1 className="text-4xl font-bold text-white">Features built for serious growth</h1>
-        <p className="mt-3 max-w-3xl text-slate-300">
+        <p className="mt-3 max-w-3xl text-slate-600">
           Everything you need to shorten, secure, and optimize links at scale.
         </p>
         <img
@@ -27,7 +27,7 @@ export default function FeaturesPage() {
         />
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {features.map((item) => (
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4" key={item}>
+            <div className="rounded-xl border border-slate-200 bg-white p-4" key={item}>
               {item}
             </div>
           ))}

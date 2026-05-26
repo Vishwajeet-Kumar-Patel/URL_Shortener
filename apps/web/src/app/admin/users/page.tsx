@@ -91,7 +91,7 @@ export default function AdminUsersPage() {
             ))}
           </select>
           <button
-            className="rounded-md border border-slate-600 px-2 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+            className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
             disabled={busy || self || (roleDraft[u.id] ?? u.role) === u.role}
             onClick={() =>
               void run(u.id, () =>
@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
           )}
           {!u.isEmailVerified ? (
             <button
-              className="rounded-md border border-indigo-800 px-2 py-1 text-xs font-medium text-indigo-200 hover:bg-indigo-950/40 disabled:opacity-50"
+              className="rounded-md border border-indigo-800 px-2 py-1 text-xs font-medium text-blue-500 hover:bg-blue-50 disabled:opacity-50"
               disabled={busy}
               onClick={() =>
                 void run(u.id, () =>
@@ -171,36 +171,36 @@ export default function AdminUsersPage() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 md:p-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-white">Users</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+            <p className="mt-2 max-w-2xl text-sm text-slate-500">
               Ban accounts, verify emails, adjust roles, or soft-delete accounts. You cannot modify your own
               role, ban yourself, or delete your own account from this screen.
             </p>
           </div>
           {data ? (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500">
               {data.pagination.total} user{data.pagination.total === 1 ? "" : "s"}
             </p>
           ) : null}
         </div>
       </div>
 
-      {loading ? <p className="text-slate-400">Loading...</p> : null}
+      {loading ? <p className="text-slate-500">Loading...</p> : null}
       {error ? <p className="rounded-lg border border-red-900/40 bg-red-950/30 px-4 py-3 text-sm text-red-200">{error}</p> : null}
       {!loading && !error && items.length === 0 ? (
-        <p className="text-slate-400">No users found.</p>
+        <p className="text-slate-500">No users found.</p>
       ) : null}
       {!loading && !error && items.length > 0 ? (
         <>
           <div className="space-y-3 md:hidden">
             {items.map((u) => (
-              <article className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm" key={u.id}>
+              <article className="rounded-xl border border-slate-200 bg-white p-4 text-sm" key={u.id}>
                 <p className="font-medium text-white">{u.name}</p>
-                <p className="mt-1 break-all text-slate-300">{u.email}</p>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400">
+                <p className="mt-1 break-all text-slate-600">{u.email}</p>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                   <span>{u.role}</span>
                   <span>·</span>
                   <span>{u.status}</span>
@@ -208,15 +208,15 @@ export default function AdminUsersPage() {
                   <span>{u.isEmailVerified ? "verified" : "unverified"}</span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">{new Date(u.createdAt).toLocaleString()}</p>
-                <div className="mt-3 border-t border-slate-800 pt-3">
+                <div className="mt-3 border-t border-slate-200 pt-3">
                   <UserActions u={u} />
                 </div>
               </article>
             ))}
           </div>
-          <div className="hidden overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white md:block">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-800/80">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">Email</th>
@@ -229,15 +229,15 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {items.map((u) => (
-                  <tr className="border-t border-slate-800" key={u.id}>
+                  <tr className="border-t border-slate-200" key={u.id}>
                     <td className="px-3 py-2 font-medium text-white">{u.name}</td>
-                    <td className="max-w-[10rem] truncate px-3 py-2 text-slate-300" title={u.email}>
+                    <td className="max-w-[10rem] truncate px-3 py-2 text-slate-600" title={u.email}>
                       {u.email}
                     </td>
                     <td className="px-3 py-2">{u.role}</td>
                     <td className="px-3 py-2">{u.status}</td>
-                    <td className="px-3 py-2 text-slate-400">{u.isEmailVerified ? "yes" : "no"}</td>
-                    <td className="whitespace-nowrap px-3 py-2 text-slate-400">
+                    <td className="px-3 py-2 text-slate-500">{u.isEmailVerified ? "yes" : "no"}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-slate-500">
                       {new Date(u.createdAt).toLocaleString()}
                     </td>
                     <td className="px-3 py-2 align-top">

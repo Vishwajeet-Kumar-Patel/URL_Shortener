@@ -70,9 +70,9 @@ export default function AdminPage() {
   return (
     <div className="space-y-10">
       <header className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-400">Admin control center</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">Admin control center</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Dashboard</h1>
-        <p className="max-w-3xl text-base leading-relaxed text-slate-400">
+        <p className="max-w-3xl text-base leading-relaxed text-slate-500">
           Welcome back. This is your home for running PurpleMerit Links: see how the platform is performing,
           jump into moderation, and understand what happens when users create short links and the world
           clicks them.
@@ -86,7 +86,7 @@ export default function AdminPage() {
       ) : null}
 
       {!overview && !error ? (
-        <p className="text-slate-400">Loading overview…</p>
+        <p className="text-slate-500">Loading overview…</p>
       ) : null}
 
       {overview ? (
@@ -94,56 +94,56 @@ export default function AdminPage() {
           <section aria-label="Key metrics">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Key metrics</h2>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Total members</span>
+              <div className="block rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Total members</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.users ?? "—"}</p>
-                <p className="mt-2 text-xs text-indigo-400">View directory →</p>
+                <p className="mt-2 text-xs text-blue-600">View directory →</p>
               </div>
-              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Anonymous users</span>
+              <div className="block rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Anonymous users</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{reports?.anonymousSessions ?? "—"}</p>
-                <p className="mt-2 text-xs text-indigo-400">Sessions without accounts</p>
+                <p className="mt-2 text-xs text-blue-600">Sessions without accounts</p>
               </div>
-              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Short links</span>
+              <div className="block rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Short links</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.urls ?? "—"}</p>
-                <p className="mt-2 text-xs text-indigo-400">Total short URLs</p>
+                <p className="mt-2 text-xs text-blue-600">Total short URLs</p>
               </div>
-              <div className="block rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Raw clicks</span>
+              <div className="block rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Raw clicks</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.clicks ?? "—"}</p>
-                <p className="mt-2 text-xs text-indigo-400">All redirects recorded</p>
+                <p className="mt-2 text-xs text-blue-600">All redirects recorded</p>
               </div>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Qualified views</span>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Qualified views</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-white">{overview?.totals.uniqueClicks ?? "—"}</p>
-                <p className="mt-2 text-xs text-indigo-400">Validated completions</p>
+                <p className="mt-2 text-xs text-blue-600">Validated completions</p>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Earnings (payout)</span>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Earnings (payout)</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-300">₹{earningsSummary?.data?.totalEarnings?.toFixed?.(2) ?? (earningsSummary?.data?.totalEarnings ?? "—")}</p>
-                <p className="mt-2 text-xs text-indigo-400">Platform payouts</p>
+                <p className="mt-2 text-xs text-blue-600">Platform payouts</p>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Gross revenue</span>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Gross revenue</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-white">₹{reports?.revenue?.grossCollected ?? "—"}</p>
-                <p className="mt-2 text-xs text-indigo-400">Collections (period)</p>
+                <p className="mt-2 text-xs text-blue-600">Collections (period)</p>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <span className="text-sm text-slate-400">Active links</span>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <span className="text-sm text-slate-500">Active links</span>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-400">{overview?.totals.activeUrls ?? "—"}</p>
                 <p className="mt-2 text-xs text-slate-500">Currently accepting redirects</p>
               </div>
             </div>
           </section>
 
-          <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-5 md:p-6">
+          <section className="rounded-xl border border-slate-200 bg-white p-5 md:p-6">
             <h2 className="text-lg font-semibold text-white">Recent click rhythm (7 days)</h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-slate-500">
               A quick pulse check before you open the full{" "}
-              <Link className="text-indigo-400 underline hover:text-indigo-300" href="/admin/clicks">
+              <Link className="text-blue-600 underline hover:text-blue-600" href="/admin/clicks">
                 Clicks
               </Link>{" "}
               page for the 90-day chart.
@@ -157,13 +157,13 @@ export default function AdminPage() {
                     <span className="w-20 shrink-0 text-slate-500">
                       {new Date(row.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
                     </span>
-                    <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+                    <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-indigo-500/90"
+                        className="h-full rounded-full bg-blue-500/90"
                         style={{ width: `${Math.max(6, (row.count / recentClicksMax) * 100)}%` }}
                       />
                     </div>
-                    <span className="w-10 text-right tabular-nums text-slate-300">{row.count}</span>
+                    <span className="w-10 text-right tabular-nums text-slate-600">{row.count}</span>
                   </div>
                 ))
               )}
@@ -173,24 +173,24 @@ export default function AdminPage() {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 md:p-6">
+        <section className="rounded-xl border border-slate-200 bg-slate-50 p-5 md:p-6">
           <h2 className="text-lg font-semibold text-white">What is this dashboard?</h2>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400">
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">
             PurpleMerit Links is a URL shortener: people paste long URLs, get short codes, and share them
             anywhere. This admin area is separate from the normal user dashboard—it is built for operators who
             keep the product trustworthy, fast, and compliant.
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400">
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">
             The numbers above reflect your live database: registered accounts, created short links, and every
             redirect that was counted. They update as real users interact with the product.
           </p>
         </section>
 
-        <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 md:p-6">
+        <section className="rounded-xl border border-slate-200 bg-slate-50 p-5 md:p-6">
           <h2 className="text-lg font-semibold text-white">What you can do here</h2>
-          <ul className="mt-4 space-y-3 text-sm text-slate-300">
+          <ul className="mt-4 space-y-3 text-sm text-slate-600">
             <li className="flex gap-2">
-              <span className="mt-0.5 text-indigo-400">→</span>
+              <span className="mt-0.5 text-blue-600">→</span>
               <span>
                 <Link className="font-medium text-white underline-offset-2 hover:underline" href="/admin/users">
                   Users
@@ -200,7 +200,7 @@ export default function AdminPage() {
               </span>
             </li>
             <li className="flex gap-2">
-              <span className="mt-0.5 text-indigo-400">→</span>
+              <span className="mt-0.5 text-blue-600">→</span>
               <span>
                 <Link className="font-medium text-white underline-offset-2 hover:underline" href="/admin/urls">
                   All URLs
@@ -210,7 +210,7 @@ export default function AdminPage() {
               </span>
             </li>
             <li className="flex gap-2">
-              <span className="mt-0.5 text-indigo-400">→</span>
+              <span className="mt-0.5 text-blue-600">→</span>
               <span>
                 <Link className="font-medium text-white underline-offset-2 hover:underline" href="/admin/clicks">
                   Clicks
@@ -223,9 +223,9 @@ export default function AdminPage() {
         </section>
       </div>
 
-      <section className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900/80 to-indigo-950/30 p-5 md:p-6">
+      <section className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-blue-100 p-5 md:p-6">
         <h2 className="text-lg font-semibold text-white">How it works (in one minute)</h2>
-        <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-slate-300">
+        <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-slate-600">
           <li>
             A user signs up and creates a short link pointing at any valid HTTP(S) destination you allow.
           </li>
@@ -245,89 +245,89 @@ export default function AdminPage() {
       </section>
 
       {overview ? (
-        <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 md:p-6">
+        <section className="rounded-xl border border-slate-200 bg-slate-50 p-5 md:p-6">
           <h2 className="text-lg font-semibold text-white">Platform snapshot</h2>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-slate-500">
             Deeper breakdown of the same overview—handy when you are writing status updates or investigating a
             ticket.
           </p>
           <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-lg border border-slate-800/80 bg-slate-950/50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3">
               <dt className="text-xs uppercase tracking-wide text-slate-500">Active users</dt>
               <dd className="mt-1 text-xl font-semibold tabular-nums text-white">{overview.totals.activeUsers}</dd>
             </div>
-            <div className="rounded-lg border border-slate-800/80 bg-slate-950/50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3">
               <dt className="text-xs uppercase tracking-wide text-slate-500">Banned users</dt>
               <dd className="mt-1 text-xl font-semibold tabular-nums text-amber-200">{overview.totals.bannedUsers}</dd>
             </div>
-            <div className="rounded-lg border border-slate-800/80 bg-slate-950/50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3">
               <dt className="text-xs uppercase tracking-wide text-slate-500">Paused URLs</dt>
               <dd className="mt-1 text-xl font-semibold tabular-nums text-amber-200">{overview.totals.pausedUrls}</dd>
             </div>
-            <div className="rounded-lg border border-slate-800/80 bg-slate-950/50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3">
               <dt className="text-xs uppercase tracking-wide text-slate-500">Deleted URLs</dt>
-              <dd className="mt-1 text-xl font-semibold tabular-nums text-slate-300">
+              <dd className="mt-1 text-xl font-semibold tabular-nums text-slate-600">
                 {overview.totals.deletedUrls}
               </dd>
             </div>
-            <div className="rounded-lg border border-slate-800/80 bg-slate-950/50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3">
               <dt className="text-xs uppercase tracking-wide text-slate-500">Total short links</dt>
               <dd className="mt-1 text-xl font-semibold tabular-nums text-white">{overview.totals.urls}</dd>
             </div>
-            <div className="rounded-lg border border-slate-800/80 bg-slate-950/50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 px-4 py-3">
               <dt className="text-xs uppercase tracking-wide text-slate-500">Total clicks logged</dt>
-              <dd className="mt-1 text-xl font-semibold tabular-nums text-indigo-300">{overview.totals.clicks}</dd>
+              <dd className="mt-1 text-xl font-semibold tabular-nums text-blue-600">{overview.totals.clicks}</dd>
             </div>
           </dl>
         </section>
       ) : null}
 
-      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 md:p-6">
+      <section className="rounded-xl border border-slate-200 bg-slate-50 p-5 md:p-6">
         <h2 className="text-lg font-semibold text-white">Stay engaged: a simple rhythm</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
             <p className="text-sm font-medium text-white">Morning glance</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
               Scan KPIs and the 7-day click strip for anything unusual before you dive into tickets.
             </p>
           </div>
-          <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
             <p className="text-sm font-medium text-white">Weekly audit</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              Walk <span className="text-slate-200">All URLs</span> sorted by recency or status and clear stale
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              Walk <span className="text-slate-700">All URLs</span> sorted by recency or status and clear stale
               or abusive destinations.
             </p>
           </div>
-          <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
             <p className="text-sm font-medium text-white">After incidents</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              Use <span className="text-slate-200">Clicks</span> to confirm traffic normalized after a pause,
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              Use <span className="text-slate-700">Clicks</span> to confirm traffic normalized after a pause,
               campaign, or outage.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl border border-dashed border-slate-700 bg-slate-900/20 p-5 md:p-6">
+      <section className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 md:p-6">
         <h2 className="text-lg font-semibold text-white">Trust, transparency, and your users</h2>
-        <p className="mt-3 text-sm leading-relaxed text-slate-400">
+        <p className="mt-3 text-sm leading-relaxed text-slate-500">
           People share short links because they trust your domain. Pausing or removing a link is a strong signal—
           use it deliberately and document why when your team asks later. When in doubt, prefer pausing over
           silent redirects so visitors are not sent somewhere harmful.
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-slate-400">
+        <p className="mt-3 text-sm leading-relaxed text-slate-500">
           Need a break from moderation? The public marketing site is always one tab away—your work here keeps
           that promise credible.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
             href="/"
           >
             View public site
           </Link>
           <Link
-            className="rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
             href="/admin/urls"
           >
             Go to All URLs

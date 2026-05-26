@@ -92,9 +92,9 @@ export default function AdminWithdrawalsPage() {
 
   return (
     <section className="space-y-8">
-      <header className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 md:p-6">
+      <header className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
         <h1 className="text-2xl font-semibold text-white">Withdrawals</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">
           Withdrawals move publisher earnings out of their in-app wallet into real bank rails. Each card (or
           table row) is one request with immutable timestamps so you can prove who approved what.
         </p>
@@ -102,8 +102,8 @@ export default function AdminWithdrawalsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {pipeline.map((p) => (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4" key={p.step}>
-            <p className="font-mono text-xs text-indigo-300">{p.step}</p>
+          <div className="rounded-xl border border-slate-200 bg-white p-4" key={p.step}>
+            <p className="font-mono text-xs text-blue-600">{p.step}</p>
             <p className="mt-1 text-sm font-semibold text-white">{p.title}</p>
             <p className="mt-2 text-xs leading-relaxed text-slate-500">{p.detail}</p>
           </div>
@@ -111,23 +111,23 @@ export default function AdminWithdrawalsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+        <div className="rounded-xl border border-slate-200 bg-white/95 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Awaiting action</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-amber-200">{pending}</p>
           <p className="mt-1 text-xs text-slate-500">Needs approve or reject with an optional memo.</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+        <div className="rounded-xl border border-slate-200 bg-white/95 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ready to pay out</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-emerald-300">{approved}</p>
           <p className="mt-1 text-xs text-slate-500">Approved rows waiting for the Mark paid button.</p>
         </div>
       </div>
 
-      {loading ? <p className="text-slate-400">Loading...</p> : null}
+      {loading ? <p className="text-slate-500">Loading...</p> : null}
       {error ? <p className="text-red-400">{error}</p> : null}
       {!loading && !error && items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
-          <p className="text-sm font-medium text-slate-200">No withdrawal requests</p>
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/40 p-8 text-center">
+          <p className="text-sm font-medium text-slate-700">No withdrawal requests</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
             When publishers cash out, you will see amount, payout method, account mask, and timestamps here.
             The pipeline cards above explain how each status should be handled operationally.
@@ -136,9 +136,9 @@ export default function AdminWithdrawalsPage() {
       ) : null}
       {!loading && !error && items.length > 0 ? (
         <div className="space-y-4">
-          <div className="hidden overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 lg:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white lg:block">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-800/80">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-3 py-2">Amount</th>
                   <th className="px-3 py-2">Status</th>
@@ -149,10 +149,10 @@ export default function AdminWithdrawalsPage() {
               </thead>
               <tbody>
                 {items.map((w) => (
-                  <tr className="border-t border-slate-800" key={w.id}>
+                  <tr className="border-t border-slate-200" key={w.id}>
                     <td className="px-3 py-2 font-semibold text-white">INR {w.amount}</td>
-                    <td className="px-3 py-2 text-slate-300">{w.status}</td>
-                    <td className="max-w-xs truncate px-3 py-2 text-slate-400">
+                    <td className="px-3 py-2 text-slate-600">{w.status}</td>
+                    <td className="max-w-xs truncate px-3 py-2 text-slate-500">
                       {w.payoutMethod ?? "—"} · {w.payoutAccount ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-slate-500">
@@ -174,18 +174,18 @@ export default function AdminWithdrawalsPage() {
           </div>
           <div className="space-y-4 lg:hidden">
             {items.map((w) => (
-              <article className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm" key={w.id}>
+              <article className="rounded-xl border border-slate-200 bg-white p-4 text-sm" key={w.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-white">INR {w.amount}</p>
-                    <p className="mt-1 text-slate-400">Status: {w.status}</p>
-                    <p className="mt-1 text-slate-400">
+                    <p className="mt-1 text-slate-500">Status: {w.status}</p>
+                    <p className="mt-1 text-slate-500">
                       {w.payoutMethod ?? "—"} · {w.payoutAccount ?? "—"}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">{new Date(w.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
-                <div className="mt-3 border-t border-slate-800 pt-3">
+                <div className="mt-3 border-t border-slate-200 pt-3">
                   <WithdrawalActions
                     busy={busyId === w.id}
                     memo={memos[w.id] ?? ""}
@@ -246,7 +246,7 @@ function WithdrawalActions({
       ) : null}
       {row.status === "APPROVED" ? (
         <button
-          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
           disabled={busy}
           onClick={() => onPatch("PAID")}
           type="button"

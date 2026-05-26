@@ -47,7 +47,7 @@ function ResendVerificationContent() {
     <main className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4 py-10 sm:px-6">
       <div className={`w-full text-left ${formCardClass}`}>
         <h1 className="text-2xl font-semibold text-white">Resend verification email</h1>
-        <p className="mt-2 text-sm text-slate-300">Enter your email to receive a fresh verification link.</p>
+        <p className="mt-2 text-sm text-slate-600">Enter your email to receive a fresh verification link.</p>
 
         <form className={`mt-6 ${formFieldGroupClass}`} onSubmit={handleSubmit} suppressHydrationWarning>
           <div>
@@ -81,7 +81,7 @@ function ResendVerificationContent() {
         ) : null}
 
         <div className="mt-4 text-sm">
-          <Link className="text-indigo-300 hover:text-indigo-200" href="/login">
+          <Link className="text-blue-600 hover:text-blue-500" href="/login">
             Back to login
           </Link>
         </div>
@@ -92,7 +92,7 @@ function ResendVerificationContent() {
 
 export default function ResendVerificationPage() {
   return (
-    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4"><p className="text-slate-400">Loading...</p></div>}>
+    <Suspense fallback={<div className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4"><p className="text-slate-500">Loading...</p></div>}>
       <ResendVerificationContent />
     </Suspense>
   );

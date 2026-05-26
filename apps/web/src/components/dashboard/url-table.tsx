@@ -52,8 +52,8 @@ const ActionButton = ({
     onClick={onClick}
     className={`inline-flex items-center justify-center rounded-lg border px-2.5 py-2 text-sm transition ${
       tone === "emerald"
-        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-        : "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+        ? "border-yellow-300 bg-yellow-100 text-slate-800 hover:bg-yellow-200"
+        : "border-slate-200 bg-white text-slate-700 hover:bg-blue-50"
     }`}
   >
     {children}
@@ -69,9 +69,9 @@ export const UrlTable = ({ items }: { items: UrlItem[] }) => {
     <>
       <div className="space-y-3 md:hidden">
         {items.map((item) => (
-          <article className="rounded-xl border border-slate-800 bg-slate-900 p-3 text-sm" key={item.id}>
+          <article className="rounded-2xl border border-slate-200 bg-white p-3 text-sm shadow-sm" key={item.id}>
             <div className="flex items-center justify-between gap-3">
-              <p className="font-mono text-base font-semibold tracking-wide text-white">{item.shortCode}</p>
+              <p className="font-mono text-base font-semibold tracking-wide text-slate-900">{item.shortCode}</p>
               <div className="flex items-center gap-2">
                 <ActionButton
                   label={`Open destination for ${item.shortCode}`}
@@ -88,7 +88,7 @@ export const UrlTable = ({ items }: { items: UrlItem[] }) => {
                 </ActionButton>
               </div>
             </div>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400">
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
               <span>{item.status}</span>
               <span>{item.clickCount} clicks</span>
               <span>{new Date(item.createdAt).toLocaleDateString()}</span>
@@ -96,9 +96,9 @@ export const UrlTable = ({ items }: { items: UrlItem[] }) => {
           </article>
         ))}
       </div>
-      <div className="hidden overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 md:block">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-800/80">
+      <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-panel md:block">
+        <table className="min-w-full text-left text-sm text-slate-700">
+          <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-3 py-2">Short Code</th>
               <th className="px-3 py-2">Actions</th>
@@ -109,8 +109,8 @@ export const UrlTable = ({ items }: { items: UrlItem[] }) => {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr className="border-t" key={item.id}>
-                <td className="px-3 py-2 font-mono text-white">{item.shortCode}</td>
+              <tr className="border-t border-slate-200 transition hover:bg-blue-50/60" key={item.id}>
+                <td className="px-3 py-2 font-mono text-slate-900">{item.shortCode}</td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">
                     <ActionButton

@@ -79,9 +79,9 @@ export default function AdminInvoicesPage() {
 
   return (
     <section className="space-y-8">
-      <header className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 md:p-6">
+      <header className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
         <h1 className="text-2xl font-semibold text-white">Invoices</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">
           Invoices are the billing paper trail for every paid flow: subscriptions, campaign budgets, and wallet
           top-ups. Each row is one Razorpay (or future provider) attempt with a clear status so finance and
           support can audit revenue.
@@ -89,17 +89,17 @@ export default function AdminInvoicesPage() {
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+        <div className="rounded-xl border border-slate-200 bg-white/95 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total rows</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-white">{data?.pagination.total ?? 0}</p>
           <p className="mt-1 text-xs text-slate-500">Loaded from the live database.</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+        <div className="rounded-xl border border-slate-200 bg-white/95 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paid</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-emerald-300">{paid}</p>
           <p className="mt-1 text-xs text-slate-500">Successful captures in this page slice.</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+        <div className="rounded-xl border border-slate-200 bg-white/95 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pending</p>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-amber-200">{pending}</p>
           <p className="mt-1 text-xs text-slate-500">Awaiting checkout or webhook-style confirmation.</p>
@@ -107,26 +107,26 @@ export default function AdminInvoicesPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-300">Invoice types</h2>
-          <ul className="mt-4 space-y-4 text-sm text-slate-300">
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-blue-600">Invoice types</h2>
+          <ul className="mt-4 space-y-4 text-sm text-slate-600">
             {typeGuide.map((t) => (
               <li key={t.code}>
                 <p className="font-medium text-white">
-                  <span className="font-mono text-xs text-indigo-200">{t.code}</span> — {t.title}
+                  <span className="font-mono text-xs text-blue-500">{t.code}</span> — {t.title}
                 </p>
-                <p className="mt-1 leading-relaxed text-slate-400">{t.body}</p>
+                <p className="mt-1 leading-relaxed text-slate-500">{t.body}</p>
               </li>
             ))}
           </ul>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-indigo-300">Statuses</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-blue-600">Statuses</h2>
           <ul className="mt-4 space-y-3 text-sm">
             {statusGuide.map((s) => (
               <li className="flex gap-2" key={s.code}>
                 <span className="shrink-0 font-mono text-xs text-slate-500">{s.code}</span>
-                <span className="text-slate-400">{s.detail}</span>
+                <span className="text-slate-500">{s.detail}</span>
               </li>
             ))}
           </ul>
@@ -137,11 +137,11 @@ export default function AdminInvoicesPage() {
         </div>
       </div>
 
-      {loading ? <p className="text-slate-400">Loading...</p> : null}
+      {loading ? <p className="text-slate-500">Loading...</p> : null}
       {error ? <p className="text-red-400">{error}</p> : null}
       {!loading && !error && items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
-          <p className="text-sm font-medium text-slate-200">No invoices yet</p>
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/40 p-8 text-center">
+          <p className="text-sm font-medium text-slate-700">No invoices yet</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
             As soon as someone completes a paid checkout, a row will appear here with provider ids and amounts.
             Use the guides above so your team knows how to read each column when traffic picks up.
@@ -149,9 +149,9 @@ export default function AdminInvoicesPage() {
         </div>
       ) : null}
       {!loading && !error && items.length > 0 ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-800/80">
+            <thead className="bg-slate-50">
               <tr>
                 <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Status</th>
@@ -164,16 +164,16 @@ export default function AdminInvoicesPage() {
             </thead>
             <tbody>
               {items.map((row) => (
-                <tr className="border-t border-slate-800" key={row.id}>
-                  <td className="px-3 py-2 text-slate-200">{row.type}</td>
-                  <td className="px-3 py-2 text-slate-300">{row.status}</td>
-                  <td className="px-3 py-2 text-slate-300">
+                <tr className="border-t border-slate-200" key={row.id}>
+                  <td className="px-3 py-2 text-slate-700">{row.type}</td>
+                  <td className="px-3 py-2 text-slate-600">{row.status}</td>
+                  <td className="px-3 py-2 text-slate-600">
                     {row.currency} {row.amount}
                   </td>
-                  <td className="max-w-[8rem] truncate px-3 py-2 text-slate-400">{row.referenceId ?? "—"}</td>
-                  <td className="max-w-[8rem] truncate px-3 py-2 text-slate-400">{row.providerOrderId ?? "—"}</td>
-                  <td className="px-3 py-2 text-slate-400">{new Date(row.createdAt).toLocaleString()}</td>
-                  <td className="px-3 py-2 text-slate-400">
+                  <td className="max-w-[8rem] truncate px-3 py-2 text-slate-500">{row.referenceId ?? "—"}</td>
+                  <td className="max-w-[8rem] truncate px-3 py-2 text-slate-500">{row.providerOrderId ?? "—"}</td>
+                  <td className="px-3 py-2 text-slate-500">{new Date(row.createdAt).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-slate-500">
                     {row.paidAt ? new Date(row.paidAt).toLocaleString() : "—"}
                   </td>
                 </tr>

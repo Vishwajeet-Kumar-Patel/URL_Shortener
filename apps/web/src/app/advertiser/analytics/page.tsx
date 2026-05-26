@@ -22,7 +22,7 @@ export default function AdvertiserAnalyticsPage() {
   return (
     <section className="space-y-5">
       <h1 className="text-3xl font-semibold text-white">Analytics</h1>
-      {!overview ? <p className="text-slate-400">Loading analytics...</p> : (
+      {!overview ? <p className="text-slate-500">Loading analytics...</p> : (
         <div className="grid gap-4 md:grid-cols-4">
           <Metric label="Qualified Clicks" value={overview.totals.clicks} />
           <Metric label="Unique Qualified" value={overview.totals.uniqueClicks} />
@@ -35,5 +35,5 @@ export default function AdvertiserAnalyticsPage() {
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4"><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold text-white">{value}</p></div>;
+  return <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold text-white">{value}</p></div>;
 }

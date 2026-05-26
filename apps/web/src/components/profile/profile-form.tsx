@@ -127,11 +127,11 @@ export function ProfileForm() {
   };
 
   if (!token) {
-    return <p className="text-sm text-slate-400">Sign in to manage your profile.</p>;
+    return <p className="text-sm text-slate-500">Sign in to manage your profile.</p>;
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-400">Loading profile…</p>;
+    return <p className="text-sm text-slate-500">Loading profile…</p>;
   }
 
   if (!profile) {
@@ -152,7 +152,7 @@ export function ProfileForm() {
       <form className={`${formCardClass} ${formFieldGroupClass}`} onSubmit={saveProfile}>
         <div>
           <h2 className="text-lg font-semibold text-white">Account details</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-slate-500">
             Update your display name or email. Changing email requires your current password and sends a
             verification link to the new address.
           </p>
@@ -208,7 +208,7 @@ export function ProfileForm() {
       <form className={`${formCardClass} ${formFieldGroupClass}`} onSubmit={savePassword}>
         <div>
           <h2 className="text-lg font-semibold text-white">Password</h2>
-          <p className="mt-1 text-sm text-slate-400">Use a strong password you do not reuse elsewhere.</p>
+          <p className="mt-1 text-sm text-slate-500">Use a strong password you do not reuse elsewhere.</p>
         </div>
         <div>
           <label className={formLabelClass} htmlFor="pw-current">

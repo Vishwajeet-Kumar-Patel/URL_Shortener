@@ -16,14 +16,14 @@ export default function AdvertiserLayout({ children }: { children: React.ReactNo
   const pathname = usePathname();
   return (
     <ProtectedLayout roles={["ADVERTISER", "ADMIN"]}>
-      <div className="min-h-screen bg-slate-950 text-slate-100">
-        <header className="border-b border-slate-800 bg-slate-950 px-4 py-4">
+      <div className="min-h-screen bg-slate-50 text-slate-700">
+        <header className="border-b border-slate-200 bg-slate-50 px-4 py-4">
           <div className="mx-auto flex max-w-6xl flex-wrap gap-2">
             {nav.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
                 <Link
-                  className={`rounded-lg px-3 py-2 text-sm ${active ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-900"}`}
+                  className={`rounded-lg px-3 py-2 text-sm ${active ? "bg-slate-100 text-white" : "text-slate-600 hover:bg-white"}`}
                   href={item.href}
                   key={item.href}
                 >

@@ -7,5 +7,14 @@ export function AppCard({
   className?: string;
   children: React.ReactNode;
 }) {
-  return <div className={cn("rounded-xl border border-slate-800 bg-slate-900/70 p-4", className)}>{children}</div>;
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-slate-200 bg-white p-4 shadow-panel transition duration-200 hover:-translate-y-0.5 hover:shadow-panelHover",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
 }

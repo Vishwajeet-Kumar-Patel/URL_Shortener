@@ -67,10 +67,10 @@ export default function BillingPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-white sm:text-2xl">Billing</h1>
-          <p className="mt-1 text-sm text-slate-400">Track your subscription and invoices.</p>
+          <p className="mt-1 text-sm text-slate-500">Track your subscription and invoices.</p>
         </div>
         <Link
-          className="inline-flex min-h-[2.5rem] items-center justify-center rounded-lg border border-slate-700 px-4 text-sm text-slate-200 hover:bg-slate-900 sm:shrink-0"
+          className="inline-flex min-h-[2.5rem] items-center justify-center rounded-lg border border-slate-300 px-4 text-sm text-slate-700 hover:bg-white sm:shrink-0"
           href="/pricing"
         >
           View plans
@@ -78,36 +78,36 @@ export default function BillingPage() {
       </div>
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
-      {loading ? <p className="text-slate-400">Loading billing data...</p> : null}
+      {loading ? <p className="text-slate-500">Loading billing data...</p> : null}
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-semibold text-white">Current subscription</h2>
         {subscription ? (
-          <div className="mt-3 text-sm text-slate-300">
+          <div className="mt-3 text-sm text-slate-600">
             <p className="font-medium text-white">{subscription.planName}</p>
-            <p className="mt-1 text-slate-400">Status: {subscription.status}</p>
-            <p className="mt-1 text-slate-400">Interval: {subscription.interval}</p>
+            <p className="mt-1 text-slate-500">Status: {subscription.status}</p>
+            <p className="mt-1 text-slate-500">Interval: {subscription.interval}</p>
             {subscription.renewAt ? (
-              <p className="mt-1 text-slate-400">
+              <p className="mt-1 text-slate-500">
                 Renews: {new Date(subscription.renewAt).toLocaleDateString()}
               </p>
             ) : null}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-slate-400">No active subscription yet.</p>
+          <p className="mt-3 text-sm text-slate-500">No active subscription yet.</p>
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900">
-        <div className="border-b border-slate-800 px-4 py-3">
+      <div className="rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 px-4 py-3">
           <h2 className="text-lg font-semibold text-white">Invoices</h2>
         </div>
         {invoices.length === 0 && !loading ? (
-          <p className="px-4 py-6 text-sm text-slate-400">No invoices yet.</p>
+          <p className="px-4 py-6 text-sm text-slate-500">No invoices yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-800/80">
+              <thead className="bg-slate-50">
                 <tr>
                   <th className="px-4 py-2">Type</th>
                   <th className="px-4 py-2">Status</th>
@@ -118,16 +118,16 @@ export default function BillingPage() {
               </thead>
               <tbody>
                 {invoices.map((invoice) => (
-                  <tr className="border-t border-slate-800" key={invoice.id}>
-                    <td className="px-4 py-2 text-slate-200">{invoice.type}</td>
-                    <td className="px-4 py-2 text-slate-300">{invoice.status}</td>
-                    <td className="px-4 py-2 text-slate-300">
+                  <tr className="border-t border-slate-200" key={invoice.id}>
+                    <td className="px-4 py-2 text-slate-700">{invoice.type}</td>
+                    <td className="px-4 py-2 text-slate-600">{invoice.status}</td>
+                    <td className="px-4 py-2 text-slate-600">
                       {invoice.currency} {invoice.amount}
                     </td>
-                    <td className="px-4 py-2 text-slate-400">
+                    <td className="px-4 py-2 text-slate-500">
                       {new Date(invoice.createdAt).toLocaleString()}
                     </td>
-                    <td className="px-4 py-2 text-slate-400">
+                    <td className="px-4 py-2 text-slate-500">
                       {invoice.paidAt ? new Date(invoice.paidAt).toLocaleString() : "-"}
                     </td>
                   </tr>

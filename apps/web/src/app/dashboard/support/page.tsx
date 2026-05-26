@@ -56,7 +56,7 @@ export default function DashboardSupportPage() {
       <header className="space-y-2">
         <p className="text-xs uppercase tracking-[0.24em] text-cyan-300/70">Help desk</p>
         <h1 className="text-3xl font-semibold text-white">Support</h1>
-        <p className="max-w-3xl text-sm text-slate-400">
+        <p className="max-w-3xl text-sm text-slate-500">
           Reach the team directly from your dashboard. The form posts to the live contact backend.
         </p>
       </header>
@@ -110,9 +110,9 @@ export default function DashboardSupportPage() {
           </button>
         </form>
 
-        <div className="space-y-4 rounded-[1.5rem] border border-white/10 bg-[#08101e] p-5">
+        <div className="space-y-4 rounded-[1.5rem] border border-slate-200 bg-white p-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Fast paths</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Fast paths</p>
             <h2 className="mt-2 text-xl font-semibold text-white">Common options</h2>
           </div>
           <div className="grid gap-3">
@@ -125,7 +125,7 @@ export default function DashboardSupportPage() {
               ["Profile", "/dashboard/profile"]
             ].map(([label, href]) => (
               <Link
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-cyan-400/30 hover:bg-cyan-400/10"
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition hover:border-cyan-400/30 hover:bg-cyan-400/10"
                 href={String(href)}
                 key={String(label)}
               >

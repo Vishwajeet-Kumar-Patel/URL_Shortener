@@ -21,27 +21,27 @@ const faqs = [
 
 export default function FaqPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-slate-50 text-slate-700">
       <div className="mx-auto max-w-4xl space-y-8 px-4 py-12 md:py-16">
         <header className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400">Help center</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Help center</p>
           <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Frequently asked questions</h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-slate-400">
+          <p className="max-w-2xl text-sm leading-relaxed text-slate-500">
             Everything you need to understand traffic monetization, publisher earnings, and platform operations.
           </p>
         </header>
 
         <section className="space-y-4">
           {faqs.map((item) => (
-            <article className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5" key={item.q}>
+            <article className="rounded-2xl border border-slate-200 bg-white p-5" key={item.q}>
               <h2 className="text-lg font-medium text-white">{item.q}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">{item.a}</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.a}</p>
             </article>
           ))}
         </section>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 text-sm text-slate-300">
-          Need more help? Contact us via the <Link className="text-indigo-300 underline" href="/contact">support form</Link>.
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          Need more help? Contact us via the <Link className="text-blue-600 underline" href="/contact">support form</Link>.
         </div>
       </div>
     </main>

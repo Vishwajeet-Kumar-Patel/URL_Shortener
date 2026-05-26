@@ -49,10 +49,10 @@ export default function AdminClicksPage() {
     <section className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-white">Clicks & traffic</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
           Every successful redirect increments click counts and feeds your analytics. Use this view to see
           platform-wide engagement over the last 90 days. For per-link detail, open{" "}
-          <Link className="text-indigo-400 underline hover:text-indigo-300" href="/admin/urls">
+          <Link className="text-blue-600 underline hover:text-blue-600" href="/admin/urls">
             All URLs
           </Link>{" "}
           and inspect individual short links.
@@ -60,25 +60,25 @@ export default function AdminClicksPage() {
       </div>
 
       {error ? <p className="text-red-400">{error}</p> : null}
-      {!overview && !error ? <p className="text-slate-400">Loading...</p> : null}
+      {!overview && !error ? <p className="text-slate-500">Loading...</p> : null}
 
       {overview ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-              <p className="text-sm text-slate-400">Total clicks (all time)</p>
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-sm text-slate-500">Total clicks (all time)</p>
               <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{overview.totals.clicks}</p>
               <p className="mt-2 text-xs text-slate-500">Aggregated across every short link on the platform.</p>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-              <p className="text-sm text-slate-400">Active short links</p>
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-sm text-slate-500">Active short links</p>
               <p className="mt-2 text-3xl font-semibold tabular-nums text-emerald-400">
                 {overview.totals.activeUrls}
               </p>
               <p className="mt-2 text-xs text-slate-500">Links that can currently receive traffic.</p>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-5 sm:col-span-2 lg:col-span-1">
-              <p className="text-sm text-slate-400">Paused links</p>
+            <div className="rounded-xl border border-slate-200 bg-white p-5 sm:col-span-2 lg:col-span-1">
+              <p className="text-sm text-slate-500">Paused links</p>
               <p className="mt-2 text-3xl font-semibold tabular-nums text-amber-400">
                 {overview.totals.pausedUrls}
               </p>
@@ -86,9 +86,9 @@ export default function AdminClicksPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-5 md:p-6">
+          <div className="rounded-xl border border-slate-200 bg-white/95 p-5 md:p-6">
             <h2 className="text-lg font-medium text-white">Daily clicks (last 90 days)</h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-slate-500">
               Taller bars mean more redirects that day. Spikes often follow campaigns or shared links going
               viral.
             </p>
@@ -104,13 +104,13 @@ export default function AdminClicksPage() {
                         day: "numeric"
                       })}
                     </span>
-                    <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800">
+                    <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-indigo-500"
+                        className="h-full rounded-full bg-blue-500"
                         style={{ width: `${Math.max(4, (row.count / maxDay) * 100)}%` }}
                       />
                     </div>
-                    <span className="w-12 shrink-0 text-right tabular-nums text-slate-300">{row.count}</span>
+                    <span className="w-12 shrink-0 text-right tabular-nums text-slate-600">{row.count}</span>
                   </div>
                 ))
               )}

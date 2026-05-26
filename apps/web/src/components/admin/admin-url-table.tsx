@@ -20,7 +20,7 @@ function OpenShortLink({ shortCode }: { shortCode: string }) {
   return (
     <a
       aria-label={`Open short link ${shortCode} in new tab`}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-600 text-slate-200 transition hover:border-indigo-500 hover:bg-indigo-950/50 hover:text-white"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition hover:border-indigo-500 hover:bg-indigo-950/50 hover:text-white"
       href={href}
       rel="noopener noreferrer"
       target="_blank"
@@ -124,27 +124,27 @@ export function AdminUrlTable({ items, token, onAfterMutation, onError }: Props)
     <>
       <div className="space-y-3 md:hidden">
         {items.map((item) => (
-          <article className="rounded-xl border border-slate-800 bg-slate-900 p-3 text-sm" key={item.id}>
+          <article className="rounded-xl border border-slate-200 bg-white p-3 text-sm" key={item.id}>
             <div className="flex items-center justify-between gap-2">
               <p className="font-medium text-white">{item.shortCode}</p>
               <OpenShortLink shortCode={item.shortCode} />
             </div>
-            <p className="mt-1 break-all text-slate-300">{item.originalUrl}</p>
+            <p className="mt-1 break-all text-slate-600">{item.originalUrl}</p>
             <p className="mt-1 text-xs text-slate-500">Owner: {item.ownerId}</p>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400">
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
               <span>Status: {item.status}</span>
               <span>Clicks: {item.clickCount}</span>
               <span>{new Date(item.createdAt).toLocaleDateString()}</span>
             </div>
-            <div className="mt-3 border-t border-slate-800 pt-3">
+            <div className="mt-3 border-t border-slate-200 pt-3">
               <Actions row={item} />
             </div>
           </article>
         ))}
       </div>
-      <div className="hidden overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 md:block">
+      <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white md:block">
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-800/80">
+          <thead className="bg-slate-50">
             <tr>
               <th className="px-3 py-2">Short</th>
               <th className="w-12 px-2 py-2 text-center" title="Open public short URL">
@@ -160,18 +160,18 @@ export function AdminUrlTable({ items, token, onAfterMutation, onError }: Props)
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr className="border-t border-slate-800" key={item.id}>
+              <tr className="border-t border-slate-200" key={item.id}>
                 <td className="px-3 py-2 font-medium text-white">{item.shortCode}</td>
                 <td className="px-2 py-2 text-center">
                   <OpenShortLink shortCode={item.shortCode} />
                 </td>
-                <td className="max-w-xs truncate px-3 py-2 text-slate-300">{item.originalUrl}</td>
+                <td className="max-w-xs truncate px-3 py-2 text-slate-600">{item.originalUrl}</td>
                 <td className="max-w-[8rem] truncate px-3 py-2 text-xs text-slate-500" title={item.ownerId}>
                   {item.ownerId}
                 </td>
                 <td className="px-3 py-2">{item.status}</td>
                 <td className="px-3 py-2 tabular-nums">{item.clickCount}</td>
-                <td className="px-3 py-2 text-slate-400">{new Date(item.createdAt).toLocaleString()}</td>
+                <td className="px-3 py-2 text-slate-500">{new Date(item.createdAt).toLocaleString()}</td>
                 <td className="px-3 py-2">
                   <Actions row={item} />
                 </td>

@@ -40,10 +40,10 @@ export default function DashboardUrlsPage() {
     <section className="space-y-4">
       <h1 className="text-2xl font-semibold text-white">My URLs</h1>
       {loading ? (
-        <p className="text-slate-300">Loading...</p>
+        <p className="text-slate-600">Loading...</p>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900 p-8 text-center">
-          <p className="text-slate-300">You have not created any URLs yet.</p>
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <p className="text-slate-600">You have not created any URLs yet.</p>
         </div>
       ) : (
         <UrlTable items={items} />

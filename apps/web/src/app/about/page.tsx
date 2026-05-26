@@ -3,11 +3,11 @@ import { SiteHeader } from "@/components/marketing/site-header";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-700">
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-10 md:px-8">
         <h1 className="text-4xl font-bold text-white">About PurpleMerit Links</h1>
-        <p className="mt-3 max-w-3xl text-slate-300">
+        <p className="mt-3 max-w-3xl text-slate-600">
           We are building a dependable link platform focused on speed, safety, and measurable growth.
         </p>
         <img

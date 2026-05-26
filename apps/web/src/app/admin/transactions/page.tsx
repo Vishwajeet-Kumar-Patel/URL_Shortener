@@ -59,8 +59,8 @@ export default function AdminTransactionsPage() {
             <DataTableRow key={row.id}>
               <DataTableCell>{row.provider}</DataTableCell>
               <DataTableCell className="text-white">{row.eventType}</DataTableCell>
-              <DataTableCell className="text-slate-400">{row.invoiceId ?? "—"}</DataTableCell>
-              <DataTableCell className="text-slate-400">{new Date(row.receivedAt).toLocaleString()}</DataTableCell>
+              <DataTableCell className="text-slate-500">{row.invoiceId ?? "—"}</DataTableCell>
+              <DataTableCell className="text-slate-500">{new Date(row.receivedAt).toLocaleString()}</DataTableCell>
             </DataTableRow>
           ))}
         </tbody>

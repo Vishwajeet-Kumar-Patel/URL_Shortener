@@ -68,7 +68,7 @@ function LoginForm() {
 
   return (
     <main className="grid min-h-screen grid-cols-1 md:grid-cols-2">
-      <section className="relative hidden min-h-[40vh] bg-slate-900 md:block md:min-h-screen">
+      <section className="relative hidden min-h-[40vh] bg-white md:block md:min-h-screen">
         <img
           alt="Analytics workspace"
           className="absolute inset-0 h-full w-full object-cover"
@@ -79,7 +79,7 @@ function LoginForm() {
       <section className="mx-auto flex w-full max-w-md items-center px-4 py-10 sm:px-6">
         <div className={`w-full ${formCardClass}`}>
           <h1 className="mb-1 text-2xl font-bold text-white sm:text-3xl">Welcome back</h1>
-          <p className="mb-6 text-sm text-slate-300">Log in to manage your links and analytics.</p>
+          <p className="mb-6 text-sm text-slate-600">Log in to manage your links and analytics.</p>
           <form className={formFieldGroupClass} onSubmit={handleSubmit} suppressHydrationWarning>
             <div>
               <label className={formLabelClass} htmlFor="login-email">
@@ -125,20 +125,20 @@ function LoginForm() {
             </button>
           </form>
           <div className="mt-3 text-right text-xs">
-            <Link className="text-indigo-300 hover:text-indigo-200" href="/auth/forgot-password">
+            <Link className="text-blue-600 hover:text-blue-500" href="/auth/forgot-password">
               Forgot password?
             </Link>
           </div>
           <div className="my-4 text-center text-xs text-slate-500">or</div>
           <GoogleButton href={`${API_BASE_URL}/auth/google`} />
-          <p className="mt-5 text-sm text-slate-300">
+          <p className="mt-5 text-sm text-slate-600">
             No account?{" "}
-            <Link className="text-indigo-400" href="/register">
+            <Link className="text-blue-600" href="/register">
               Register
             </Link>
           </p>
           <Link
-            className="mt-4 block w-full text-center text-sm text-indigo-400 underline underline-offset-4 hover:text-indigo-300"
+            className="mt-4 block w-full text-center text-sm text-blue-600 underline underline-offset-4 hover:text-blue-600"
             href="/"
           >
             ← Back to Home
@@ -152,7 +152,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
         Loading...
       </div>
     }>

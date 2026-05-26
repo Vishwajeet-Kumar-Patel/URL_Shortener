@@ -73,10 +73,10 @@ export default function AdminEarningsPage() {
   if (loading) {
     return (
       <section className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-slate-700" />
+        <div className="h-8 w-48 animate-pulse rounded bg-slate-200" />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24 animate-pulse rounded bg-slate-800" />
+            <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200" />
           ))}
         </div>
       </section>
@@ -87,9 +87,9 @@ export default function AdminEarningsPage() {
     return (
       <section className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Admin Earnings</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Admin Earnings</h1>
         </div>
-        <div className="rounded-lg border border-red-500 bg-red-950 p-4 text-red-200">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
           {error}
         </div>
       </section>
@@ -106,14 +106,14 @@ export default function AdminEarningsPage() {
     <section className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Admin Earnings</h1>
-          <p className="mt-2 text-sm text-slate-400">Platform revenue breakdown and analytics</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Admin Earnings</h1>
+          <p className="mt-2 text-sm text-slate-500">Platform revenue breakdown and analytics</p>
         </div>
         <div className="flex gap-2">
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
           >
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
@@ -122,7 +122,7 @@ export default function AdminEarningsPage() {
           </select>
           <button
             onClick={loadData}
-            className="rounded border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+            className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
           >
             Refresh
           </button>
@@ -131,97 +131,97 @@ export default function AdminEarningsPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-        <div className="rounded-lg border border-slate-800 bg-gradient-to-br from-emerald-900 to-emerald-800 p-6">
-          <p className="text-sm text-slate-300">Total Earnings</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-400">
+        <div className="interactive-lift rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-panel">
+          <p className="text-sm text-emerald-700">Total Earnings</p>
+          <p className="mt-2 text-3xl font-bold text-emerald-700">
             ₹{breakdown?.totalEarnings.toFixed(2) || "0.00"}
           </p>
-          <p className="mt-1 text-xs text-slate-400">Platform revenue</p>
+          <p className="mt-1 text-xs text-emerald-600">Platform revenue</p>
         </div>
 
-        <div className="rounded-lg border border-slate-800 bg-gradient-to-br from-blue-900 to-blue-800 p-6">
-          <p className="text-sm text-slate-300">Subscriptions</p>
-          <p className="mt-2 text-3xl font-bold text-blue-400">
+        <div className="interactive-lift rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-panel">
+          <p className="text-sm text-blue-700">Subscriptions</p>
+          <p className="mt-2 text-3xl font-bold text-blue-700">
             ₹{breakdown?.bySource.subscriptions.toFixed(2) || "0.00"}
           </p>
-          <p className="mt-1 text-xs text-slate-400">Plan revenue</p>
+          <p className="mt-1 text-xs text-blue-600">Plan revenue</p>
         </div>
 
-        <div className="rounded-lg border border-slate-800 bg-gradient-to-br from-purple-900 to-purple-800 p-6">
-          <p className="text-sm text-slate-300">CPM Margin</p>
-          <p className="mt-2 text-3xl font-bold text-purple-400">
+        <div className="interactive-lift rounded-2xl border border-violet-200 bg-violet-50 p-6 shadow-panel">
+          <p className="text-sm text-violet-700">CPM Margin</p>
+          <p className="mt-2 text-3xl font-bold text-violet-700">
             ₹{breakdown?.bySource.cpmClicks.toFixed(2) || "0.00"}
           </p>
-          <p className="mt-1 text-xs text-slate-400">20% from ad revenue</p>
+          <p className="mt-1 text-xs text-violet-600">20% from ad revenue</p>
         </div>
 
-        <div className="rounded-lg border border-slate-800 bg-gradient-to-br from-amber-900 to-amber-800 p-6">
-          <p className="text-sm text-slate-300">Active Subscriptions</p>
-          <p className="mt-2 text-3xl font-bold text-amber-400">
+        <div className="interactive-lift rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-panel">
+          <p className="text-sm text-amber-700">Active Subscriptions</p>
+          <p className="mt-2 text-3xl font-bold text-amber-700">
             {summary?.totalActiveSubscriptions || "0"}
           </p>
-          <p className="mt-1 text-xs text-slate-400">Paid members</p>
+          <p className="mt-1 text-xs text-amber-600">Paid members</p>
         </div>
 
-        <div className="rounded-lg border border-slate-800 bg-gradient-to-br from-cyan-900 to-cyan-800 p-6">
-          <p className="text-sm text-slate-300">Avg per Member</p>
-          <p className="mt-2 text-3xl font-bold text-cyan-400">
+        <div className="interactive-lift rounded-2xl border border-cyan-200 bg-cyan-50 p-6 shadow-panel">
+          <p className="text-sm text-cyan-700">Avg per Member</p>
+          <p className="mt-2 text-3xl font-bold text-cyan-700">
             ₹{summary?.averageEarningsPerMember.toFixed(2) || "0.00"}
           </p>
-          <p className="mt-1 text-xs text-slate-400">Per member average</p>
+          <p className="mt-1 text-xs text-cyan-600">Per member average</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Revenue by Source */}
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-lg font-semibold text-white">Revenue by Source</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-panel">
+          <h2 className="text-lg font-semibold text-slate-900">Revenue by Source</h2>
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-3 w-3 rounded-full bg-blue-500" />
-                <span className="text-sm text-slate-300">Subscriptions</span>
+                <span className="text-sm text-slate-600">Subscriptions</span>
               </div>
-              <span className="text-sm font-semibold text-white">
+              <span className="text-sm font-semibold text-slate-900">
                 ₹{breakdown?.bySource.subscriptions.toFixed(2) || "0.00"}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-3 w-3 rounded-full bg-purple-500" />
-                <span className="text-sm text-slate-300">CPM Clicks</span>
+                <span className="text-sm text-slate-600">CPM Clicks</span>
               </div>
-              <span className="text-sm font-semibold text-white">
+              <span className="text-sm font-semibold text-slate-900">
                 ₹{breakdown?.bySource.cpmClicks.toFixed(2) || "0.00"}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-3 w-3 rounded-full bg-amber-500" />
-                <span className="text-sm text-slate-300">Referral Commission</span>
+                <span className="text-sm text-slate-600">Referral Commission</span>
               </div>
-              <span className="text-sm font-semibold text-white">
+              <span className="text-sm font-semibold text-slate-900">
                 ₹{breakdown?.bySource.referrals.toFixed(2) || "0.00"}
               </span>
             </div>
-            <div className="border-t border-slate-700 pt-3">
+            <div className="border-t border-slate-200 pt-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-300">Total</span>
-                <span className="text-lg font-bold text-emerald-400">
+                <span className="text-sm font-semibold text-slate-600">Total</span>
+                <span className="text-lg font-bold text-emerald-700">
                   ₹{breakdown?.totalEarnings.toFixed(2) || "0.00"}
                 </span>
               </div>
             </div>
-            <div className="border-t border-slate-700 pt-3">
+            <div className="border-t border-slate-200 pt-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Ad popup impressions</span>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm text-slate-600">Ad popup impressions</span>
+                <span className="text-sm font-semibold text-slate-900">
                   {breakdown?.byAdEvents.popupImpressions ?? 0}
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-sm text-slate-300">Ad popup clicks</span>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm text-slate-600">Ad popup clicks</span>
+                <span className="text-sm font-semibold text-slate-900">
                   {breakdown?.byAdEvents.popupClicks ?? 0}
                 </span>
               </div>
@@ -230,38 +230,38 @@ export default function AdminEarningsPage() {
         </div>
 
         {/* Top Countries */}
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-lg font-semibold text-white">Top Countries (CPM)</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-panel">
+          <h2 className="text-lg font-semibold text-slate-900">Top Countries (CPM)</h2>
           <div className="mt-4 space-y-3">
             {topCountries.length > 0 ? (
               topCountries.map((country) => (
                 <div key={country.country} className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">{country.country}</span>
+                  <span className="text-sm text-slate-600">{country.country}</span>
                   <div className="flex items-center gap-3">
-                    <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-700">
+                    <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200">
                       <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-purple-400"
+                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
                         style={{
                           width: `${(country.amount / (topCountries[0]?.amount || 1)) * 100}%`
                         }}
                       />
                     </div>
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-slate-900">
                       ₹{country.amount.toFixed(2)}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-slate-400">No data</p>
+              <p className="text-sm text-slate-500">No data</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Recent Earnings Trend */}
-      <div className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-        <h2 className="text-lg font-semibold text-white">Recent Earnings Trend</h2>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-panel">
+        <h2 className="text-lg font-semibold text-slate-900">Recent Earnings Trend</h2>
         <div className="mt-6 flex h-40 items-end gap-2">
           {recentDays.length > 0 ? (
             recentDays.map((day) => {
@@ -272,19 +272,19 @@ export default function AdminEarningsPage() {
                 <div key={day.date} className="flex flex-1 flex-col items-center">
                   <div className="relative h-32 w-full">
                     <div
-                      className="absolute bottom-0 w-full rounded-t-sm bg-gradient-to-t from-emerald-500 to-emerald-400"
+                      className="absolute bottom-0 w-full rounded-t-sm bg-gradient-to-t from-blue-600 to-yellow-300"
                       style={{ height: `${height}%` }}
                       title={`₹${day.amount.toFixed(2)}`}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-slate-400">
+                  <p className="mt-2 text-xs text-slate-500">
                     {new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </p>
                 </div>
               );
             })
           ) : (
-            <p className="text-sm text-slate-400">No data for this period</p>
+            <p className="text-sm text-slate-500">No data for this period</p>
           )}
         </div>
       </div>
@@ -293,31 +293,31 @@ export default function AdminEarningsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/admin/cpm-rates"
-          className="rounded-lg border border-slate-700 bg-slate-800 p-4 text-center transition hover:bg-slate-700"
+          className="rounded-xl border border-slate-200 bg-white p-4 text-center transition hover:border-blue-200 hover:bg-blue-50"
         >
-          <p className="text-sm font-medium text-white">Manage CPM Rates</p>
-          <p className="mt-1 text-xs text-slate-400">Configure country rates</p>
+          <p className="text-sm font-semibold text-slate-900">Manage CPM Rates</p>
+          <p className="mt-1 text-xs text-slate-500">Configure country rates</p>
         </Link>
         <Link
           href="/admin/invoices"
-          className="rounded-lg border border-slate-700 bg-slate-800 p-4 text-center transition hover:bg-slate-700"
+          className="rounded-xl border border-slate-200 bg-white p-4 text-center transition hover:border-blue-200 hover:bg-blue-50"
         >
-          <p className="text-sm font-medium text-white">View Invoices</p>
-          <p className="mt-1 text-xs text-slate-400">Payment records</p>
+          <p className="text-sm font-semibold text-slate-900">View Invoices</p>
+          <p className="mt-1 text-xs text-slate-500">Payment records</p>
         </Link>
         <Link
           href="/admin/click-logs"
-          className="rounded-lg border border-slate-700 bg-slate-800 p-4 text-center transition hover:bg-slate-700"
+          className="rounded-xl border border-slate-200 bg-white p-4 text-center transition hover:border-blue-200 hover:bg-blue-50"
         >
-          <p className="text-sm font-medium text-white">Click Analytics</p>
-          <p className="mt-1 text-xs text-slate-400">Qualified traffic</p>
+          <p className="text-sm font-semibold text-slate-900">Click Analytics</p>
+          <p className="mt-1 text-xs text-slate-500">Qualified traffic</p>
         </Link>
         <Link
           href="/admin/reports"
-          className="rounded-lg border border-slate-700 bg-slate-800 p-4 text-center transition hover:bg-slate-700"
+          className="rounded-xl border border-slate-200 bg-white p-4 text-center transition hover:border-blue-200 hover:bg-blue-50"
         >
-          <p className="text-sm font-medium text-white">Full Reports</p>
-          <p className="mt-1 text-xs text-slate-400">Detailed analysis</p>
+          <p className="text-sm font-semibold text-slate-900">Full Reports</p>
+          <p className="mt-1 text-xs text-slate-500">Detailed analysis</p>
         </Link>
       </div>
     </section>
